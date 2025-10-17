@@ -1,0 +1,13 @@
+{
+  "build": {
+    "builder": "NIXPACKS",
+    "commands": [
+        "cp .env.prod .env",
+        "composer install --no-dev --optimize-autoloader",
+        "cd frontend && npm install && npm run build"
+    ]
+  },
+  "deploy": {
+    "startCommand": "php -S 0.0.0.0:8080 -t public"
+  }
+}

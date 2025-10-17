@@ -49,21 +49,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             try {
                 const refreshToken = localStorage.getItem("refresh_token");
 
-                if (!refreshToken || !refreshToken.length) {
-                    throw new Error("Unauthorized");
+                // if no token, just stop here (don't logout on public pages)
+                if (!refreshToken) {
+                    setLoading(false);
+                    return;
                 }
 
                 const res = await axios.post(
-                    "http://localhost:8000/api/token/refresh",
-                    { refresh_token: localStorage.getItem("refresh_token") },
+                    "http://localhost:8001/api/token/refresh",
+                    { refresh_token: refreshToken },
                     { withCredentials: true }
                 );
 
                 setAccessToken(res.data.token);
                 setUser(res.data.user);
                 localStorage.setItem("refresh_token", res.data.refresh_token);
-            } catch {
-                logout();
+            } catch (err) {
+                // only redirect to login if user is on a protected page
+                const publicPaths = ["/login", "/logout", "/anamnese"];
+                const currentPath = window.location.pathname;
+
+                if (!publicPaths.includes(currentPath)) {
+                    logout();
+                }
             } finally {
                 setLoading(false);
             }

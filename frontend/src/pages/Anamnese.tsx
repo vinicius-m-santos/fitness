@@ -53,7 +53,7 @@ export default function Anamnese() {
             setLoading(true);
 
             const res = await axios.post(
-                "http://127.0.0.1:8001/api/client/",
+                "http://localhost:8001/api/client/",
                 data
             );
             if (res.data.success) {

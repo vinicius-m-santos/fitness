@@ -8,7 +8,6 @@ import Dashboard from "./pages/Dashboard";
 export default function App() {
     return (
         <Routes>
-            <Route path="/" element={<Anamnese />} />
             <Route
                 path="/dashboard"
                 element={
@@ -17,6 +16,7 @@ export default function App() {
                     </PrivateRoute>
                 }
             />
+            <Route path="/anamnese" element={<Anamnese />} />
             <Route path="/login" element={<Login />} />
             <Route path="/logout" element={<Logout />} />
         </Routes>

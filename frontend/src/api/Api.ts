@@ -4,7 +4,7 @@ import { useAuth } from "../providers/AuthProvider";
 export const useApi = () => {
     const { accessToken } = useAuth();
 
-    const api = axios.create({ baseURL: "http://localhost:8000/api" });
+    const api = axios.create({ baseURL: "http://localhost:8001/api" });
 
     api.interceptors.request.use((config) => {
         if (accessToken) {

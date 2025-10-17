@@ -13,7 +13,6 @@ use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints\Date;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-#[ORM\Table(name: '`user`')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -40,6 +39,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     #[Groups(['user_all'])]
     private string $lastName;
+
+    #[ORM\OneToMany(mappedBy:"user", targetEntity:Client::class)]
+    private $clients;
 
     #[ORM\Column(type: "datetime_immutable")]
     #[Groups(['user_all'])]
