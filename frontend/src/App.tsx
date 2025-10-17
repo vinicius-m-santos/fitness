@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import Anamnese from "./pages/Anamnese";
 import Login from "./pages/Login";
-import Logout from "./pages/logout";
+import Logout from "./pages/Logout";
 import PrivateRoute from "./utils/Auth/PrivateRoute";
 import Dashboard from "./pages/Dashboard";
 

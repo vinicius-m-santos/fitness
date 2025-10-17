@@ -1,19 +1,23 @@
 import { useState } from "react";
 import axios from "axios";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Textarea } from "../components/ui/textarea";
 import {
     Select,
     SelectTrigger,
     SelectValue,
     SelectContent,
     SelectItem,
-} from "@/components/ui/select";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+} from "../components/ui/select";
+import {
+    Card,
+    CardHeader,
+    CardTitle,
+    CardContent,
+} from "../components/ui/card";
+import { Button } from "../components/ui/button";
 import { CheckCircle } from "lucide-react";
-import { Link } from "react-router-dom";
 import Loader from "../components/ui/loader";
 import toast from "react-hot-toast";
 import ButtonLoader from "../components/ui/buttonLoader";
