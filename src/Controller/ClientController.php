@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Client;
 use App\Service\ClientService;
+use App\Repository\ClientRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -19,7 +20,8 @@ class ClientController extends AbstractController
         private readonly ValidatorInterface $validator,
         private readonly NormalizerInterface $normalizer,
         private readonly ClientService $clientService,
-        private readonly TranslatorInterface $translator
+        private readonly TranslatorInterface $translator,
+        private readonly ClientRepository $clientRepository
     )
     {
     }
@@ -51,5 +53,21 @@ class ClientController extends AbstractController
         $normalizedData = $this->normalizer->normalize($client, 'json', ['client_all']);
 
         return $this->json(['success' => true, 'data' => $normalizedData], 200);
+    }
+
+    #[Route('/all', name: 'get_all_clients', methods: ['GET'])]
+    public function getAll(): JsonResponse
+    {
+         /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return new JsonResponse(['error' => 'Unauthorized', 401]);
+        }
+
+        $clients = $this->clientRepository->findBy(['user' => $user->getId()]);
+        $normalizedData = $this->normalizer->normalize($clients, 'json', ['client_all']);
+
+        return new JsonResponse(['clients' => $normalizedData], 200);
     }
 }

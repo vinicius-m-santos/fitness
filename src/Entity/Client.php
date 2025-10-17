@@ -65,6 +65,11 @@ class Client
     #[Groups(['client_all'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: "clients")]
+    #[ORM\JoinColumn(name: "user_id", referencedColumnName: "id", nullable: false)]
+    #[Groups(['client_all'])]
+    private User $user;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -185,6 +190,22 @@ class Client
         return $this;
     }
 
+    public function getCreatedAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function getUser(): User
+    {
+        return $this->user;
+    }
+
+    public function setUser(User $user): self
+    {
+        $this->user = $user;
+        return $this;
+    }
+
     public function getDataFromArray(array $data): self
     {
         if (isset($data['name'])) {
@@ -225,6 +246,14 @@ class Client
 
         if (isset($data['active'])) {
             $this->active = $data['active'];
+        }
+
+        if (isset($data['createdAt'])) {
+            $this->active = $data['createdAt'];
+        }
+
+        if (isset($data['user'])) {
+            $this->active = $data['user'];
         }
 
         return $this;
