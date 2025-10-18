@@ -10,8 +10,10 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Validator\Constraints\Date;
 
+#[ORM\HasLifecycleCallbacks]
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: "users")]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
@@ -21,6 +23,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: "integer")]
     #[Groups(['user_all'])]
     private int $id;
+
+    #[ORM\Column(type: "uuid", unique: true)]
+    private ?Uuid $uuid = null;
 
     #[ORM\Column(type: "string", unique: true)]
     #[Groups(['user_all'])]
@@ -52,6 +57,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user_all'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[ORM\PrePersist]
+    public function initializeUuid(): void
+    {
+        if ($this->uuid === null) {
+            $this->uuid = Uuid::v4();
+        }
+    }
 
     public function getId(): int
     {
