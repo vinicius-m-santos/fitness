@@ -53,7 +53,7 @@ export default function Anamnese() {
             setLoading(true);
 
             const res = await axios.post(
-                "http://localhost:8001/api/client/",
+                `${import.meta.env.VITE_API_URL}/client/`,
                 data
             );
             if (res.data.success) {
