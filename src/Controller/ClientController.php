@@ -5,10 +5,12 @@ namespace App\Controller;
 use App\Entity\Client;
 use App\Service\ClientService;
 use App\Repository\ClientRepository;
+use App\Repository\UserRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Serializer\Encoder\JsonEncode;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -21,14 +23,20 @@ class ClientController extends AbstractController
         private readonly NormalizerInterface $normalizer,
         private readonly ClientService $clientService,
         private readonly TranslatorInterface $translator,
-        private readonly ClientRepository $clientRepository
+        private readonly ClientRepository $clientRepository,
+        private readonly UserRepository $userRepository
     )
     {
     }
 
-    #[Route('/', name: 'client_create', methods: ['POST'])]
-    public function create(Request $request): JsonResponse
+    #[Route('/{token}', name: 'client_create', methods: ['POST'])]
+    public function create(Request $request, string $token): JsonResponse
     {
+        $token = trim($token);
+        if (strlen($token) === 0) {
+            return $this->json(['success' => false, 'error' => 'Link de Personal inválido'], 200);
+        }
+
         $data = json_decode($request->getContent(), true);
         
         $client = new Client();
@@ -48,6 +56,17 @@ class ClientController extends AbstractController
                 'error' => $errorMessage,
             ], 400);
         }
+
+        $personal = $this->userRepository->findOneBy(['uuid' => $token]);
+
+        if ($personal === null) {
+            return $this->json([
+                'success' => false,
+                'error' => 'Personal não encontrado',
+            ], 400);
+        }
+
+        $client->setUser($personal);
 
         $client = $this->clientService->add($client);
         $normalizedData = $this->normalizer->normalize($client, 'json', ['client_all']);

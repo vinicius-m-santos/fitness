@@ -6,6 +6,8 @@ import Logout from "./pages/Logout";
 import PrivateRoute from "./utils/Auth/PrivateRoute";
 import Dashboard from "./pages/Dashboard";
 import AdminLayout from "./layout/AdminLayout";
+import Home from "./pages/Home";
+import UuidRoute from "./utils/Auth/UuidRoute";
 
 export default function App() {
     return (
@@ -20,8 +22,16 @@ export default function App() {
                     </PrivateRoute>
                 }
             />
-            <Route path="/anamnese" element={<Anamnese />} />
             <Route path="/client-view/:id" element={<ClientView />} />
+            <Route path="/" element={<Home />} />
+            <Route
+                path="/anamnese"
+                element={
+                    <UuidRoute>
+                        <Anamnese />
+                    </UuidRoute>
+                }
+            />
             <Route path="/login" element={<Login />} />
             <Route path="/logout" element={<Logout />} />
         </Routes>

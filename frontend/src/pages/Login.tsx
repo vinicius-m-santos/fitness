@@ -2,12 +2,15 @@ import { useState } from "react";
 import { useAuth } from "../providers/AuthProvider";
 import { useApi } from "../api/Api";
 import toast from "react-hot-toast";
+import { ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
     const { login, user, accessToken } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const api = useApi();
+    const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -38,9 +41,15 @@ const Login = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
+            <button
+                onClick={() => navigate("/")}
+                className="absolute top-6 left-6 flex items-center text-gray-600 hover:text-gray-900 transition"
+            >
+                <ArrowLeft className="mr-2 h-5 w-5" /> Voltar
+            </button>
             <div className="bg-white shadow-lg rounded-2xl p-8 max-w-md w-full">
                 <h2 className="text-2xl font-bold text-gray-800 text-center mb-6">
-                    Login to Your Account
+                    Entrar na sua conta
                 </h2>
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
@@ -56,7 +65,7 @@ const Login = () => {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             className="w-full text-black border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="you@example.com"
+                            placeholder="seu@email.com.br"
                             required
                         />
                     </div>
@@ -65,7 +74,7 @@ const Login = () => {
                             htmlFor="password"
                             className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                            Password
+                            Senha
                         </label>
                         <input
                             type="password"
@@ -81,7 +90,7 @@ const Login = () => {
                         type="submit"
                         className="w-full bg-blue-500 text-white font-semibold rounded-lg py-2 hover:bg-blue-600 transition-colors"
                     >
-                        Login
+                        Entrar
                     </button>
                 </form>
                 {/* <p className="text-sm text-center text-gray-500 mt-6">

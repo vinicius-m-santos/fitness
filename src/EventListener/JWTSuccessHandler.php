@@ -28,7 +28,8 @@ class JWTSuccessHandler
             'firstName' => $user->getFirstName(),
             'lastName' => $user->getLastName(),
             'email' => $user->getUserIdentifier(),
-            'roles' => $user->getRoles()
+            'roles' => $user->getRoles(),
+            'uuid' => $user->getUuid()
         ];
 
         $event->setData($data);

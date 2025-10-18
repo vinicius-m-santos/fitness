@@ -110,6 +110,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->password;
     }
 
+    public function getUuid(): string
+    {
+        return $this->uuid;
+    }
+
     public function getUserIdentifier(): string { return $this->email; }
     public function getRoles(): array { return array_unique(array_merge($this->roles, ['ROLE_USER'])); }
     public function setRoles(array $roles): self { $this->roles = $roles; return $this; }
