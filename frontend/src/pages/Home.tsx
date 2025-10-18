@@ -6,11 +6,19 @@ import {
     Star,
     Clock,
     Heart,
+    ChartNoAxesColumnIncreasing,
+    Clipboard,
+    LogOut,
+    MenuIcon,
+    X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import logo from "../assets/fitrise_logo.png";
+import { useState } from "react";
 
 export default function Home() {
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
     return (
         <div className="min-h-screen flex flex-col bg-white text-gray-800">
             {/* Navbar */}
@@ -34,7 +42,35 @@ export default function Home() {
                                 Entrar
                             </Link>
                         </div>
+
+                        {/* Mobile menu button */}
+                        <div className="md:hidden">
+                            <button
+                                onClick={() =>
+                                    setMobileMenuOpen(!mobileMenuOpen)
+                                }
+                                className="p-2 focus:outline-none"
+                            >
+                                {mobileMenuOpen ? (
+                                    <X size={24} />
+                                ) : (
+                                    <MenuIcon size={24} />
+                                )}
+                            </button>
+                        </div>
                     </div>
+
+                    {/* Mobile Menu */}
+                    {mobileMenuOpen && (
+                        <div className="md:hidden pb-4 flex flex-col">
+                            <Link
+                                to="/login"
+                                className="flex items-center gap-2 text-black font-bold text-sm hover:text-gray-600 px-4 py-2 rounded transition"
+                            >
+                                Entrar
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </nav>
 

@@ -6,9 +6,7 @@ import toast from "react-hot-toast";
 import { useState } from "react";
 import {
     ChartNoAxesColumnIncreasing,
-    ChevronDown,
     Clipboard,
-    Grid,
     LogOut,
     MenuIcon,
     X,
