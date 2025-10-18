@@ -9,6 +9,9 @@ import { useApi } from "../../api/Api";
 import  Loader from "../../components/ui/loader";
 import { useQuery } from "@tanstack/react-query";
 import DateConverterComponent from "../../utils/DateConverter";
+import { localeText } from "../../utils/traduction/traduction";
+import { Eye, Copy } from "lucide-react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 
 const themeDarkBlue = themeQuartz.withPart(colorSchemeLightWarm);
 
@@ -25,15 +28,41 @@ const DateConverter = (data: { value: string }) => {
   return DateConverterComponent(data.value, null);
 };
 
-const ActionButtons = (data: { value: number }) => {
+const ActionButtons = (params: any) => {
+  const { navigate } = params;
+
+  const handleView = () => {
+    return navigate(`/client-view/${params.data.id}`, { state: { client: params.data } });
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(JSON.stringify(params.data));
+    alert("Dados copiados!");
+  };
+
   return (
-    <div className="flex justify-center items-center h-full">
+    <div className="flex justify-center items-center gap-3">
+      <button
+        onClick={handleView}
+        className="p-1 text-blue-500 hover:text-blue-700 transition"
+        title="Visualizar"
+      >
+        <Eye className="w-5 h-5" />
+      </button>
+      <button
+        onClick={handleCopy}
+        className="p-1 text-green-500 hover:text-green-700 transition"
+        title="Copiar"
+      >
+        <Copy className="w-5 h-5" />
+      </button>
     </div>
   );
 };
 
 const ClientTable = () => {
   const api = useApi();
+  const navigate = useNavigate();
   async function loadClients() {
     const res = await api.get("/client/all");
     console.log(res)
@@ -46,15 +75,22 @@ const ClientTable = () => {
   });
   const [columnDefs, setColumnDefs] = useState([
     { headerName: "ID", field: "id" },
-    { headerName: "Nome", field: "name", flex: 2 },
-    { headerName: "Sobrenome", field: "lastName", flex: 3 },
-    { headerName: "Gênero", field: "gender", flex: 3 },
+    { headerName: "Nome", field: "name", filter: true, flex: 2 },
+    { headerName: "Sobrenome", field: "lastName", filter: true, flex: 3 },
+    { headerName: "Gênero", field: "gender", flex: 2 },
     { headerName: "Ativo", field: "active" },
     {
       headerName: "Data de Cadastro",
       cellRenderer: DateConverter,
       field: "createdAt",
       flex: 2,
+    },
+    {
+      headerName: "Ação", 
+      cellRenderer: (params) => (
+        <ActionButtons {...params} navigate={navigate} />
+      ),
+      flex: 2
     },
   ]);
 
@@ -80,6 +116,11 @@ const ClientTable = () => {
         columnDefs={columnDefs}
         defaultColDef={defaultColDef}
         theme={themeDarkBlue}
+        localeText={localeText}
+        pagination={true}
+        paginationPageSize={10}
+        enableBrowserTooltips={true}
+        suppressMenuHide={false}  
       />
     </div>
   );
