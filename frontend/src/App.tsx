@@ -22,7 +22,14 @@ export default function App() {
                     </PrivateRoute>
                 }
             />
-            <Route path="/client-view/:id" element={<ClientView />} />
+            <Route
+                path="/client-view/:id"
+                element={
+                    <PrivateRoute>
+                        <ClientView />
+                    </PrivateRoute>
+                }
+            />
             <Route path="/" element={<Home />} />
             <Route
                 path="/anamnese"

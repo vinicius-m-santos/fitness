@@ -1,6 +1,6 @@
 import axios from "axios";
 import { createContext, useState, useContext, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Loader from "../components/ui/loader";
 
 type User = {
@@ -21,6 +21,8 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const AUTHENTICATED_ROUTES = ["dashboard", "client-view"];
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     children,
 }) => {
@@ -28,6 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const navigate = useNavigate();
+    const location = useLocation();
 
     const login = (token: string, user: User, refresh_token: string) => {
         setAccessToken(token);
@@ -76,6 +79,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 setLoading(false);
             }
         };
+
+        if (
+            !AUTHENTICATED_ROUTES.some((path) =>
+                location.pathname.includes(path)
+            )
+        ) {
+            setLoading(false);
+            return;
+        }
 
         fetchAccessToken();
     }, []);

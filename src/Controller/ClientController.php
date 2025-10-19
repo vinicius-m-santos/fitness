@@ -2,10 +2,13 @@
 
 namespace App\Controller;
 
+use App\Entity\Anamnese;
 use App\Entity\Client;
+use App\Repository\AnamneseRepository;
 use App\Service\ClientService;
 use App\Repository\ClientRepository;
 use App\Repository\UserRepository;
+use App\Service\AnamneseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -24,7 +27,9 @@ class ClientController extends AbstractController
         private readonly ClientService $clientService,
         private readonly TranslatorInterface $translator,
         private readonly ClientRepository $clientRepository,
-        private readonly UserRepository $userRepository
+        private readonly UserRepository $userRepository,
+        private readonly AnamneseService $anamneseService,
+        private readonly AnamneseRepository $anamneseRepository
     )
     {
     }
@@ -43,7 +48,23 @@ class ClientController extends AbstractController
         $client->getDataFromArray($data);
 
         $errors = $this->validator->validate($client);
+        if (count($errors) > 0) {
+            $errorMessage = null;
+            foreach ($errors as $error) {
+                $errorMessage = $error->getMessage();
+                break;
+            }
 
+            return $this->json([
+                'success' => false,
+                'error' => $errorMessage,
+            ], 400);
+        }
+
+        $anamnese = new Anamnese();
+        $anamnese->getDataFromArray($data);
+
+        $errors = $this->validator->validate($anamnese);
         if (count($errors) > 0) {
             $errorMessage = null;
             foreach ($errors as $error) {
@@ -67,8 +88,11 @@ class ClientController extends AbstractController
         }
 
         $client->setUser($personal);
-
         $client = $this->clientService->add($client);
+
+        $anamnese->setClient($client);
+        $this->anamneseService->add($anamnese);
+
         $normalizedData = $this->normalizer->normalize($client, 'json', ['client_all']);
 
         return $this->json(['success' => true, 'data' => $normalizedData], 200);
@@ -88,5 +112,37 @@ class ClientController extends AbstractController
         $normalizedData = $this->normalizer->normalize($clients, 'json', ['client_all']);
 
         return new JsonResponse(['clients' => $normalizedData], 200);
+    }
+
+    #[Route('/{clientId}', name: 'get_client', methods: ['GET'])]
+    public function get(int $clientId): JsonResponse
+    {
+         /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return new JsonResponse(
+                [
+                    'success' => false,
+                    'error' => 'Unauthorized'
+                ],
+                401
+            );
+        }
+
+        $client = $this->anamneseRepository->findOneBy(
+            [
+                'client' => $clientId
+            ]
+        );
+
+        $normalizedData = $this->normalizer->normalize($client, 'json', ['anamnese_all']);
+        return new JsonResponse(
+            [
+                'success' => true,
+                'client' => $normalizedData
+            ],
+            200
+        );
     }
 }

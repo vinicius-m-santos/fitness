@@ -2,53 +2,60 @@
 
 namespace App\Entity;
 
+use App\Validator as AppAssert;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: \App\Repository\AnamneseRepository::class)]
 #[ORM\Table(name: "anamnese")]
+#[AppAssert\ValidAnamnese]
 class Anamnese
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: "integer")]
-    #[Groups(['client_all'])]
+    #[Groups(['client_all', 'anamnese_all'])]
     private int $id;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['client_all'])]
-    private string $medicalRestriction;
+    #[Groups(['client_all', 'anamnese_all'])]
+    private string $medicalRestriction = "";
 
     #[ORM\Column(length: 255)]
-    #[Groups(['client_all'])]
-    private string $cronicalPain;
+    #[Groups(['client_all', 'anamnese_all'])]
+    private string $cronicalPain = "";
 
     #[ORM\Column(length: 255)]
-    #[Groups(['client_all'])]
-    private string $controledMedicine;
+    #[Groups(['client_all', 'anamnese_all'])]
+    private string $controledMedicine = "";
 
     #[ORM\Column(length: 255)]
-    #[Groups(['client_all'])]
-    private string $heartProblem;
+    #[Groups(['client_all', 'anamnese_all'])]
+    private string $heartProblem = "";
 
     #[ORM\Column(length: 255)]
-    #[Groups(['client_all'])]
-    private string $recentSurgery;
+    #[Groups(['client_all', 'anamnese_all'])]
+    private string $recentSurgery = "";
 
     #[ORM\Column(length: 255)]
-    #[Groups(['client_all'])]
-    private string $timeWithoutGym;
+    #[Groups(['client_all', 'anamnese_all'])]
+    private string $timeWithoutGym = "";
 
     #[ORM\Column(length: 255)]
-    #[Groups(['client_all'])]
-    private string $ocupation;
+    #[Groups(['client_all', 'anamnese_all'])]
+    private string $ocupation = "";
+
+    #[ORM\OneToOne(inversedBy: "anamnese")]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['anamnese_all'])]
+    private ?Client $client = null;
 
     #[ORM\Column(type: "datetime_immutable")]
-    #[Groups(['client_all'])]
+    #[Groups(['client_all', 'anamnese_all'])]
     private \DateTimeImmutable $createdAt;
 
     #[ORM\Column(type: "datetime_immutable", nullable: true)]
-    #[Groups(['client_all'])]
+    #[Groups(['client_all', 'anamnese_all'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
     public function __construct()
@@ -94,23 +101,23 @@ class Anamnese
         return $this;
     }
 
-    public function getHeartProblem(): float
+    public function getHeartProblem(): string
     {
         return $this->heartProblem;
     }
 
-    public function setHeartProblem(float $heartProblem): self
+    public function setHeartProblem(string $heartProblem): self
     {
         $this->heartProblem = $heartProblem;
         return $this;
     }
 
-    public function getRecentSurgery(): int
+    public function getRecentSurgery(): string
     {
         return $this->recentSurgery;
     }
 
-    public function setRecentSurgery(int $recentSurgery): self
+    public function setRecentSurgery(string $recentSurgery): self
     {
         $this->recentSurgery = $recentSurgery;
         return $this;
@@ -135,6 +142,17 @@ class Anamnese
     public function setOcupation(string $ocupation): self
     {
         $this->ocupation = $ocupation;
+        return $this;
+    }
+
+    public function getClient(): ?Client
+    {
+        return $this->client;
+    }
+
+    public function setClient(Client $client): self
+    {
+        $this->client = $client;
         return $this;
     }
 

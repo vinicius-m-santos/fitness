@@ -4,16 +4,20 @@ import { useApi } from "../api/Api";
 import toast from "react-hot-toast";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Button } from "../components/ui/button";
+import ButtonLoader from "../components/ui/buttonLoader";
 
 const Login = () => {
     const { login, user, accessToken } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
     const api = useApi();
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        setLoading(true);
 
         try {
             const res = await api.post("/login_check", {
@@ -35,7 +39,7 @@ const Login = () => {
                 }
             }
         } finally {
-            // setLoading(false);
+            setLoading(false);
         }
     };
 
@@ -86,12 +90,14 @@ const Login = () => {
                             required
                         />
                     </div>
-                    <button
+                    <Button
                         type="submit"
-                        className="w-full bg-blue-500 text-white font-semibold rounded-lg py-2 hover:bg-blue-600 transition-colors"
+                        className="w-full bg-blue-500 cursor-pointer text-white font-semibold rounded-lg py-2 hover:bg-blue-600 transition-colors disabled:opacity-100"
+                        disabled={loading}
                     >
-                        Entrar
-                    </button>
+                        {!loading && "Entrar"}
+                        {loading && <ButtonLoader />}
+                    </Button>
                 </form>
                 {/* <p className="text-sm text-center text-gray-500 mt-6">
                     Don’t have an account?{" "}

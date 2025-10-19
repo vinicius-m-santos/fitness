@@ -57,6 +57,10 @@ class Client
     #[Groups(['client_all'])]
     private bool $active = true;
 
+    #[ORM\OneToOne(mappedBy:"client", cascade: ['persist', 'remove'])]
+    #[Groups(['client_all'])]
+    private ?Anamnese $anamnese = null;
+
     #[ORM\Column(type: "datetime_immutable")]
     #[Groups(['client_all'])]
     private \DateTimeImmutable $createdAt;
