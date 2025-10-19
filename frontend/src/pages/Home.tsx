@@ -77,7 +77,7 @@ export default function Home() {
             {/* Hero / Header */}
             <header className="flex flex-col items-center justify-center text-center py-16 bg-gray-50 flex-shrink-0">
                 <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gray-800">
-                    Transforme o jeito de treinar seus clientes
+                    Transforme o jeito de treinar seus alunos
                 </h1>
                 <p className="text-lg md:text-xl text-gray-600 max-w-2xl">
                     Organize treinos, acompanhe o progresso, colete dados e veja
@@ -95,11 +95,11 @@ export default function Home() {
                         <div className="flex flex-col items-center p-6 border rounded-lg hover:shadow-lg transition">
                             <Users size={48} className="text-blue-500 mb-4" />
                             <h3 className="text-xl font-semibold mb-2">
-                                Gerenciar Clientes
+                                Gerenciar Alunos
                             </h3>
                             <p>
-                                Adicione, edite e acompanhe todos os seus
-                                clientes facilmente.
+                                Adicione, edite e acompanhe todos os seus alunos
+                                facilmente.
                             </p>
                         </div>
                         <div className="flex flex-col items-center p-6 border rounded-lg hover:shadow-lg transition">
@@ -138,7 +138,7 @@ export default function Home() {
                             </h3>
                             <p>
                                 Visualize gráficos e métricas para entender o
-                                desempenho dos clientes.
+                                desempenho dos alunos.
                             </p>
                         </div>
                     </div>
@@ -159,7 +159,7 @@ export default function Home() {
                                 Produtividade
                             </h3>
                             <p>
-                                Gerencie múltiplos clientes sem perder tempo com
+                                Gerencie múltiplos alunos sem perder tempo com
                                 planilhas ou papéis.
                             </p>
                         </div>
@@ -179,7 +179,7 @@ export default function Home() {
                                 Engajamento
                             </h3>
                             <p>
-                                Clientes motivados e mais engajados com
+                                Alunos motivados e mais engajados com
                                 acompanhamento personalizado.
                             </p>
                         </div>
@@ -194,7 +194,7 @@ export default function Home() {
                 </h2>
                 <p className="mb-8 text-gray-600 text-center max-w-xl">
                     Crie sua conta, organize seus treinos e veja resultados
-                    concretos com seus clientes de maneira simples.
+                    concretos com seus alunos de maneira simples.
                 </p>
                 <button className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
                     Em Breve

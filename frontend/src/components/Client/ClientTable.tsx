@@ -24,7 +24,6 @@ interface IRow {
 }
 
 const DateConverter = (data: { value: string }) => {
-    console.log(data.value);
     return DateConverterComponent(data.value, null);
 };
 
@@ -44,13 +43,13 @@ const ActionButtons = (params: any) => {
 
     return (
         <div className="flex justify-center items-center gap-3">
-            <button
+            {/* <button
                 onClick={handleView}
                 className="p-1 text-blue-500 hover:text-blue-700 transition"
                 title="Visualizar"
             >
                 <Eye className="w-5 h-5" />
-            </button>
+            </button> */}
             {/* <button
         onClick={handleCopy}
         className="p-1 text-green-500 hover:text-green-700 transition"
@@ -87,13 +86,13 @@ const ClientTable = () => {
             field: "createdAt",
             flex: 2,
         },
-        {
-            headerName: "Ação",
-            cellRenderer: (params) => (
-                <ActionButtons {...params} navigate={navigate} />
-            ),
-            flex: 2,
-        },
+        // {
+        //     headerName: "Ação",
+        //     cellRenderer: (params) => (
+        //         <ActionButtons {...params} navigate={navigate} />
+        //     ),
+        //     flex: 2,
+        // },
     ]);
 
     const defaultColDef: ColDef = {
@@ -120,7 +119,7 @@ const ClientTable = () => {
                 theme={themeDarkBlue}
                 localeText={localeText}
                 pagination={true}
-                paginationPageSize={10}
+                paginationPageSize={20}
                 enableBrowserTooltips={true}
                 suppressMenuHide={false}
             />
