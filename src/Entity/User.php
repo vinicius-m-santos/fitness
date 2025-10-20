@@ -46,9 +46,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user_all'])]
     private string $lastName;
 
-    #[ORM\OneToMany(mappedBy:"user", targetEntity:Client::class)]
-    private $clients;
-
     #[ORM\Column(type: "datetime_immutable")]
     #[Groups(['user_all'])]
     private \DateTimeImmutable $createdAt;
