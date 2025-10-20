@@ -26,7 +26,9 @@ export default function App() {
                 path="/client-view/:id"
                 element={
                     <PrivateRoute>
-                        <ClientView />
+                        <AdminLayout>
+                            <ClientView />
+                        </AdminLayout>
                     </PrivateRoute>
                 }
             />
