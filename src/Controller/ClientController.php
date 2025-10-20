@@ -7,6 +7,7 @@ use App\Entity\Client;
 use App\Repository\AnamneseRepository;
 use App\Service\ClientService;
 use App\Repository\ClientRepository;
+use App\Repository\PersonalRepository;
 use App\Repository\UserRepository;
 use App\Service\AnamneseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -29,7 +30,8 @@ class ClientController extends AbstractController
         private readonly ClientRepository $clientRepository,
         private readonly UserRepository $userRepository,
         private readonly AnamneseService $anamneseService,
-        private readonly AnamneseRepository $anamneseRepository
+        private readonly AnamneseRepository $anamneseRepository,
+        private readonly PersonalRepository $personalRepository
     )
     {
     }
@@ -78,7 +80,7 @@ class ClientController extends AbstractController
             ], 400);
         }
 
-        $personal = $this->userRepository->findOneBy(['uuid' => $token]);
+        $personal = $this->personalRepository->findOneByUserUuid($token);
 
         if ($personal === null) {
             return $this->json([
@@ -87,8 +89,7 @@ class ClientController extends AbstractController
             ], 400);
         }
 
-        $client->setUser($personal);
-        $client = $this->clientService->add($client);
+        $client = $this->clientService->createClient($personal, $client);
 
         $anamnese->setClient($client);
         $this->anamneseService->add($anamnese);
@@ -108,8 +109,8 @@ class ClientController extends AbstractController
             return new JsonResponse(['error' => 'Unauthorized', 401]);
         }
 
-        $clients = $this->clientRepository->findBy(['user' => $user->getId()]);
-        $normalizedData = $this->normalizer->normalize($clients, 'json', ['client_all']);
+        $clients = $this->clientRepository->findAllClientsByUserId($user->getId());
+        $normalizedData = $this->normalizer->normalize($clients, 'json', ['groups' => ['client_list']]);
 
         return new JsonResponse(['clients' => $normalizedData], 200);
     }
@@ -136,7 +137,7 @@ class ClientController extends AbstractController
             ]
         );
 
-        $normalizedData = $this->normalizer->normalize($client, 'json', ['anamnese_all']);
+        $normalizedData = $this->normalizer->normalize($client, 'json', ['groups' => ['anamnese_all']]);
         return new JsonResponse(
             [
                 'success' => true,
