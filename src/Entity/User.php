@@ -46,6 +46,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user_all'])]
     private string $lastName;
 
+    #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
+    private ?Personal $personal = null;
+
+    #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
+    private ?Client $client = null;
+
     #[ORM\Column(type: "datetime_immutable")]
     #[Groups(['user_all'])]
     private \DateTimeImmutable $createdAt;
@@ -53,6 +59,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: "datetime_immutable", nullable: true)]
     #[Groups(['user_all'])]
     private ?\DateTimeImmutable $updatedAt = null;
+
+    public function __construct()
+    {
+        $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
+    }
 
     #[ORM\PrePersist]
     public function initializeUuid(): void

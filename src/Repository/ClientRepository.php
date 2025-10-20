@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Client;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -36,6 +37,17 @@ class ClientRepository extends ServiceEntityRepository
     {
         $this->em->remove($client);
         $this->em->flush();
+    }
+
+    public function findAllClientsByUserId(int $userId): mixed
+    {
+        return $this->createQueryBuilder('c')
+            ->select('c')
+            ->innerJoin('c.personal', 'p')
+            ->where('p.user = :userId')
+            ->setParameter('userId', $userId)
+            ->getQuery()
+            ->getResult();
     }
 
 //    /**

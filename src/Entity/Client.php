@@ -14,47 +14,47 @@ class Client
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: "integer")]
-    #[Groups(['client_all'])]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private int $id;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['client_all'])]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private string $name;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['client_all'])]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private string $lastName;
 
     #[ORM\Column(type: "integer", nullable: true)]
-    #[Groups(['client_all'])]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private int $age;
 
     #[ORM\Column(length: 1)]
-    #[Groups(['client_all'])]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private string $gender;
 
     #[ORM\Column(type: "float", nullable: true)]
-    #[Groups(['client_all'])]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private ?float $weight;
 
     #[ORM\Column(type: "float", nullable: true)]
-    #[Groups(['client_all'])]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private ?float $height;
 
     #[ORM\Column(type: "integer")]
-    #[Groups(['client_all'])]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private int $objective;
 
     #[ORM\Column(length: 10)]
-    #[Groups(['client_all'])]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private string $bloodPressure = "";
 
     #[ORM\Column(type: "integer")]
-    #[Groups(['client_all'])]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private int $workoutDaysPerWeek;
 
     #[ORM\Column(type: "boolean", options: ['default' => true])]
-    #[Groups(['client_all'])]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private bool $active = true;
 
     #[ORM\OneToOne(mappedBy:"client", cascade: ['persist', 'remove'])]
@@ -62,16 +62,25 @@ class Client
     private ?Anamnese $anamnese = null;
 
     #[ORM\Column(type: "datetime_immutable")]
-    #[Groups(['client_all'])]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private \DateTimeImmutable $createdAt;
 
     #[ORM\Column(type: "datetime_immutable", nullable: true)]
-    #[Groups(['client_all'])]
+    #[Groups(['client_all', 'client_list'])]
     private ?\DateTimeImmutable $updatedAt = null;
+
+    #[ORM\OneToOne(inversedBy: 'client', cascade: ['persist', 'remove'])]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?User $user = null;
+    
+    #[ORM\ManyToOne(inversedBy: 'clients')]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?Personal $personal = null;
 
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
     public function getId(): int
@@ -192,6 +201,28 @@ class Client
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function getUser(): User
+    {
+        return $this->user;
+    }
+
+    public function setUser(User $user): self
+    {
+        $this->user = $user;
+        return $this;
+    }
+
+    public function getPersonal(): ?Personal
+    {
+        return $this->personal;
+    }
+
+    public function setPersonal(?Personal $personal): self
+    {
+        $this->personal = $personal;
+        return $this;
     }
 
     public function getDataFromArray(array $data): self
