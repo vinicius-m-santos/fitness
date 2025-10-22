@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import UserDropdown from "./components/UserDropdown";
-import logo from "../../assets/fitrise_logo.png";
-import { useAuth } from "../../providers/AuthProvider";
+import UserDropdown from "@/components/Menu/components/UserDropdown";
+import logo from "@/assets/fitrise_logo.png";
+import { useAuth } from "@/providers/AuthProvider";
 import toast from "react-hot-toast";
 import { useState } from "react";
 import {

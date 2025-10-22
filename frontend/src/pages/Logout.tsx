@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useAuth } from "../providers/AuthProvider";
+import { useAuth } from "@/providers/AuthProvider";
 
 const Logout = () => {
     const { logout } = useAuth();

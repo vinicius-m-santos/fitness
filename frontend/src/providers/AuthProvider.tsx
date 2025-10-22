@@ -1,7 +1,7 @@
 import axios from "axios";
 import { createContext, useState, useContext, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import Loader from "../components/ui/loader";
+import Loader from "@/components/ui/loader";
 
 type User = {
     id: number;

@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { useAuth } from "../providers/AuthProvider";
-import { useApi } from "../api/Api";
+import { useAuth } from "@/providers/AuthProvider";
+import { useApi } from "@/api/Api";
 import toast from "react-hot-toast";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "../components/ui/button";
-import ButtonLoader from "../components/ui/buttonLoader";
+import { Button } from "@/components/ui/button";
+import ButtonLoader from "@/components/ui/buttonLoader";
 
 const Login = () => {
-    const { login, user, accessToken } = useAuth();
+    const { login } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);

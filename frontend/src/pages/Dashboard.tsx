@@ -1,4 +1,4 @@
-import ClientTable from "../components/Client/ClientTable";
+import ClientTable from "@/components/Client/ClientTable";
 
 export default function Dashboard() {
     return (

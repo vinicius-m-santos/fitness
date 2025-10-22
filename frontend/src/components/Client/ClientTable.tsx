@@ -5,13 +5,13 @@ import {
 } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { useState } from "react";
-import { useApi } from "../../api/Api";
-import Loader from "../../components/ui/loader";
+import { useApi } from "@/api/Api";
+import Loader from "@/components/ui/loader";
 import { useQuery } from "@tanstack/react-query";
-import DateConverterComponent from "../../utils/DateConverter";
-import { localeText } from "../../utils/traduction/traduction";
-import { Eye, Copy } from "lucide-react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import DateConverterComponent from "@/utils/DateConverter";
+import { localeText } from "@/utils/traduction/traduction";
+import { Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const themeDarkBlue = themeQuartz.withPart(colorSchemeLightWarm);
 

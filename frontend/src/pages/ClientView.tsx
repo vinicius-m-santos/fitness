@@ -1,41 +1,74 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Edit, MessageCircle } from "lucide-react";
-import EvolutionTab from "../components/Client/components/EvolutionTab";
-import MeasurementsTab from "../components/Client/components/MeasurementsTab";
-import GalleryTab from "../components/Client/components/GalleryTab";
-import AnamneseTab from "../components/Client/components/AnamneseTab";
-import WorkoutsTab from "../components/Client/components/WorkoutsTab";
+import { MessageCircle } from "lucide-react";
+import EvolutionTab from "@/components/Client/components/EvolutionTab";
+import MeasurementsTab from "@/components/Client/components/MeasurementsTab";
+import GalleryTab from "@/components/Client/components/GalleryTab";
+import AnamneseTab from "@/components/Client/components/AnamneseTab";
+import WorkoutsTab from "@/components/Client/components/WorkoutsTab";
+import { useLocation } from "react-router-dom";
+import EditClientModal from "@/components/Client/components/EditClientModal";
+import { OBJECTIVES } from "@/utils/constants/Client/constants";
 
 export default function ClientView() {
     const [tab, setTab] = useState("evolucao");
+    const [client, setClient] = useState(null);
+    const location = useLocation();
+
+    const getClientNameFormatted = (name: string, lastName: string): string => {
+        if (name) {
+            name = name.slice(0, 1).toUpperCase() + name.slice(1);
+        }
+
+        if (lastName) {
+            lastName = lastName.slice(0, 1).toUpperCase() + lastName.slice(1);
+        }
+
+        return `${name} ${lastName}`;
+    };
+
+    useEffect(() => {
+        if (!location.state.client) {
+            return;
+        }
+        console.log(location.state.client);
+
+        setClient(location.state.client);
+    }, [location.state]);
 
     return (
         <div className="w-full max-w-6xl mx-auto p-6 space-y-8">
             <Card className="p-6 flex flex-col sm:flex-row items-center gap-6">
                 <Avatar className="h-24 w-24">
-                    <AvatarImage
-                        src="https://i.pravatar.cc/150?img=5"
-                        alt="Foto do cliente"
-                    />
-                    <AvatarFallback>VS</AvatarFallback>
+                    {client?.src && (
+                        <AvatarImage src={client.src} alt="Foto do cliente" />
+                    )}
+                    {!client?.src && (
+                        <AvatarFallback>
+                            {`${client?.name
+                                .slice(0, 1)
+                                .toUpperCase()}${client?.lastName
+                                .slice(0, 1)
+                                .toUpperCase()}`}
+                        </AvatarFallback>
+                    )}
                 </Avatar>
                 <div className="flex-1 space-y-2">
-                    <h2 className="text-2xl font-semibold">Vinícius Santos</h2>
+                    <h2 className="text-2xl font-semibold">
+                        {getClientNameFormatted(client?.name, client?.lastName)}
+                    </h2>
                     <p className="text-sm text-muted-foreground">
-                        Idade: 28 anos • Objetivo: Hipertrofia • Último treino:
-                        há 2 dias
+                        Idade: {client?.age} anos • Objetivo:{" "}
+                        {client ? OBJECTIVES[client.objective] : ""}
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                        <Edit className="h-4 w-4 mr-2" /> Editar
-                    </Button>
-                    <Button size="sm">
+                    <EditClientModal clientData={client} />
+                    <Button className="cursor-pointer" size="sm">
                         <MessageCircle className="h-4 w-4 mr-2" /> Contatar
                     </Button>
                 </div>
@@ -60,7 +93,7 @@ export default function ClientView() {
                     <TabsContent value="evolucao">
                         <Card>
                             <CardContent className="p-6 text-sm text-muted-foreground">
-                                {/* <EvolutionTab /> */}
+                                <EvolutionTab />
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -68,7 +101,7 @@ export default function ClientView() {
                     <TabsContent value="medidas">
                         <Card>
                             <CardContent className="p-6 text-sm text-muted-foreground">
-                                {/* <MeasurementsTab /> */}
+                                <MeasurementsTab />
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -84,7 +117,7 @@ export default function ClientView() {
                     <TabsContent value="galeria">
                         <Card>
                             <CardContent className="p-6 text-sm text-muted-foreground">
-                                {/* <GalleryTab /> */}
+                                <GalleryTab />
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -92,7 +125,7 @@ export default function ClientView() {
                     <TabsContent value="anamnese">
                         <Card>
                             <CardContent className="p-6 text-sm text-muted-foreground">
-                                {/* <AnamneseTab /> */}
+                                <AnamneseTab />
                             </CardContent>
                         </Card>
                     </TabsContent>

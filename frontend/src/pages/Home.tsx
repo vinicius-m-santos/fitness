@@ -6,14 +6,11 @@ import {
     Star,
     Clock,
     Heart,
-    ChartNoAxesColumnIncreasing,
-    Clipboard,
-    LogOut,
     MenuIcon,
     X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import logo from "../assets/fitrise_logo.png";
+import logo from "@/assets/fitrise_logo.png";
 import { useState } from "react";
 
 export default function Home() {
