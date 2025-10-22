@@ -1,0 +1,99 @@
+<?php
+
+namespace App\Entity;
+
+use App\Repository\ExerciseRepository;
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
+
+#[ORM\Entity(repositoryClass: ExerciseRepository::class)]
+#[ORM\Table(name: 'exercises')]
+class Exercise
+{
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
+    #[Groups(['exercise_all'])]
+    private ?int $id = null;
+
+    #[ORM\Column(type: 'string', length: 150)]
+    #[Groups(['exercise_all'])]
+    private string $name;
+
+    #[ORM\ManyToOne(targetEntity: ExerciseCategory::class)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    #[Groups(['exercise_all'])]
+    private ExerciseCategory $exerciseCategory;
+
+    #[ORM\ManyToOne(targetEntity: Personal::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
+    #[Groups(['exercise_all'])]
+    private Personal $personal;
+
+    #[ORM\Column(type: 'datetime_immutable')]
+    #[Groups(['exercise_all'])]
+    private \DateTimeImmutable $createdAt;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    #[Groups(['exercise_all'])]
+    private ?\DateTimeImmutable $updatedAt = null;
+
+    public function __construct()
+    {
+        $this->createdAt = new \DateTimeImmutable();
+    }
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $name): self
+    {
+        $this->name = $name;
+        return $this;
+    }
+
+    public function getExerciseCategory(): ExerciseCategory
+    {
+        return $this->exerciseCategory;
+    }
+
+        public function getPersonal(): Personal
+    {
+        return $this->personal;
+    }
+
+    public function setPersonal(Personal $personal): self
+    {
+        $this->personal = $personal;
+        return $this;
+    }
+
+    public function setExerciseCategory(ExerciseCategory $exerciseCategory): self
+    {
+        $this->exerciseCategory = $exerciseCategory;
+        return $this;
+    }
+
+    public function getCreatedAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): self
+    {
+        $this->updatedAt = $updatedAt;
+        return $this;
+    }
+}

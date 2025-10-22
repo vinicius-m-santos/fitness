@@ -51,7 +51,7 @@ export default function WorkoutsTab() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold flex items-center gap-2">
+        <h3 className="text-xl font-semibold text-black flex items-center gap-2">
           <Dumbbell className="h-5 w-5" />
           Treinos do Aluno
         </h3>
@@ -61,7 +61,7 @@ export default function WorkoutsTab() {
       <Accordion type="single" collapsible className="space-y-3">
         {workouts.map((workout, wi) => (
           <AccordionItem key={wi} value={workout.name}>
-            <AccordionTrigger className="text-lg font-medium">
+            <AccordionTrigger className="text-lg text-black font-medium">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full text-left">
                 <span>{workout.name}</span>
                 <Badge variant="secondary" className="mt-1 sm:mt-0">

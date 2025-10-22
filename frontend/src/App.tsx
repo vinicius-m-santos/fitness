@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 import UuidRoute from "./utils/Auth/UuidRoute";
 import NoAuthLayout from "./layout/NoAuthLayout";
 import Clients from "./pages/Clients";
+import Exercise from "./pages/Exercise";
 
 export default function App() {
     return (
@@ -59,6 +60,17 @@ export default function App() {
                     </NoAuthLayout>
                 }
             />
+            <Route
+                path="/exercises"
+                element={
+                    <PrivateRoute>
+                        <AdminLayout>
+                            <Exercise />
+                        </AdminLayout>
+                    </PrivateRoute>
+                }
+            />
+            <Route path="/login" element={<Login />} />
             <Route path="/logout" element={<Logout />} />
         </Routes>
     );
