@@ -73,6 +73,7 @@ export default function EditClientModal({
             const errors = validation.error.flatten().fieldErrors;
 
             for (const [key, value] of Object.entries(errors)) {
+                console.log(key);
                 const message = value.shift()?.toString().trim();
 
                 if (!message || message.length === 0) {
@@ -81,8 +82,7 @@ export default function EditClientModal({
                     toast.error(message);
                 }
 
-                setLoading(false);
-                return; // stops on the first error
+                return;
             }
 
             return;

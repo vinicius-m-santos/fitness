@@ -15,6 +15,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import EditableAvatar from "@/components/ClientView/Client/EditableAvatar";
 import ContactButtonDropdown from "@/components/ClientView/Client/ContactButtonDropdown";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 export default function ClientView() {
     // const [loading, setLoading] = useState<boolean>(true);
@@ -71,6 +72,7 @@ export default function ClientView() {
     ) => {
         updateClientMutation.mutate(data, {
             onSuccess: () => {
+                toast.success("Dados atualizados!");
                 setOpen(false);
             },
         });

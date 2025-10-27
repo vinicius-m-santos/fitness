@@ -9,7 +9,7 @@ export const clientFormSchema = z.object({
     age: z.number().nullable(),
     height: z.number().nullable(),
     weight: z.number().nullable(),
-    objective: z.number().nullable().optional(),
+    objective: z.string().nullable().optional(),
     observation: z.string(),
 });
 

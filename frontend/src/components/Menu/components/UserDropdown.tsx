@@ -12,7 +12,7 @@ export default function UserDropdown() {
             <button
                 onClick={() => setOpen(!open)}
                 className={`cursor-pointer inline-flex justify-between items-center p-2 text-white text-sm font-medium rounded-full focus:outline-none ${
-                    open ? "bg-blue-400" : ""
+                    open ? "bg-gray-300" : ""
                 }`}
             >
                 <UserCircleIcon className="w-5 h-5 text-black hover:text-gray-700" />
