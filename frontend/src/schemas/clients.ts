@@ -6,9 +6,9 @@ export const clientFormSchema = z.object({
     email: z.string().email("Email inválido"),
     phone: z.string(),
     gender: z.string(),
-    age: z.number().nullable(),
-    height: z.number().nullable(),
-    weight: z.number().nullable(),
+    age: z.string().nullable().optional(),
+    height: z.string().nullable().optional(),
+    weight: z.string().nullable().optional(),
     objective: z.string().nullable().optional(),
     observation: z.string(),
 });
