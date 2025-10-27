@@ -14,6 +14,7 @@ import Loader from "@/components/ui/loader";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import EditableAvatar from "@/components/ClientView/Client/EditableAvatar";
 import ContactButtonDropdown from "@/components/ClientView/Client/ContactButtonDropdown";
+import { useState } from "react";
 
 export default function ClientView() {
     // const [loading, setLoading] = useState<boolean>(true);
@@ -119,7 +120,7 @@ export default function ClientView() {
             </Card>
 
             {/* --- Tabs principais --- */}
-            <Tabs value={tab} onValueChange={setTab} className="w-full">
+            {/* <Tabs value={tab} onValueChange={setTab} className="w-full">
                 <TabsList className="grid grid-cols-3 sm:grid-cols-6 mb-6">
                     <TabsTrigger value="evolucao">Evolução</TabsTrigger>
                     <TabsTrigger value="medidas">Medidas</TabsTrigger>
@@ -182,7 +183,7 @@ export default function ClientView() {
                         </Card>
                     </TabsContent>
                 </motion.div>
-            </Tabs>
+            </Tabs> */}
         </div>
     );
 }
