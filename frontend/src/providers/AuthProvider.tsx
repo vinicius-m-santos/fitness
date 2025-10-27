@@ -1,7 +1,7 @@
 import axios from "axios";
 import { createContext, useState, useContext, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import Loader from "../components/ui/loader";
+import Loader from "@/components/ui/loader";
 
 type User = {
     id: number;
@@ -21,7 +21,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTHENTICATED_ROUTES = ["dashboard", "client-view"];
+const AUTHENTICATED_ROUTES = ["dashboard", "clients", "client-view"];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     children,
@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(user);
 
         localStorage.setItem("refresh_token", refresh_token);
-        navigate("/dashboard");
+        navigate("/clients");
     };
 
     const logout = () => {

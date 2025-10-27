@@ -1,501 +1,188 @@
-import { useCallback, useEffect, useState } from "react";
-import axios from "axios";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Textarea } from "../components/ui/textarea";
-import {
-    Select,
-    SelectTrigger,
-    SelectValue,
-    SelectContent,
-    SelectItem,
-} from "../components/ui/select";
-import {
-    Card,
-    CardHeader,
-    CardTitle,
-    CardContent,
-} from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { ArrowLeft, CheckCircle } from "lucide-react";
-import Loader from "../components/ui/loader";
-import toast from "react-hot-toast";
-import ButtonLoader from "../components/ui/buttonLoader";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useApi } from "../api/Api";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { motion } from "framer-motion";
+import EvolutionTab from "@/components/ClientView/EvolutionTab";
+import MeasurementsTab from "@/components/ClientView/MeasurementsTab";
+import GalleryTab from "@/components/ClientView/GalleryTab";
+import AnamneseTab from "@/components/ClientView/AnamneseTab";
+import WorkoutsTab from "@/components/ClientView/WorkoutsTab";
+import { useLocation, useParams } from "react-router-dom";
+import EditClientModal from "@/components/ClientView/Client/EditClientModal";
+import { OBJECTIVES } from "@/utils/constants/Client/constants";
+import { useRequest } from "@/api/request";
+import Loader from "@/components/ui/loader";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import EditableAvatar from "@/components/ClientView/Client/EditableAvatar";
+import ContactButtonDropdown from "@/components/ClientView/Client/ContactButtonDropdown";
 
-export default function Anamnese() {
-    const [form, setForm] = useState({
-        name: "",
-        lastName: "",
-        age: "",
-        gender: "",
-        weight: "",
-        height: "",
-        objective: "",
-        medicalRestriction: "",
-        cronicalPain: "",
-        controledMedicine: "",
-        bloodPressureProblem: "",
-        heartProblem: "",
-        recentSurgery: "",
-        timeWithoutGym: "",
-        workoutDaysPerWeek: "",
-        ocupation: "",
+export default function ClientView() {
+    // const [loading, setLoading] = useState<boolean>(true);
+    const [tab, setTab] = useState("evolucao");
+    const { id } = useParams();
+    const request = useRequest();
+    const queryClient = useQueryClient();
+
+    const getClientNameFormatted = (name: string, lastName: string): string => {
+        if (name) {
+            name = name.slice(0, 1).toUpperCase() + name.slice(1);
+        }
+
+        if (lastName) {
+            lastName = lastName.slice(0, 1).toUpperCase() + lastName.slice(1);
+        }
+
+        return `${name} ${lastName}`;
+    };
+
+    const {
+        data: client,
+        isLoading,
+        isError,
+    } = useQuery({
+        queryKey: ["client", id],
+        queryFn: async () => {
+            const res = await request({ method: "GET", url: `/client/${id}` });
+            return res;
+        },
+        refetchOnMount: true,
+        staleTime: 5 * 60 * 1000,
     });
-    const [loading, setLoading] = useState<boolean>(false);
-    const [submitted, setSubmitted] = useState<boolean>(false);
-    const [client, setClient] = useState(null);
-    const navigate = useNavigate();
-    const location = useLocation();
-    const api = useApi();
 
-    const handleChange = (field: string, value: string) => {
-        setForm((prev) => ({ ...prev, [field]: value }));
+    const updateClientMutation = useMutation({
+        mutationFn: async (payload) => {
+            const res = await request({
+                method: "PATCH",
+                url: `/client/${id}`,
+                data: payload,
+            });
+
+            return res;
+        },
+        onSuccess: (updatedClient) => {
+            queryClient.setQueryData(["client", id], updatedClient);
+            queryClient.invalidateQueries({ queryKey: ["clients"] });
+        },
+    });
+
+    const handleClientUpdate = (
+        data: any,
+        setOpen: (value: boolean) => void
+    ) => {
+        updateClientMutation.mutate(data, {
+            onSuccess: () => {
+                setOpen(false);
+            },
+        });
     };
-
-    const saveAnamnese = async (data) => {
-        try {
-            setLoading(true);
-
-            const res = await axios.post(
-                `${import.meta.env.VITE_API_URL}/client/`,
-                data
-            );
-            if (res.data.success) {
-                setSubmitted(true);
-            }
-        } catch (e) {
-            const data = e.response.data;
-
-            if (!data?.success) {
-                toast.error(data.error);
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        saveAnamnese(form);
-    };
-
-    const handleLoadAnamnese = async (id: number) => {
-        try {
-            setLoading(true);
-
-            const res = await api.get(
-                `${import.meta.env.VITE_API_URL}/client/${id}`
-            );
-            const data = res.data;
-            if (data.success) {
-                setClient(data.client);
-            }
-        } catch (e) {
-            const data = e.response.data;
-
-            if (!data?.success) {
-                toast.error(data.error);
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const populateFormWithClient = useCallback(() => {
-        if (client === null) {
-            return;
-        }
-
-        setLoading(true);
-        console.log(client);
-
-        setForm((prev) => ({
-            ...prev,
-            name: client?.client?.name,
-            lastName: client?.client?.lastName,
-            age: client?.client?.age,
-            gender: client?.client?.gender,
-            weight: client?.client?.weight,
-            height: client?.client?.height,
-            objective: client?.client?.objective,
-            workoutDaysPerWeek: client?.client?.workoutDaysPerWeek,
-            bloodPressureProblem: client?.client?.bloodPressure,
-            ocupation: client?.ocupation,
-            medicalRestriction: client?.medicalRestriction,
-            cronicalPain: client?.cronicalPain,
-            controledMedicine: client?.controledMedicine,
-            heartProblem: client?.heartProblem,
-            recentSurgery: client?.recentSurgery,
-            timeWithoutGym: client?.timeWithoutGym,
-        }));
-        setLoading(false);
-    }, [client]);
-
-    useEffect(() => {
-        handleLoadAnamnese(location.state.client?.id);
-    }, []);
-
-    useEffect(() => {
-        populateFormWithClient();
-    }, [client, populateFormWithClient]);
-
-    if (submitted) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center text-center bg-gradient-to-b from-gray-50 to-white px-6">
-                <Loader loading={loading} />
-                <CheckCircle className="w-16 h-16 text-green-600 mb-4" />
-                <h1 className="text-2xl font-bold mb-2 text-gray-800">
-                    Anamnese enviada com sucesso! 🎉
-                </h1>
-                {/* <p className="text-gray-600 max-w-md">
-                    Entrarei em contato em breve para confirmar o cadastro da sua
-                    oficina.
-                </p> */}
-                {/* <Link
-                    to="/"
-                    className="mt-6 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-semibold transition-all"
-                >
-                    Voltar para o início
-                </Link> */}
-            </div>
-        );
-    }
-
-    if (loading) {
-        <Loader loading={loading} />;
-    }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-            <button
-                onClick={() => navigate(-1)}
-                className="absolute top-6 left-6 flex items-center text-gray-600 hover:text-gray-900 transition"
-            >
-                <ArrowLeft className="mr-2 h-5 w-5" /> Voltar
-            </button>
-            <form onSubmit={handleSubmit}>
-                <Card className="w-full max-w-2xl shadow-md">
-                    <CardHeader>
-                        <CardTitle className="text-2xl font-semibold text-center">
-                            Anamnese do Aluno
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Nome</Label>
-                                <Input
-                                    className="disabled:opacity-100"
-                                    disabled={true}
-                                    placeholder="Digite o nome"
-                                    value={form.name}
-                                    onChange={(e) =>
-                                        handleChange("name", e.target.value)
-                                    }
-                                />
-                            </div>
+        <div className="w-full max-w-6xl mx-auto p-6 space-y-8">
+            <Loader loading={isLoading} />
+            <Card className="p-6 flex flex-col sm:flex-row items-center gap-6">
+                {/* <Avatar className="h-24 w-24">
+                    {client?.src && (
+                        <AvatarImage src={client.src} alt="Foto do cliente" />
+                    )}
+                    {!client?.src && (
+                        <AvatarFallback>
+                            {`${client?.name
+                                .slice(0, 1)
+                                .toUpperCase()}${client?.lastName
+                                .slice(0, 1)
+                                .toUpperCase()}`}
+                        </AvatarFallback>
+                    )}
+                </Avatar> */}
+                {!client && (
+                    <div className="h-24 w-24 rounded-full bg-gray-300 animate-pulse" />
+                )}
+                {client && <EditableAvatar clientData={client} />}
+                <div className="flex-1 space-y-2">
+                    <h2 className="text-2xl font-semibold">
+                        {getClientNameFormatted(client?.name, client?.lastName)}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                        {client?.age ? `Idade: ${client.age} anos •` : ""}
+                        {client?.objective
+                            ? `Objetivo: ${OBJECTIVES[client.objective]}`
+                            : ""}
+                    </p>
+                </div>
+                <div className="flex gap-2">
+                    <EditClientModal
+                        clientData={client}
+                        onSubmit={handleClientUpdate}
+                        isLoading={updateClientMutation.isPending}
+                    />
+                    <ContactButtonDropdown client={client} />
+                </div>
+            </Card>
 
-                            <div className="space-y-2">
-                                <Label>Sobrenome</Label>
-                                <Input
-                                    className="disabled:opacity-100"
-                                    disabled={true}
-                                    placeholder="Digite o sobrenome"
-                                    value={form.lastName}
-                                    onChange={(e) =>
-                                        handleChange("lastName", e.target.value)
-                                    }
-                                />
-                            </div>
-                        </div>
+            {/* --- Tabs principais --- */}
+            <Tabs value={tab} onValueChange={setTab} className="w-full">
+                <TabsList className="grid grid-cols-3 sm:grid-cols-6 mb-6">
+                    <TabsTrigger value="evolucao">Evolução</TabsTrigger>
+                    <TabsTrigger value="medidas">Medidas</TabsTrigger>
+                    <TabsTrigger value="treinos">Treinos</TabsTrigger>
+                    <TabsTrigger value="galeria">Galeria</TabsTrigger>
+                    <TabsTrigger value="anamnese">Anamnese</TabsTrigger>
+                    <TabsTrigger value="dados">Dados Pessoais</TabsTrigger>
+                </TabsList>
+                <motion.div
+                    key={tab}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                >
+                    <TabsContent value="evolucao">
+                        <Card>
+                            <CardContent className="p-6 text-sm text-muted-foreground">
+                                <EvolutionTab />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label>Idade</Label>
-                                <Input
-                                    className="disabled:opacity-100"
-                                    disabled={true}
-                                    type="number"
-                                    placeholder="Idade"
-                                    value={form.age}
-                                    onChange={(e) =>
-                                        handleChange("age", e.target.value)
-                                    }
-                                />
-                            </div>
-                            <div>
-                                <Label>Sexo</Label>
-                                <Select
-                                    disabled={true}
-                                    value={form.gender}
-                                    onValueChange={(value) =>
-                                        handleChange("gender", value)
-                                    }
-                                >
-                                    <SelectTrigger className="disabled:opacity-100 disabled:cursor-not-allowed">
-                                        <SelectValue placeholder="Selecione" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="M">
-                                            Masculino
-                                        </SelectItem>
-                                        <SelectItem value="F">
-                                            Feminino
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
+                    <TabsContent value="medidas">
+                        <Card>
+                            <CardContent className="p-6 text-sm text-muted-foreground">
+                                <MeasurementsTab />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                        {/* Peso, Altura */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label>Peso (kg)</Label>
-                                <Input
-                                    className="disabled:opacity-100"
-                                    disabled={true}
-                                    type="number"
-                                    placeholder="Ex: 75"
-                                    value={form.weight}
-                                    onChange={(e) =>
-                                        handleChange("weight", e.target.value)
-                                    }
-                                />
-                            </div>
-                            <div>
-                                <Label>Altura (cm)</Label>
-                                <Input
-                                    className="disabled:opacity-100"
-                                    disabled={true}
-                                    type="number"
-                                    placeholder="Ex: 175"
-                                    value={form.height}
-                                    onChange={(e) =>
-                                        handleChange("height", e.target.value)
-                                    }
-                                />
-                            </div>
-                        </div>
+                    <TabsContent value="treinos">
+                        <Card>
+                            <CardContent className="p-6 text-sm text-muted-foreground">
+                                <WorkoutsTab />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label>Objetivo</Label>
-                                <Select
-                                    disabled={true}
-                                    value={form.objective}
-                                    onValueChange={(value) =>
-                                        handleChange("objective", value)
-                                    }
-                                >
-                                    <SelectTrigger className="disabled:opacity-100">
-                                        <SelectValue placeholder="Selecione" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="1">
-                                            Ganho de Massa
-                                        </SelectItem>
-                                        <SelectItem value="2">
-                                            Emagrecimento
-                                        </SelectItem>
-                                        <SelectItem value="3">
-                                            Condicionamento
-                                        </SelectItem>
-                                        <SelectItem value="4">Outro</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <Label>Treinos por semana</Label>
-                                <Select
-                                    disabled={true}
-                                    value={form.workoutDaysPerWeek}
-                                    onValueChange={(value) =>
-                                        handleChange(
-                                            "workoutDaysPerWeek",
-                                            value
-                                        )
-                                    }
-                                >
-                                    <SelectTrigger className="disabled:opacity-100">
-                                        <SelectValue placeholder="Selecione" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {[1, 2, 3, 4, 5, 6, 7].map((item) => (
-                                            <SelectItem
-                                                key={item}
-                                                value={item.toString()}
-                                            >
-                                                {item}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <Label>Algum problema de pressão?</Label>
-                            <Select
-                                disabled={true}
-                                value={form.bloodPressureProblem}
-                                onValueChange={(value) =>
-                                    handleChange("bloodPressureProblem", value)
-                                }
-                            >
-                                <SelectTrigger className="disabled:opacity-100">
-                                    <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="1">Nenhum</SelectItem>
-                                    <SelectItem value="2">
-                                        Hipertensão
-                                    </SelectItem>
-                                    <SelectItem value="3">
-                                        Hipotensão
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <Label>
-                                Na sua ocupação, passa mais tempo sentado ou em
-                                pé?
-                            </Label>
-                            <Select
-                                disabled={true}
-                                value={form.ocupation}
-                                onValueChange={(value) =>
-                                    handleChange("ocupation", value)
-                                }
-                            >
-                                <SelectTrigger className="disabled:opacity-100">
-                                    <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="sentado">
-                                        Sentado
-                                    </SelectItem>
-                                    <SelectItem value="em_pe">Em pé</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+                    <TabsContent value="galeria">
+                        <Card>
+                            <CardContent className="p-6 text-sm text-muted-foreground">
+                                <GalleryTab />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                        {/* Questões de saúde */}
-                        <div className="space-y-3">
-                            <div>
-                                <Label>
-                                    Alguma restrição médica (se sim, qual)?
-                                </Label>
-                                <Textarea
-                                    className="disabled:opacity-100"
-                                    disabled={true}
-                                    value={form.medicalRestriction}
-                                    onChange={(e) =>
-                                        handleChange(
-                                            "medicalRestriction",
-                                            e.target.value
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div>
-                                <Label>
-                                    Alguma dor crônica (se sim, qual)?
-                                </Label>
-                                <Textarea
-                                    className="disabled:opacity-100"
-                                    disabled={true}
-                                    value={form.cronicalPain}
-                                    onChange={(e) =>
-                                        handleChange(
-                                            "cronicalPain",
-                                            e.target.value
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div>
-                                <Label>
-                                    Faz uso de remédio controlado (se sim,
-                                    qual)?
-                                </Label>
-                                <Textarea
-                                    className="disabled:opacity-100"
-                                    disabled={true}
-                                    value={form.controledMedicine}
-                                    onChange={(e) =>
-                                        handleChange(
-                                            "controledMedicine",
-                                            e.target.value
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div>
-                                <Label>
-                                    Histórico de cardiopatia na família?
-                                </Label>
-                                <Textarea
-                                    className="disabled:opacity-100"
-                                    disabled={true}
-                                    value={form.heartProblem}
-                                    onChange={(e) =>
-                                        handleChange(
-                                            "heartProblem",
-                                            e.target.value
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div>
-                                <Label>
-                                    Passou por alguma cirurgia recentemente (se
-                                    sim, qual)?
-                                </Label>
-                                <Textarea
-                                    className="disabled:opacity-100"
-                                    disabled={true}
-                                    value={form.recentSurgery}
-                                    onChange={(e) =>
-                                        handleChange(
-                                            "recentSurgery",
-                                            e.target.value
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div>
-                                <Label>
-                                    Há quanto tempo está sem praticar atividades
-                                    físicas?
-                                </Label>
-                                <Input
-                                    className="disabled:opacity-100"
-                                    disabled={true}
-                                    value={form.timeWithoutGym}
-                                    onChange={(e) =>
-                                        handleChange(
-                                            "timeWithoutGym",
-                                            e.target.value
-                                        )
-                                    }
-                                />
-                            </div>
-                        </div>
+                    <TabsContent value="anamnese">
+                        <Card>
+                            <CardContent className="p-6 text-sm text-muted-foreground">
+                                <AnamneseTab />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                        {/* <div className="pt-4">
-                            <Button
-                                className="w-full cursor-pointer disabled:opacity-100"
-                                disabled={loading}
-                            >
-                                {!loading && "Salvar"}
-                                {loading && <ButtonLoader />}
-                            </Button>
-                        </div> */}
-                    </CardContent>
-                </Card>
-            </form>
+                    <TabsContent value="dados">
+                        <Card>
+                            <CardContent className="p-6 text-sm text-muted-foreground">
+                                Dados cadastrais e pessoais do aluno.
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                </motion.div>
+            </Tabs>
         </div>
     );
 }

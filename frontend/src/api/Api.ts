@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useAuth } from "../providers/AuthProvider";
+import { useAuth } from "@/providers/AuthProvider";
 
 export const useApi = () => {
     const { accessToken } = useAuth();

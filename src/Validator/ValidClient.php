@@ -9,6 +9,8 @@ final class ValidClient extends Constraint
 {
     public string $name = 'Name cannot be empty.';
     public string $lastName = 'Lastname cannot be empty.';
+    public string $email = 'Email cannot be empty.';
+    // public string $phone = 'Phone cannot be empty.';
     public string $age = 'Age cannot be empty.';
     public string $gender = 'Gender cannot be empty.';
     public string $weight = 'Weight cannot be empty.';

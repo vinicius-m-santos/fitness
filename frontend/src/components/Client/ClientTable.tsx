@@ -5,13 +5,18 @@ import {
 } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { useState } from "react";
-import { useApi } from "../../api/Api";
-import Loader from "../../components/ui/loader";
-import { useQuery } from "@tanstack/react-query";
-import DateConverterComponent from "../../utils/DateConverter";
-import { localeText } from "../../utils/traduction/traduction";
-import { Eye, Copy } from "lucide-react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import DateConverterComponent from "@/utils/DateConverter";
+import { localeText } from "@/utils/traduction/traduction";
+import { Copy, Eye, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { GENDERS } from "@/utils/constants/Client/constants";
+import { useAuth } from "@/providers/AuthProvider";
+import toast from "react-hot-toast";
+import DefaultTooltip from "../ui/Tooltip/DefaultTooltip";
+import DeleteClientModal from "./components/DeleteClientModal";
+import { useRequest } from "@/api/request";
+import { useQueryClient } from "@tanstack/react-query";
 
 const themeDarkBlue = themeQuartz.withPart(colorSchemeLightWarm);
 
@@ -28,57 +33,132 @@ const DateConverter = (data: { value: string }) => {
 };
 
 const ActionButtons = (params: any) => {
-    const { navigate } = params;
+    const { navigate, queryClient, request, user } = params;
 
     const handleView = () => {
-        return navigate(`/client-view/${params.data.id}`, {
-            state: { client: params.data },
+        return navigate(`/client-view/${params.data.id}`);
+    };
+
+    const handleAnamneseLinkCopy = () => {
+        if (!user.uuid || !params.data?.uuid) {
+            toast.error("Erro ao copiar link!");
+            return;
+        }
+
+        navigator.clipboard.writeText(
+            `${import.meta.env.VITE_FRONTEND_URL}/anamnese?token=${
+                user.uuid
+            }&client=${params.data?.uuid}`
+        );
+        toast.success("Link copiado!");
+    };
+
+    const handleDeleteClient = async () => {
+        const res = await request({
+            method: "DELETE",
+            url: `/client/${params.data.id}`,
+            showSuccess: true,
+            successMessage: "Aluno excluído!",
+            onAccept: () =>
+                queryClient.invalidateQueries({ queryKey: ["clients"] }),
         });
     };
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(JSON.stringify(params.data));
-        alert("Dados copiados!");
-    };
-
     return (
-        <div className="flex justify-center items-center gap-3">
-            <button
-                onClick={handleView}
-                className="p-1 text-blue-500 hover:text-blue-700 transition"
-                title="Visualizar"
-            >
-                <Eye className="w-5 h-5" />
-            </button>
-            {/* <button
-        onClick={handleCopy}
-        className="p-1 text-green-500 hover:text-green-700 transition"
-        title="Copiar"
-      >
-        <Copy className="w-5 h-5" />
-      </button> */}
+        <div className="flex h-full items-center gap-3">
+            <DefaultTooltip tooltipText="Visualizar aluno" delay={0}>
+                <button
+                    onClick={handleView}
+                    className="cursor-pointer p-1 text-blue-500 hover:text-blue-700 transition"
+                >
+                    <Eye className="w-5 h-5" />
+                </button>
+            </DefaultTooltip>
+            <DefaultTooltip tooltipText="Copiar link anamnese" delay={0}>
+                <button
+                    onClick={handleAnamneseLinkCopy}
+                    className="cursor-pointer p-1 text-green-500 hover:text-green-700 transition"
+                >
+                    <Copy className="w-5 h-5" />
+                </button>
+            </DefaultTooltip>
+            <DeleteClientModal onConfirm={handleDeleteClient} />
         </div>
     );
 };
 
-const ClientTable = () => {
-    const api = useApi();
-    const navigate = useNavigate();
-    async function loadClients() {
-        const res = await api.get("/client/all");
-        console.log(res);
-        return res.data.clients;
+const showAvatar = (params: any) => {
+    const client = params.data;
+
+    return (
+        <div className="flex items-center justify-center h-full">
+            <Avatar
+                key={client?.avatarUrl || "no-avatar"}
+                className="h-8 w-8 cursor-pointer"
+            >
+                {client?.avatarUrl ? (
+                    <AvatarImage
+                        key={client?.avatarUrl}
+                        src={client.avatarUrl}
+                        alt="Foto do cliente"
+                    />
+                ) : (
+                    <AvatarFallback className="bg-gray-200">
+                        {client?.name[0].toUpperCase()}
+                        {client?.lastName?.[0].toUpperCase()}
+                    </AvatarFallback>
+                )}
+            </Avatar>
+        </div>
+    );
+};
+
+const genderRenderer = (params: any) => {
+    const hasValue = Object.keys(GENDERS).includes(params.value);
+    if (!hasValue) {
+        return "-";
     }
 
-    const { data, isLoading, error } = useQuery({
-        queryKey: ["clients"],
-        queryFn: loadClients,
-    });
+    return GENDERS[params.value];
+};
+
+const nameRenderer = (params: any) => {
+    const value = params.value.toString();
+    if (!value) {
+        return value;
+    }
+
+    return value.slice(0, 1).toUpperCase() + value.slice(1);
+};
+
+const ClientTable = ({ clientTableData, loading }) => {
+    const navigate = useNavigate();
+    const request = useRequest();
+    const queryClient = useQueryClient();
+    const { user } = useAuth();
+
     const [columnDefs, setColumnDefs] = useState([
-        { headerName: "ID", field: "id" },
-        { headerName: "Nome", field: "name", filter: true, flex: 2 },
-        { headerName: "Sobrenome", field: "lastName", filter: true, flex: 3 },
-        { headerName: "Gênero", field: "gender", flex: 2 },
+        { headerName: "", cellRenderer: showAvatar },
+        {
+            headerName: "Nome",
+            field: "name",
+            filter: true,
+            flex: 2,
+            cellRenderer: nameRenderer,
+        },
+        {
+            headerName: "Sobrenome",
+            field: "lastName",
+            filter: true,
+            flex: 3,
+            cellRenderer: nameRenderer,
+        },
+        {
+            headerName: "Gênero",
+            field: "gender",
+            flex: 2,
+            cellRenderer: genderRenderer,
+        },
         { headerName: "Ativo", field: "active" },
         {
             headerName: "Data de Cadastro",
@@ -89,7 +169,13 @@ const ClientTable = () => {
         {
             headerName: "Ação",
             cellRenderer: (params) => (
-                <ActionButtons {...params} navigate={navigate} />
+                <ActionButtons
+                    {...params}
+                    navigate={navigate}
+                    queryClient={queryClient}
+                    request={request}
+                    user={user}
+                />
             ),
             flex: 2,
         },
@@ -99,21 +185,13 @@ const ClientTable = () => {
         flex: 1,
     };
 
-    if (isLoading)
-        return (
-            <div className="w-full h-full min-h-[75vh] flex items-center justify-center">
-                <Loader loading={isLoading} />
-            </div>
-        );
-    if (error) return <p>Erro ao carregar tabela</p>;
-
     return (
         <div
             className="bg-gray-900 rounded-xl shadow-md overflow-hidden border border-gray-200"
-            style={{ width: "100%", height: "15rem" }}
+            style={{ width: "100%", minHeight: "15rem", height: "40rem" }}
         >
             <AgGridReact
-                rowData={data}
+                rowData={clientTableData}
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}
                 theme={themeDarkBlue}
@@ -122,6 +200,7 @@ const ClientTable = () => {
                 paginationPageSize={20}
                 enableBrowserTooltips={true}
                 suppressMenuHide={false}
+                loading={loading}
             />
         </div>
     );
