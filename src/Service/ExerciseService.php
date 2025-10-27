@@ -8,7 +8,10 @@ use App\Repository\ExerciseCategoryRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Personal;
 use App\Entity\User;
+use App\Repository\PeriodExerciseRepository;
 use App\Repository\PersonalRepository;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 class ExerciseService
 {
@@ -16,13 +19,23 @@ class ExerciseService
         private ExerciseRepository $exerciseRepository,
         private PersonalRepository $personalRepository,
         private ExerciseCategoryRepository $exerciseCategoryRepository,
-        private EntityManagerInterface $em
+        private EntityManagerInterface $em,
+        private PeriodExerciseRepository $periodExerciseRepository,
     ) {}
 
-    public function createExercise(string $name, int $categoryId, Personal $personal): Exercise
+    public function createExercise(User $user, array $data): Exercise
     {
+        $personal = $user->getPersonal();
+        if (!$personal) {
+            throw new UnprocessableEntityHttpException("Personal não encontrado");
+        }
+
+        if (!$data['name'] || !$data['exerciseCategoryId']) {
+            throw new UnprocessableEntityHttpException("Necessário preencher todos os campos");
+        }
+
         $existing = $this->exerciseRepository->findOneBy([
-            'name' => $name,
+            'name' => $data['name'],
             'personal' => $personal
         ]);
 
@@ -30,13 +43,13 @@ class ExerciseService
             throw new \Exception('Já existe um exercício com esse nome.');
         }
 
-        $category = $this->exerciseCategoryRepository->find($categoryId);
+        $category = $this->exerciseCategoryRepository->find($data['exerciseCategoryId']);
         if (!$category) {
             throw new \Exception('Categoria não encontrada.');
         }
 
         $exercise = new Exercise();
-        $exercise->setName($name);
+        $exercise->setName($data['name']);
         $exercise->setExerciseCategory($category);
         $exercise->setPersonal($personal);
 
@@ -62,7 +75,45 @@ class ExerciseService
             throw new \Exception('Exercício não encontrado.');
         }
 
+        $hasRelations = $this->periodExerciseRepository->findOneBy(['exercise' => $exercise]);
+
+        if ($hasRelations) {
+            throw new \Exception('O exercício está cadastrado a um treino.');
+        }
+
         $this->em->remove($exercise);
+        $this->em->flush();
+    }
+
+    public function deleteDefaultExercise(int $exerciseId, User $user): void
+    {
+        $personal = $this->personalRepository->findOneBy(['user' => $user]);
+        if (!$personal) {
+            throw new \Exception('Personal não encontrado.');
+        }
+
+        $exercise = $this->exerciseRepository->findOneBy([
+            'id' => $exerciseId
+        ]);
+
+        if (!$exercise) {
+            throw new \Exception('Exercício não encontrado.');
+        }
+
+        $hasRelations = $this->periodExerciseRepository->findOneBy(['exercise' => $exercise]);
+
+        if ($hasRelations) {
+            throw new \Exception('O exercício está cadastrado a um treino.');
+        }
+
+        $defaults = $personal->getDefaultExercises() ?? [];
+
+        if (!in_array($exerciseId, $defaults, true)) {
+            $defaults[] = $exerciseId;
+            $personal->setDefaultExercises($defaults);
+        }
+
+        $this->em->persist($personal);
         $this->em->flush();
     }
 

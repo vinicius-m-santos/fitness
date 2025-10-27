@@ -13,29 +13,29 @@ class Exercise
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
-    #[Groups(['exercise_all'])]
+    #[Groups(['exercise_all', 'training_client'])]
     private ?int $id = null;
 
     #[ORM\Column(type: 'string', length: 150)]
-    #[Groups(['exercise_all'])]
+    #[Groups(['exercise_all', 'training_client'])]
     private string $name;
 
     #[ORM\ManyToOne(targetEntity: ExerciseCategory::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    #[Groups(['exercise_all'])]
+    #[Groups(['exercise_all', 'training_client'])]
     private ExerciseCategory $exerciseCategory;
 
     #[ORM\ManyToOne(targetEntity: Personal::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
-    #[Groups(['exercise_all'])]
-    private Personal $personal;
+    #[Groups(['exercise_all', 'training_client'])]
+    private ?Personal $personal = null;
 
     #[ORM\Column(type: 'datetime_immutable')]
-    #[Groups(['exercise_all'])]
+    #[Groups(['exercise_all', 'training_client'])]
     private \DateTimeImmutable $createdAt;
 
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
-    #[Groups(['exercise_all'])]
+    #[Groups(['exercise_all', 'training_client'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
     public function __construct()
@@ -64,12 +64,12 @@ class Exercise
         return $this->exerciseCategory;
     }
 
-        public function getPersonal(): Personal
+        public function getPersonal(): ?Personal
     {
         return $this->personal;
     }
 
-    public function setPersonal(Personal $personal): self
+    public function setPersonal(?Personal $personal): self
     {
         $this->personal = $personal;
         return $this;

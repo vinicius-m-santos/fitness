@@ -1,0 +1,176 @@
+<?php
+
+namespace App\Service;
+
+use App\Entity\Exercise;
+use App\Entity\PeriodExercise;
+use App\Repository\TrainingRepository;
+use Doctrine\ORM\EntityManagerInterface;
+use App\Entity\Personal;
+use App\Entity\Training;
+use App\Entity\TrainingPeriod;
+use App\Entity\User;
+use App\Repository\ExerciseRepository;
+use App\Repository\PeriodExerciseRepository;
+use App\Repository\PersonalRepository;
+use App\Repository\TrainingPeriodRepository;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
+
+class TrainingService
+{
+    public function __construct(
+        private TrainingRepository $trainingRepository,
+        private TrainingPeriodRepository $trainingPeriodRepository,
+        private PersonalRepository $personalRepository,
+        private ExerciseRepository $exerciseRepository,
+        private PeriodExerciseRepository $periodExerciseRepository,
+        private PeriodExerciseService $periodExerciseService,
+        private EntityManagerInterface $em,
+        private ClientService $clientService,
+    ) {}
+
+    public function createTraining(User $user, array $data): Training
+    {
+        $personal = $user->getPersonal();
+        if (!$personal) {
+            throw new UnprocessableEntityHttpException("Personal não encontrado");
+        }
+        
+        $clientId = $data['client'] ?? null;
+        if (!$clientId) {
+            throw new UnprocessableEntityHttpException("Cliente não fornecido");
+        }
+
+        $client = $this->clientService->find($clientId);
+        if (!$client) {
+            throw new UnprocessableEntityHttpException("Cliente não encontrado");
+        }
+
+        if(!$data["name"]) {
+            throw new UnprocessableEntityHttpException("Nome do treino não informado");
+        }  
+
+        $training = new Training();
+        $training->setName($data['name']);
+        $training->setClient($client);
+        $training->setPersonal($personal);
+
+        $this->trainingRepository->add($training, true);
+
+        foreach ($data['periods'] as $periodData) {
+            $trainingPeriod = $this->createTrainingPeriod(
+                $training,
+                $periodData['name']
+            );
+
+            foreach ($periodData['exercises'] as $exerciseData) {
+                $exercise = $this->exerciseRepository->find($exerciseData['id']);
+                if (!$exercise) {
+                    throw new UnprocessableEntityHttpException("Exercício não encontrado");
+                }
+
+                $this->createPeriodExercise(
+                    $trainingPeriod,
+                    $exercise,
+                    $exerciseData
+                );
+            }
+        }
+
+        return $training;
+    }
+    private function createPeriodExercise(TrainingPeriod $trainingPeriod, Exercise $exercise, array $data): PeriodExercise
+    {
+        $periodExercise = new PeriodExercise();
+        $periodExercise->getDataFromArray($data);
+        $periodExercise->setTrainingPeriod($trainingPeriod);
+        $periodExercise->setExercise($exercise);
+        
+        return $this->periodExerciseService->add($periodExercise, true);
+    }
+
+    private function createTrainingPeriod(Training $training, string $name): TrainingPeriod
+    {
+        $period = new TrainingPeriod();
+        $period->setTraining($training);
+        $period->setName($name);
+
+        return $this->trainingPeriodRepository->add($period, true);
+    }
+
+    public function getTrainingsByClient(int $clientId, int $personalId): array
+    {
+        $trainings = $this->trainingRepository->findBy([
+            'client' => $clientId,
+            'personal' => $personalId
+        ], ['createdAt' => 'DESC']);
+
+        $result = [];
+        foreach ($trainings as $training) {
+            $periods = [];
+            
+            foreach ($training->getPeriods() as $period) {
+                $exercises = [];
+                
+                foreach ($period->getPeriodExercises() as $pe) {
+                    $exercises[] = [
+                        'id' => $pe->getExercise()->getId(),
+                        'name' => $pe->getExercise()->getName(),
+                        'series' => $pe->getSeries(),
+                        'reps' => $pe->getRepeats(),
+                        'rest' => $pe->getRest(),
+                        'notes' => $pe->getObservation(),
+                    ];
+                }
+
+                $periods[] = [
+                    'id' => $period->getId(),
+                    'name' => $period->getName(),
+                    'exercises' => $exercises,
+                ];
+            }
+
+            $result[] = [
+                'id' => $training->getId(),
+                'name' => $training->getName(),
+                'createdAt' => $training->getCreatedAt()->format('d/m/Y'),
+                'periods' => $periods,
+            ];
+        }
+
+        return $result;
+    }
+
+    public function updateTraining(Training $training, string $name, array $periodsData): void
+    {
+        $training->setName($name);
+
+        foreach ($training->getPeriods() as $period) {
+            $this->em->remove($period);
+        }
+
+        foreach ($periodsData as $pData) {
+            $period = new TrainingPeriod();
+            $period->setTraining($training);
+            $period->setName($pData['name'] ?? 'Período');
+            $this->em->persist($period);
+
+            foreach ($pData['exercises'] as $eData) {
+                $exercise = $this->exerciseRepository->find($eData['id']);
+                if (!$exercise) continue;
+
+                $pe = new PeriodExercise();
+                $pe->setTrainingPeriod($period);
+                $pe->setExercise($exercise);
+                $pe->setSeries($eData['series'] ?? null);
+                $pe->setRepeats($eData['reps'] ?? null);
+                $pe->setRest($eData['rest'] ?? null);
+                $pe->setObservation($eData['obs'] ?? null);
+
+                $this->em->persist($pe);
+            }
+        }
+
+        $this->em->flush();
+    }
+}

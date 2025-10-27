@@ -6,15 +6,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { Button } from "../../ui/button";
 
-type ExerciseDeleteModalProps = {
+type ExerciseDeleteDefaultModalProps = {
   openProp: boolean;
   exerciseId: number;
 };
 
-const ExerciseDeleteModal = ({
+const ExerciseDeleteDefaultModal = ({
   openProp,
   exerciseId,
-}: ExerciseDeleteModalProps) => {
+}: ExerciseDeleteDefaultModalProps) => {
   const api = useApi();
   const queryExercise = useQueryClient();
   const [open, setOpen] = useState(openProp);
@@ -23,8 +23,8 @@ const ExerciseDeleteModal = ({
     console.log("Deleting exerciseId:", exerciseId);
   }, [exerciseId]);
 
-  const deleteExercise = async () => {
-    const res = await api.delete(`/exercise/${exerciseId}`);
+  const deleteDefaultExercise = async () => {
+    const res = await api.delete(`/exercise/default/${exerciseId}`);
     console.log(res.data);
     return res.data;
   };
@@ -34,7 +34,7 @@ const ExerciseDeleteModal = ({
   };
 
   const mutation = useMutation({
-    mutationFn: deleteExercise,
+    mutationFn: deleteDefaultExercise,
     onSuccess: (data) => {
       toast.success(data.message || "Exercício excluído com sucesso!");
       queryExercise.invalidateQueries({ queryKey: ["exercises"] });
@@ -78,13 +78,13 @@ const ExerciseDeleteModal = ({
 
           {/* Title */}
           <Dialog.Title className="text-2xl font-semibold">
-            Excluir Exercício
+            Excluir Exercício Padrão
           </Dialog.Title>
 
           {/* Body Content */}
           <div>
             <div className="mt-4">
-              <p>Deseja mesmo excluir este exercício?</p>
+              <p>Deseja mesmo excluir este exercício padrão?</p>
             </div>
           </div>
 
@@ -108,4 +108,4 @@ const ExerciseDeleteModal = ({
   );
 };
 
-export default ExerciseDeleteModal;
+export default ExerciseDeleteDefaultModal;

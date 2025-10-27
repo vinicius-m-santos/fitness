@@ -122,14 +122,14 @@ export default function ClientView() {
             </Card>
 
             {/* --- Tabs principais --- */}
-            {/* <Tabs value={tab} onValueChange={setTab} className="w-full">
+            <Tabs value={tab} onValueChange={setTab} className="w-full">
                 <TabsList className="grid grid-cols-3 sm:grid-cols-6 mb-6">
-                    <TabsTrigger value="evolucao">Evolução</TabsTrigger>
-                    <TabsTrigger value="medidas">Medidas</TabsTrigger>
+                    {/* <TabsTrigger value="evolucao">Evolução</TabsTrigger>
+                    <TabsTrigger value="medidas">Medidas</TabsTrigger> */}
                     <TabsTrigger value="treinos">Treinos</TabsTrigger>
-                    <TabsTrigger value="galeria">Galeria</TabsTrigger>
+                    {/* <TabsTrigger value="galeria">Galeria</TabsTrigger>
                     <TabsTrigger value="anamnese">Anamnese</TabsTrigger>
-                    <TabsTrigger value="dados">Dados Pessoais</TabsTrigger>
+                    <TabsTrigger value="dados">Dados Pessoais</TabsTrigger> */}
                 </TabsList>
                 <motion.div
                     key={tab}
@@ -137,7 +137,7 @@ export default function ClientView() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2 }}
                 >
-                    <TabsContent value="evolucao">
+                    {/* <TabsContent value="evolucao">
                         <Card>
                             <CardContent className="p-6 text-sm text-muted-foreground">
                                 <EvolutionTab />
@@ -151,7 +151,7 @@ export default function ClientView() {
                                 <MeasurementsTab />
                             </CardContent>
                         </Card>
-                    </TabsContent>
+                    </TabsContent> */}
 
                     <TabsContent value="treinos">
                         <Card>
@@ -161,7 +161,7 @@ export default function ClientView() {
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="galeria">
+                    {/* <TabsContent value="galeria">
                         <Card>
                             <CardContent className="p-6 text-sm text-muted-foreground">
                                 <GalleryTab />
@@ -183,9 +183,9 @@ export default function ClientView() {
                                 Dados cadastrais e pessoais do aluno.
                             </CardContent>
                         </Card>
-                    </TabsContent>
+                    </TabsContent> */}
                 </motion.div>
-            </Tabs> */}
+            </Tabs>
         </div>
     );
 }

@@ -30,6 +30,10 @@ class Personal
     #[ORM\OneToMany(mappedBy: 'personal', targetEntity: Client::class, cascade: ['persist', 'remove'])]
     private Collection $clients;
 
+    #[ORM\Column(type: "json", nullable: true)]
+    #[Groups(['personal_all'])]
+    private ?array $deleted_default_exercises = [];
+
     #[ORM\Column(type: "datetime_immutable")]
     #[Groups(['client_all', 'personal_all'])]
     private \DateTimeImmutable $createdAt;
@@ -98,6 +102,17 @@ class Personal
             $this->cref = $data['cref'];
         }
 
+        return $this;
+    }
+
+    public function getDefaultExercises(): ?array
+    {
+        return $this->deleted_default_exercises;
+    }
+
+    public function setDefaultExercises(?array $deleted_default_exercises): self
+    {
+        $this->deleted_default_exercises = $deleted_default_exercises;
         return $this;
     }
 }

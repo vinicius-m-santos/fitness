@@ -4,7 +4,9 @@ namespace App\Controller;
 
 use App\Repository\ExerciseRepository;
 use App\Repository\PersonalRepository;
+use App\Repository\TrainingRepository;
 use App\Service\ExerciseService;
+use App\Service\TrainingService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
@@ -18,15 +20,13 @@ final class ExerciseController extends AbstractController
         private readonly PersonalRepository $personalRepository,
         private readonly ExerciseRepository $exerciseRepository,
         private readonly ExerciseService $exerciseService,
-        private readonly NormalizerInterface $normalizer
-    )
-    {
-    }
-    
+        private readonly NormalizerInterface $normalizer,
+    ) {}
+
     #[Route('/all', name: 'get_all_exercises', methods: ['GET'])]
     public function getAll(ExerciseRepository $exerciseRepository): JsonResponse
     {
-         /** @var \App\Entity\User $user */
+        /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$user) {
@@ -40,6 +40,7 @@ final class ExerciseController extends AbstractController
             $data[] = [
                 'id' => $exercise->getId(),
                 'name' => $exercise->getName(),
+                'personal' => $exercise->getPersonal() ? $exercise->getPersonal()->getId() : null,
                 'exerciseCategory' => $exercise->getExerciseCategory()->getName(),
                 'createdAt' => $exercise->getCreatedAt()->format('Y-m-d H:i:s'),
             ];
@@ -57,28 +58,14 @@ final class ExerciseController extends AbstractController
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 
-        $data = json_decode($request->getContent(), true);
-        $name = $data['name'] ?? null;
-        $categoryId = $data['exerciseCategoryId'] ?? null;
-
-        if (!$name || !$categoryId) {
-            return new JsonResponse(['error' => 'Necessário preencher todos os campos'], 400);
-        }
-
-        $personal = $this->personalRepository->findOneBy(['user' => $user]);
-        if (!$personal) {
-            return new JsonResponse(['error' => 'Personal não encontrado'], 404);
-        }
-
         try {
-            $exercise = $this->exerciseService->createExercise($name, $categoryId, $personal);
+            $exercise = $this->exerciseService->createExercise($user, $data);
             $normalizedData = $this->normalizer->normalize($exercise, 'json', ['groups' => ['exercise_all']]);
 
             return new JsonResponse([
                 'message' => 'Exercício criado com sucesso',
                 'exercise' => $normalizedData
             ], 201);
-
         } catch (\Exception $e) {
             return new JsonResponse(['error' => $e->getMessage()], 409);
         }
@@ -157,10 +144,31 @@ final class ExerciseController extends AbstractController
                 'message' => 'Exercício atualizado com sucesso',
                 'exercise' => $normalizedData
             ], 200);
-
         } catch (\Exception $e) {
             return new JsonResponse(['error' => $e->getMessage()], 409);
         }
     }
 
+    #[Route('/default/{id}', name: 'delete_default_exercise', methods: ['DELETE'])]
+    public function deleteDefault(int $id): JsonResponse
+    {
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $this->exerciseService->deleteDefaultExercise($id, $user);
+
+            return new JsonResponse([
+                'message' => 'Exercício deletado com sucesso'
+            ], 200);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'error' => $e->getMessage()
+            ], 400);
+        }
+    }
 }
