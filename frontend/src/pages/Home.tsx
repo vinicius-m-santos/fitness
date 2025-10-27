@@ -6,71 +6,10 @@ import {
     Star,
     Clock,
     Heart,
-    MenuIcon,
-    X,
 } from "lucide-react";
-import { Link } from "react-router-dom";
-import logo from "@/assets/fitrise_logo.png";
-import { useState } from "react";
-
 export default function Home() {
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
     return (
         <div className="min-h-screen flex flex-col bg-white text-gray-800">
-            {/* Navbar */}
-            <nav className="bg-gray-100 text-gray-800 shadow-lg">
-                <div className="container mx-auto px-4">
-                    <div className="flex justify-between items-center py-4">
-                        {/* Logo */}
-                        <div className="flex items-center space-x-2">
-                            <img
-                                src={logo}
-                                className="w-30 h-10 mt-2 object-contain"
-                            />
-                        </div>
-
-                        {/* Desktop Menu */}
-                        <div className="hidden md:flex space-x-2 items-center">
-                            <Link
-                                to="/login"
-                                className="flex items-center gap-2 text-black font-bold text-sm hover:text-gray-600 px-4 py-2 rounded transition"
-                            >
-                                Entrar
-                            </Link>
-                        </div>
-
-                        {/* Mobile menu button */}
-                        <div className="md:hidden">
-                            <button
-                                onClick={() =>
-                                    setMobileMenuOpen(!mobileMenuOpen)
-                                }
-                                className="p-2 focus:outline-none"
-                            >
-                                {mobileMenuOpen ? (
-                                    <X size={24} />
-                                ) : (
-                                    <MenuIcon size={24} />
-                                )}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Mobile Menu */}
-                    {mobileMenuOpen && (
-                        <div className="md:hidden pb-4 flex flex-col">
-                            <Link
-                                to="/login"
-                                className="flex items-center gap-2 text-black font-bold text-sm hover:text-gray-600 px-4 py-2 rounded transition"
-                            >
-                                Entrar
-                            </Link>
-                        </div>
-                    )}
-                </div>
-            </nav>
-
             {/* Hero / Header */}
             <header className="flex flex-col items-center justify-center text-center py-16 bg-gray-50 flex-shrink-0">
                 <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gray-800">

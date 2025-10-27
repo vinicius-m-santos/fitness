@@ -24,27 +24,33 @@ class ValidClientValidator extends ConstraintValidator
             'lastName' => empty($client->getLastName())
                 ? $constraint->lastName
                 : null,
-            'age' => empty($client->getAge())
-                ? $constraint->age
+            'email' => empty($client->getEmail())
+                ? $constraint->email
                 : null,
-            'gender' => empty($client->getGender())
-                ? $constraint->gender
-                : null,
-            'weight' => empty($client->getWeight())
-                ? $constraint->weight
-                : null,
-            'height' => empty($client->getHeight())
-                ? $constraint->height
-                : null,
-            'objective' => empty($client->getObjective())
-                ? $constraint->objective
-                : null,
-            'workoutDaysPerWeek' => empty($client->getWorkoutDaysPerWeek())
-                ? $constraint->workoutDaysPerWeek
-                : null,
-            'bloodPressure' => empty($client->getBloodPressure())
-                ? $constraint->bloodPressure
-                : null,
+            // 'phone' => empty($client->getPhone())
+            //     ? $constraint->phone
+            //     : null,
+            // 'age' => empty($client->getAge())
+            //     ? $constraint->age
+            //     : null,
+            // 'gender' => empty($client->getGender())
+            //     ? $constraint->gender
+            //     : null,
+            // 'weight' => empty($client->getWeight())
+            //     ? $constraint->weight
+            //     : null,
+            // 'height' => empty($client->getHeight())
+            //     ? $constraint->height
+            //     : null,
+            // 'objective' => empty($client->getObjective())
+            //     ? $constraint->objective
+            //     : null,
+            // 'workoutDaysPerWeek' => empty($client->getWorkoutDaysPerWeek())
+            //     ? $constraint->workoutDaysPerWeek
+            //     : null,
+            // 'bloodPressure' => empty($client->getBloodPressure())
+            //     ? $constraint->bloodPressure
+            //     : null,
         ];
 
         foreach ($violations as $field => $message) {

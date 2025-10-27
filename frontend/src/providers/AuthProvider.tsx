@@ -21,7 +21,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTHENTICATED_ROUTES = ["dashboard", "client-view"];
+const AUTHENTICATED_ROUTES = ["dashboard", "clients", "client-view"];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     children,
@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(user);
 
         localStorage.setItem("refresh_token", refresh_token);
-        navigate("/dashboard");
+        navigate("/clients");
     };
 
     const logout = () => {

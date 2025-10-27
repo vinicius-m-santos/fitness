@@ -22,50 +22,37 @@ import {
 } from "@/components/ui/select";
 import { OBJECTIVES } from "@/utils/constants/Client/constants";
 import type { Client } from "@/types/client";
+import SaveButton from "@/components/ui/Buttons/components/SaveButton";
+import OutlineButton from "@/components/ui/Buttons/components/OutlineButton";
+import GenderSelect from "@/components/ui/Select/GenderSelect";
+import PhoneInput from "@/components/ui/Inputs/PhoneInput";
+import toast from "react-hot-toast";
+import { clientFormSchema, ClientFormSchema } from "@/schemas/clients";
 
 type EditClientModalProps = {
     clientData: Client;
+    onSubmit: (data: any, setOpen: any) => void;
+    isLoading: boolean;
 };
 
-type EditClientForm = {
-    name: string;
-    age: number | null;
-    height: number | null;
-    weight: number | null;
-    objective: number | null;
-    observations: string;
-};
-
-export default function EditClientModal({ clientData }: EditClientModalProps) {
-    const [open, setOpen] = useState(false);
-    const [form, setForm] = useState<EditClientForm>({
+export default function EditClientModal({
+    clientData,
+    onSubmit,
+    isLoading,
+}: EditClientModalProps) {
+    const [open, setOpen] = useState<boolean>(false);
+    const [form, setForm] = useState<ClientFormSchema>({
         name: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        gender: "",
         age: null,
         height: null,
         weight: null,
         objective: null,
-        observations: "",
+        observation: "",
     });
-
-    useEffect(() => {
-        console.log(clientData);
-        if (!clientData) {
-            return;
-        }
-
-        console.log(clientData?.objective);
-
-        setForm((prev) => {
-            return {
-                ...prev,
-                name: clientData?.name,
-                age: clientData?.age,
-                height: clientData?.height,
-                weight: clientData?.weight,
-                objective: clientData?.objective,
-            };
-        });
-    }, [clientData]);
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -73,17 +60,59 @@ export default function EditClientModal({ clientData }: EditClientModalProps) {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
-    const handleSelectChange = (field: string, value: number | string) => {
+    const handleChangeWithField = (field: string, value: number | string) => {
         setForm((prev) => ({
             ...prev,
             [field]: value,
         }));
     };
 
-    const handleSave = () => {
-        console.log("Dados atualizados:", form);
-        setOpen(false);
+    const handleSave = async () => {
+        const validation = clientFormSchema.safeParse(form);
+        if (!validation.success) {
+            const errors = validation.error.flatten().fieldErrors;
+
+            for (const [key, value] of Object.entries(errors)) {
+                const message = value.shift()?.toString().trim();
+
+                if (!message || message.length === 0) {
+                    toast.error("Preencha todos os campos");
+                } else {
+                    toast.error(message);
+                }
+
+                setLoading(false);
+                return; // stops on the first error
+            }
+
+            return;
+        }
+        onSubmit(form, setOpen);
     };
+
+    useEffect(() => {
+        if (!clientData) {
+            return;
+        }
+
+        setForm((prev) => {
+            return {
+                ...prev,
+                name: clientData?.name,
+                lastName: clientData?.lastName,
+                email: clientData?.email,
+                phone: clientData?.phone,
+                gender: clientData?.gender,
+                age: clientData?.age,
+                height: clientData?.height,
+                weight: clientData?.weight,
+                objective: clientData?.objective
+                    ? String(clientData?.objective)
+                    : undefined,
+                observation: clientData?.observation,
+            };
+        });
+    }, [clientData]);
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -103,7 +132,7 @@ export default function EditClientModal({ clientData }: EditClientModalProps) {
                     <DialogTitle>Editar dados do aluno</DialogTitle>
                     <DialogDescription>
                         Atualize as informações pessoais do aluno e clique em
-                        “Salvar alterações”.
+                        "Salvar".
                     </DialogDescription>
                 </DialogHeader>
 
@@ -118,6 +147,52 @@ export default function EditClientModal({ clientData }: EditClientModalProps) {
                             value={form.name}
                             onChange={handleChange}
                             className="col-span-3"
+                        />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-2">
+                        <Label htmlFor="lastName" className="text-right">
+                            Sobrenome
+                        </Label>
+                        <Input
+                            id="lastName"
+                            name="lastName"
+                            value={form.lastName}
+                            onChange={handleChange}
+                            className="col-span-3"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-4 items-center gap-2">
+                        <Label htmlFor="email" className="text-right">
+                            Email
+                        </Label>
+                        <Input
+                            id="email"
+                            name="email"
+                            type="email"
+                            disabled={true}
+                            required={true}
+                            value={form.email}
+                            onChange={handleChange}
+                            className="col-span-3"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-4 items-center gap-2">
+                        <Label htmlFor="phone" className="text-right">
+                            WhatsApp
+                        </Label>
+                        <PhoneInput
+                            value={form.phone}
+                            label="phone"
+                            onChange={handleChangeWithField}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-4 items-center gap-2">
+                        <GenderSelect
+                            value={form.gender}
+                            handleChange={handleChangeWithField}
                         />
                     </div>
 
@@ -142,6 +217,7 @@ export default function EditClientModal({ clientData }: EditClientModalProps) {
                         <Input
                             id="height"
                             name="height"
+                            type="number"
                             value={form.height}
                             onChange={handleChange}
                             className="col-span-3"
@@ -155,6 +231,7 @@ export default function EditClientModal({ clientData }: EditClientModalProps) {
                         <Input
                             id="weight"
                             name="weight"
+                            type="number"
                             value={form.weight}
                             onChange={handleChange}
                             className="col-span-3"
@@ -169,15 +246,14 @@ export default function EditClientModal({ clientData }: EditClientModalProps) {
                         </Label>
                         <div className="col-span-3">
                             <Select
-                                value={String(form.objective)}
+                                value={form.objective}
                                 onValueChange={(value) =>
-                                    handleSelectChange("objective", value)
+                                    handleChangeWithField("objective", value)
                                 }
                             >
-                                <SelectTrigger id="objetivo">
-                                    <SelectValue placeholder="Selecione um objetivo" />
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione" />
                                 </SelectTrigger>
-
                                 <SelectContent>
                                     {Object.entries(OBJECTIVES).map(
                                         ([key, label]) => (
@@ -193,15 +269,16 @@ export default function EditClientModal({ clientData }: EditClientModalProps) {
 
                     <div className="grid grid-cols-4 items-start gap-2">
                         <Label
-                            htmlFor="observations"
+                            htmlFor="observation"
                             className="text-right mt-2"
                         >
                             Observações
                         </Label>
                         <Textarea
-                            id="observations"
-                            name="observations"
-                            value={form.observations}
+                            id="observation"
+                            name="observation"
+                            value={form.observation}
+                            maxLength={255}
                             onChange={handleChange}
                             className="col-span-3"
                             rows={3}
@@ -210,19 +287,8 @@ export default function EditClientModal({ clientData }: EditClientModalProps) {
                 </div>
 
                 <DialogFooter>
-                    <Button
-                        onClick={() => setOpen(false)}
-                        variant="outline"
-                        className="flex cursor-pointer items-center gap-2"
-                    >
-                        Cancelar
-                    </Button>
-                    <Button
-                        className="cursor-pointer text-white font-semibold rounded-lg py-2  transition-colors disabled:opacity-100"
-                        onClick={handleSave}
-                    >
-                        Salvar alterações
-                    </Button>
+                    <OutlineButton onClick={() => setOpen(false)} />
+                    <SaveButton loading={isLoading} onClick={handleSave} />
                 </DialogFooter>
             </DialogContent>
         </Dialog>

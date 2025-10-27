@@ -4,20 +4,21 @@ import ClientView from "./pages/ClientView";
 import Login from "./pages/Login";
 import Logout from "./pages/Logout";
 import PrivateRoute from "./utils/Auth/PrivateRoute";
-import Dashboard from "./pages/Dashboard";
 import AdminLayout from "./layout/AdminLayout";
 import Home from "./pages/Home";
 import UuidRoute from "./utils/Auth/UuidRoute";
+import NoAuthLayout from "./layout/NoAuthLayout";
+import Clients from "./pages/Clients";
 
 export default function App() {
     return (
         <Routes>
             <Route
-                path="/dashboard"
+                path="/clients"
                 element={
                     <PrivateRoute>
                         <AdminLayout>
-                            <Dashboard />
+                            <Clients />
                         </AdminLayout>
                     </PrivateRoute>
                 }
@@ -32,16 +33,32 @@ export default function App() {
                     </PrivateRoute>
                 }
             />
-            <Route path="/" element={<Home />} />
+            <Route
+                path="/"
+                element={
+                    <NoAuthLayout>
+                        <Home />
+                    </NoAuthLayout>
+                }
+            />
             <Route
                 path="/anamnese"
                 element={
                     <UuidRoute>
-                        <Anamnese />
+                        <NoAuthLayout>
+                            <Anamnese />
+                        </NoAuthLayout>
                     </UuidRoute>
                 }
             />
-            <Route path="/login" element={<Login />} />
+            <Route
+                path="/login"
+                element={
+                    <NoAuthLayout>
+                        <Login />
+                    </NoAuthLayout>
+                }
+            />
             <Route path="/logout" element={<Logout />} />
         </Routes>
     );

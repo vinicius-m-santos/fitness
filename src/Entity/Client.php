@@ -4,8 +4,11 @@ namespace App\Entity;
 
 use App\Validator as AppAssert;
 use Doctrine\ORM\Mapping as ORM;
+use Exception;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Uid\Uuid;
 
+#[ORM\HasLifecycleCallbacks]
 #[ORM\Entity(repositoryClass: \App\Repository\ClientRepository::class)]
 #[ORM\Table(name: "clients")]
 #[AppAssert\ValidClient]
@@ -17,6 +20,10 @@ class Client
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private int $id;
 
+    #[ORM\Column(type: "uuid", unique: true, nullable: true)]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
+    private ?Uuid $uuid = null;
+
     #[ORM\Column(length: 255)]
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private string $name;
@@ -27,11 +34,11 @@ class Client
 
     #[ORM\Column(type: "integer", nullable: true)]
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
-    private int $age;
+    private ?int $age;
 
-    #[ORM\Column(length: 1)]
+    #[ORM\Column(length: 1, nullable: true)]
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
-    private string $gender;
+    private ?string $gender;
 
     #[ORM\Column(type: "float", nullable: true)]
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
@@ -41,17 +48,17 @@ class Client
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private ?float $height;
 
-    #[ORM\Column(type: "integer")]
+    #[ORM\Column(type: "integer", nullable: true)]
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
-    private int $objective;
+    private ?int $objective;
 
-    #[ORM\Column(length: 10)]
+    #[ORM\Column(length: 10, nullable: true)]
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
-    private string $bloodPressure = "";
+    private ?string $bloodPressure = "";
 
-    #[ORM\Column(type: "integer")]
+    #[ORM\Column(type: "integer", nullable: true)]
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
-    private int $workoutDaysPerWeek;
+    private ?int $workoutDaysPerWeek;
 
     #[ORM\Column(type: "boolean", options: ['default' => true])]
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
@@ -77,10 +84,38 @@ class Client
     #[ORM\JoinColumn(nullable: true)]
     private ?Personal $personal = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
+    private ?string $observation = '';
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
+    private ?string $avatarKey = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
+    private ?string $avatarUrl = null;
+
+    #[ORM\Column(length: 50, nullable: true)]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
+    private ?string $phone = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
+    private ?string $email = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    #[ORM\PrePersist]
+    public function initializeUuid(): void
+    {
+        if ($this->uuid === null) {
+            $this->uuid = Uuid::v4();
+        }
     }
 
     public function getId(): int
@@ -132,23 +167,23 @@ class Client
         return $this;
     }
 
-    public function getWeight(): float
+    public function getWeight(): ?float
     {
         return $this->weight;
     }
 
-    public function setWeight(float $weight): self
+    public function setWeight(?float $weight): self
     {
         $this->weight = $weight;
         return $this;
     }
 
-    public function getHeight(): float
+    public function getHeight(): ?float
     {
         return $this->height;
     }
 
-    public function setHeight(float $height): self
+    public function setHeight(?float $height): self
     {
         $this->height = $height;
         return $this;
@@ -225,6 +260,77 @@ class Client
         return $this;
     }
 
+    public function getAnamnese(): ?Anamnese
+    {
+        return $this->anamnese;
+    }
+
+    public function setAnamnese(?Anamnese $anamnese): self
+    {
+        $this->anamnese = $anamnese;
+        return $this;
+    }
+
+    public function setObservation(string $observation): self
+    {
+        $this->observation = $observation;
+        return $this;
+    }
+
+    public function getObservation(): string
+    {
+        return $this->observation;
+    }
+
+    public function setAvatarKey(?string $avatarKey): self
+    {
+        $this->avatarKey = $avatarKey;
+        return $this;
+    }
+
+    public function getAvatarKey(): string|null
+    {
+        return $this->avatarKey;
+    }
+
+    public function setAvatarUrl(?string $avatarUrl): self
+    {
+        $this->avatarUrl = $avatarUrl;
+        return $this;
+    }
+
+    public function getAvatarUrl(): string|null
+    {
+        return $this->avatarUrl;
+    }
+
+    public function setPhone(?string $phone): self
+    {
+        $this->phone = $phone;
+        return $this;
+    }
+
+    public function getPhone(): string|null
+    {
+        return $this->phone;
+    }
+
+    public function setEmail(?string $email): self
+    {
+        $this->email = $email;
+        return $this;
+    }
+
+    public function getEmail(): string|null
+    {
+        return $this->email;
+    }
+
+    public function getUuid(): string
+    {
+        return $this->uuid;
+    }
+
     public function getDataFromArray(array $data): self
     {
         if (isset($data['name'])) {
@@ -267,12 +373,28 @@ class Client
             $this->active = $data['active'];
         }
 
-        if (isset($data['createdAt'])) {
-            $this->active = $data['createdAt'];
+        if (isset($data['user'])) {
+            $this->user = $data['user'];
         }
 
-        if (isset($data['user'])) {
-            $this->active = $data['user'];
+        if (isset($data['observation'])) {
+            $this->observation = $data['observation'];
+        }
+
+        if (isset($data['avatarKey'])) {
+            $this->avatarKey = $data['avatarKey'];
+        }
+
+        if (isset($data['avatarUrl'])) {
+            $this->avatarUrl = $data['avatarUrl'];
+        }
+
+        if (isset($data['phone'])) {
+            $this->phone = $data['phone'];
+        }
+
+        if (isset($data['email'])) {
+            $this->email = $data['email'];
         }
 
         return $this;

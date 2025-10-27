@@ -1,23 +1,26 @@
-import { useEffect, useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { MessageCircle } from "lucide-react";
-import EvolutionTab from "@/components/Client/components/EvolutionTab";
-import MeasurementsTab from "@/components/Client/components/MeasurementsTab";
-import GalleryTab from "@/components/Client/components/GalleryTab";
-import AnamneseTab from "@/components/Client/components/AnamneseTab";
-import WorkoutsTab from "@/components/Client/components/WorkoutsTab";
-import { useLocation } from "react-router-dom";
-import EditClientModal from "@/components/Client/components/EditClientModal";
+import EvolutionTab from "@/components/ClientView/EvolutionTab";
+import MeasurementsTab from "@/components/ClientView/MeasurementsTab";
+import GalleryTab from "@/components/ClientView/GalleryTab";
+import AnamneseTab from "@/components/ClientView/AnamneseTab";
+import WorkoutsTab from "@/components/ClientView/WorkoutsTab";
+import { useLocation, useParams } from "react-router-dom";
+import EditClientModal from "@/components/ClientView/Client/EditClientModal";
 import { OBJECTIVES } from "@/utils/constants/Client/constants";
+import { useRequest } from "@/api/request";
+import Loader from "@/components/ui/loader";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import EditableAvatar from "@/components/ClientView/Client/EditableAvatar";
+import ContactButtonDropdown from "@/components/ClientView/Client/ContactButtonDropdown";
 
 export default function ClientView() {
+    // const [loading, setLoading] = useState<boolean>(true);
     const [tab, setTab] = useState("evolucao");
-    const [client, setClient] = useState(null);
-    const location = useLocation();
+    const { id } = useParams();
+    const request = useRequest();
+    const queryClient = useQueryClient();
 
     const getClientNameFormatted = (name: string, lastName: string): string => {
         if (name) {
@@ -31,19 +34,52 @@ export default function ClientView() {
         return `${name} ${lastName}`;
     };
 
-    useEffect(() => {
-        if (!location.state.client) {
-            return;
-        }
-        console.log(location.state.client);
+    const {
+        data: client,
+        isLoading,
+        isError,
+    } = useQuery({
+        queryKey: ["client", id],
+        queryFn: async () => {
+            const res = await request({ method: "GET", url: `/client/${id}` });
+            return res;
+        },
+        refetchOnMount: true,
+        staleTime: 5 * 60 * 1000,
+    });
 
-        setClient(location.state.client);
-    }, [location.state]);
+    const updateClientMutation = useMutation({
+        mutationFn: async (payload) => {
+            const res = await request({
+                method: "PATCH",
+                url: `/client/${id}`,
+                data: payload,
+            });
+
+            return res;
+        },
+        onSuccess: (updatedClient) => {
+            queryClient.setQueryData(["client", id], updatedClient);
+            queryClient.invalidateQueries({ queryKey: ["clients"] });
+        },
+    });
+
+    const handleClientUpdate = (
+        data: any,
+        setOpen: (value: boolean) => void
+    ) => {
+        updateClientMutation.mutate(data, {
+            onSuccess: () => {
+                setOpen(false);
+            },
+        });
+    };
 
     return (
         <div className="w-full max-w-6xl mx-auto p-6 space-y-8">
+            <Loader loading={isLoading} />
             <Card className="p-6 flex flex-col sm:flex-row items-center gap-6">
-                <Avatar className="h-24 w-24">
+                {/* <Avatar className="h-24 w-24">
                     {client?.src && (
                         <AvatarImage src={client.src} alt="Foto do cliente" />
                     )}
@@ -56,21 +92,29 @@ export default function ClientView() {
                                 .toUpperCase()}`}
                         </AvatarFallback>
                     )}
-                </Avatar>
+                </Avatar> */}
+                {!client && (
+                    <div className="h-24 w-24 rounded-full bg-gray-300 animate-pulse" />
+                )}
+                {client && <EditableAvatar clientData={client} />}
                 <div className="flex-1 space-y-2">
                     <h2 className="text-2xl font-semibold">
                         {getClientNameFormatted(client?.name, client?.lastName)}
                     </h2>
                     <p className="text-sm text-muted-foreground">
-                        Idade: {client?.age} anos • Objetivo:{" "}
-                        {client ? OBJECTIVES[client.objective] : ""}
+                        {client?.age ? `Idade: ${client.age} anos •` : ""}
+                        {client?.objective
+                            ? `Objetivo: ${OBJECTIVES[client.objective]}`
+                            : ""}
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <EditClientModal clientData={client} />
-                    <Button className="cursor-pointer" size="sm">
-                        <MessageCircle className="h-4 w-4 mr-2" /> Contatar
-                    </Button>
+                    <EditClientModal
+                        clientData={client}
+                        onSubmit={handleClientUpdate}
+                        isLoading={updateClientMutation.isPending}
+                    />
+                    <ContactButtonDropdown client={client} />
                 </div>
             </Card>
 

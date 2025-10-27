@@ -3,3 +3,8 @@ export const OBJECTIVES = {
     2: "Emagrecimento",
     3: "Condicionamento",
 };
+
+export const GENDERS = {
+    M: "Masculino",
+    F: "Feminino",
+};

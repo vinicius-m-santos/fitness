@@ -23,6 +23,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowUp, ArrowDown, Plus } from "lucide-react";
 import clsx from "clsx";
+import DefaultButton from "@/components/ui/Buttons/components/DefaultButton";
+import SaveButton from "@/components/ui/Buttons/components/SaveButton";
 
 const initialData = {
     braco: [
@@ -153,9 +155,9 @@ export default function MeasurementsTab() {
                 <h3 className="text-xl font-semibold">Medidas Corporais</h3>
                 <Dialog open={open} onOpenChange={setOpen}>
                     <DialogTrigger asChild>
-                        <Button>
+                        <DefaultButton>
                             <Plus className="w-4 h-4 mr-2" /> Adicionar medida
-                        </Button>
+                        </DefaultButton>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader>
@@ -209,7 +211,7 @@ export default function MeasurementsTab() {
                         </div>
 
                         <DialogFooter>
-                            <Button onClick={handleAdd}>Salvar</Button>
+                            <SaveButton text="Salvar" onClick={handleAdd} />
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>

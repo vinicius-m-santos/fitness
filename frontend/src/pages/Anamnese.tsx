@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,19 +12,65 @@ import {
 } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CheckCircle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import Loader from "@/components/ui/loader";
 import toast from "react-hot-toast";
 import ButtonLoader from "@/components/ui/buttonLoader";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { Client } from "@/types/client";
 
 function useQuery() {
     return new URLSearchParams(useLocation().search);
 }
 
-export default function Anamnese() {
+type ClientData = {
+    clientData?: Client;
+};
+
+function InputWithLabel({ label, ...props }) {
+    return (
+        <div className="space-y-1">
+            <Label>{label}</Label>
+            <Input {...props} />
+        </div>
+    );
+}
+
+function TextareaWithLabel({ label, ...props }) {
+    return (
+        <div className="space-y-1">
+            <Label>{label}</Label>
+            <Textarea {...props} />
+        </div>
+    );
+}
+
+function SelectWithLabel({ label, onValueChange, items }) {
+    return (
+        <div className="space-y-1">
+            <Label>{label}</Label>
+            <Select onValueChange={onValueChange}>
+                <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                    {items.map(([value, text]) => (
+                        <SelectItem key={value} value={value}>
+                            {text}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
+    );
+}
+
+export default function Anamnese({ clientData }: ClientData) {
     const query = useQuery();
     const token = query.get("token");
+    const client = query.get("client");
+
+    console.log(clientData);
 
     const [form, setForm] = useState({
         name: "",
@@ -46,9 +92,9 @@ export default function Anamnese() {
     });
     const [loading, setLoading] = useState<boolean>(false);
     const [submitted, setSubmitted] = useState<boolean>(false);
-    const navigate = useNavigate();
 
     const handleChange = (field: string, value: string) => {
+        console.log(value);
         setForm((prev) => ({ ...prev, [field]: value }));
     };
 
@@ -57,7 +103,7 @@ export default function Anamnese() {
             setLoading(true);
 
             const res = await axios.post(
-                `${import.meta.env.VITE_API_URL}/client/${token}`,
+                `${import.meta.env.VITE_API_URL}/client/${token}/${client}`,
                 data
             );
             if (res.data.success) {
@@ -79,333 +125,254 @@ export default function Anamnese() {
         saveAnamnese(form);
     };
 
-    if (submitted) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center text-center bg-gradient-to-b from-gray-50 to-white px-6">
-                <Loader loading={loading} />
-                <button
-                    onClick={() => navigate("/")}
-                    className="absolute top-6 left-6 flex items-center text-gray-600 hover:text-gray-900 transition"
-                >
-                    <ArrowLeft className="mr-2 h-5 w-5" /> Voltar
-                </button>
-                <CheckCircle className="w-16 h-16 text-green-600 mb-4" />
-                <h1 className="text-2xl font-bold mb-2 text-gray-800">
-                    Anamnese enviada com sucesso! 🎉
+    useEffect(() => {
+        console.log(clientData);
+        if (clientData?.anamnese) {
+            setSubmitted(true);
+        }
+    }, [clientData, clientData?.anamnese]);
+
+    return submitted ? (
+        <div className="min-h-[80vh] flex items-center justify-center p-6">
+            <Loader loading={loading} />
+
+            <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md text-center animate-fade-in">
+                <div className="flex justify-center mb-4">
+                    <div className="bg-green-100 rounded-full p-3">
+                        <CheckCircle className="w-10 h-10 text-green-600" />
+                    </div>
+                </div>
+
+                <h1 className="text-2xl font-semibold text-gray-800 mb-2">
+                    Anamnese enviada!
                 </h1>
-                {/* <p className="text-gray-600 max-w-md">
-                    Entrarei em contato em breve para confirmar o cadastro da sua
-                    oficina.
-                </p> */}
-                {/* <Link
+                <p className="text-gray-500 mb-6 leading-relaxed">
+                    Seu treinador irá analisar os dados e preparar seu treino
+                    personalizado.
+                </p>
+
+                <Link
                     to="/"
-                    className="mt-6 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-semibold transition-all"
+                    className="inline-flex items-center justify-center w-full bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2.5 rounded-lg transition-colors"
                 >
                     Voltar para o início
-                </Link> */}
+                </Link>
             </div>
-        );
-    }
-
-    return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-            <button
-                onClick={() => navigate("/")}
-                className="absolute top-6 left-6 flex items-center text-gray-600 hover:text-gray-900 transition"
-            >
-                <ArrowLeft className="mr-2 h-5 w-5" /> Voltar
-            </button>
+        </div>
+    ) : (
+        <div className="min-h-screen w-full bg-gray-50 pb-6">
             <form
                 onSubmit={handleSubmit}
-                className="min-h-screen bg-gray-50 flex items-center justify-center p-6"
+                className="max-w-2xl pt-4 px-2 mx-auto"
             >
-                <Card className="w-full max-w-2xl shadow-md">
+                <Card className="shadow-sm border-none">
                     <CardHeader>
-                        <CardTitle className="text-2xl font-semibold text-center">
+                        <CardTitle className="text-center text-2xl font-semibold">
                             Anamnese do Aluno
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Nome</Label>
-                                <Input
-                                    placeholder="Digite o nome"
+
+                    <CardContent className="space-y-6">
+                        {/* --- DADOS PESSOAIS --- */}
+                        <div className="space-y-3">
+                            <h3 className="text-sm font-medium text-gray-700 uppercase">
+                                Dados pessoais
+                            </h3>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <InputWithLabel
+                                    label="Nome"
                                     value={form.name}
                                     onChange={(e) =>
                                         handleChange("name", e.target.value)
                                     }
                                 />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>Sobrenome</Label>
-                                <Input
-                                    placeholder="Digite o sobrenome"
+                                <InputWithLabel
+                                    label="Sobrenome"
                                     value={form.lastName}
                                     onChange={(e) =>
                                         handleChange("lastName", e.target.value)
                                     }
                                 />
                             </div>
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label>Idade</Label>
-                                <Input
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <InputWithLabel
+                                    label="Idade"
                                     type="number"
-                                    placeholder="Idade"
                                     value={form.age}
                                     onChange={(e) =>
                                         handleChange("age", e.target.value)
                                     }
                                 />
+
+                                <div className="space-y-1">
+                                    <Label>Sexo</Label>
+                                    <Select
+                                        onValueChange={(v) =>
+                                            handleChange("gender", v)
+                                        }
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="M">
+                                                Masculino
+                                            </SelectItem>
+                                            <SelectItem value="F">
+                                                Feminino
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
-                            <div>
-                                <Label>Sexo</Label>
-                                <Select
-                                    onValueChange={(value) =>
-                                        handleChange("gender", value)
+
+                            <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
+                                <SelectWithLabel
+                                    label="Na sua ocupação, passa mais tempo sentado ou em
+                                pé?"
+                                    onValueChange={(v) =>
+                                        handleChange("ocupation", v)
                                     }
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Selecione" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="M">
-                                            Masculino
-                                        </SelectItem>
-                                        <SelectItem value="F">
-                                            Feminino
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                    items={[
+                                        ["sentado", "Sentado"],
+                                        ["em_pe", "Em pé"],
+                                    ]}
+                                />
                             </div>
                         </div>
 
-                        {/* Peso, Altura */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label>Peso (kg)</Label>
-                                <Input
+                        {/* --- MEDIDAS E OBJETIVO --- */}
+                        <div className="space-y-3">
+                            <h3 className="text-sm font-medium text-gray-700 uppercase">
+                                Medidas & objetivo
+                            </h3>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <InputWithLabel
+                                    label="Peso (kg)"
                                     type="number"
-                                    placeholder="Ex: 75"
                                     value={form.weight}
                                     onChange={(e) =>
                                         handleChange("weight", e.target.value)
                                     }
                                 />
-                            </div>
-                            <div>
-                                <Label>Altura (cm)</Label>
-                                <Input
+                                <InputWithLabel
+                                    label="Altura (cm)"
                                     type="number"
-                                    placeholder="Ex: 175"
                                     value={form.height}
                                     onChange={(e) =>
                                         handleChange("height", e.target.value)
                                     }
                                 />
                             </div>
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label>Objetivo</Label>
-                                <Select
-                                    onValueChange={(value) =>
-                                        handleChange("objective", value)
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <SelectWithLabel
+                                    label="Objetivo"
+                                    onValueChange={(v) =>
+                                        handleChange("objective", v)
                                     }
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Selecione" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="1">
-                                            Ganho de Massa
-                                        </SelectItem>
-                                        <SelectItem value="2">
-                                            Emagrecimento
-                                        </SelectItem>
-                                        <SelectItem value="3">
-                                            Condicionamento
-                                        </SelectItem>
-                                        <SelectItem value="4">Outro</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <Label>Treinos por semana</Label>
-                                <Select
-                                    onValueChange={(value) =>
-                                        handleChange(
-                                            "workoutDaysPerWeek",
-                                            value
-                                        )
+                                    items={[
+                                        ["1", "Ganho de Massa"],
+                                        ["2", "Emagrecimento"],
+                                        ["3", "Condicionamento"],
+                                        ["4", "Outro"],
+                                    ]}
+                                />
+                                <SelectWithLabel
+                                    label="Treinos por semana"
+                                    onValueChange={(v) =>
+                                        handleChange("workoutDaysPerWeek", v)
                                     }
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Selecione" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {[1, 2, 3, 4, 5, 6, 7].map((item) => (
-                                            <SelectItem
-                                                key={item}
-                                                value={item.toString()}
-                                            >
-                                                {item}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                    items={[1, 2, 3, 4, 5, 6, 7].map((n) => [
+                                        String(n),
+                                        n,
+                                    ])}
+                                />
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <Label>Algum problema de pressão?</Label>
-                            <Select
-                                onValueChange={(value) =>
-                                    handleChange("bloodPressureProblem", value)
-                                }
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="1">Nenhum</SelectItem>
-                                    <SelectItem value="2">
-                                        Hipertensão
-                                    </SelectItem>
-                                    <SelectItem value="3">
-                                        Hipotensão
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <Label>
-                                Na sua ocupação, passa mais tempo sentado ou em
-                                pé?
-                            </Label>
-                            <Select
-                                onValueChange={(value) =>
-                                    handleChange("ocupation", value)
-                                }
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="sentado">
-                                        Sentado
-                                    </SelectItem>
-                                    <SelectItem value="em_pe">Em pé</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
 
-                        {/* Questões de saúde */}
+                        {/* --- QUESTÕES DE SAÚDE --- */}
                         <div className="space-y-3">
-                            <div>
-                                <Label>
-                                    Alguma restrição médica (se sim, qual)?
-                                </Label>
-                                <Textarea
-                                    value={form.medicalRestriction}
-                                    onChange={(e) =>
-                                        handleChange(
-                                            "medicalRestriction",
-                                            e.target.value
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div>
-                                <Label>
-                                    Alguma dor crônica (se sim, qual)?
-                                </Label>
-                                <Textarea
-                                    value={form.cronicalPain}
-                                    onChange={(e) =>
-                                        handleChange(
-                                            "cronicalPain",
-                                            e.target.value
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div>
-                                <Label>
-                                    Faz uso de remédio controlado (se sim,
-                                    qual)?
-                                </Label>
-                                <Textarea
-                                    value={form.controledMedicine}
-                                    onChange={(e) =>
-                                        handleChange(
-                                            "controledMedicine",
-                                            e.target.value
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div>
-                                <Label>
-                                    Histórico de cardiopatia na família?
-                                </Label>
-                                <Textarea
-                                    value={form.heartProblem}
-                                    onChange={(e) =>
-                                        handleChange(
-                                            "heartProblem",
-                                            e.target.value
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div>
-                                <Label>
-                                    Passou por alguma cirurgia recentemente (se
-                                    sim, qual)?
-                                </Label>
-                                <Textarea
-                                    value={form.recentSurgery}
-                                    onChange={(e) =>
-                                        handleChange(
-                                            "recentSurgery",
-                                            e.target.value
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div>
-                                <Label>
-                                    Há quanto tempo está sem praticar atividades
-                                    físicas?
-                                </Label>
-                                <Input
-                                    value={form.timeWithoutGym}
-                                    onChange={(e) =>
-                                        handleChange(
-                                            "timeWithoutGym",
-                                            e.target.value
-                                        )
-                                    }
-                                />
-                            </div>
-                        </div>
+                            <h3 className="text-sm font-medium text-gray-700 uppercase">
+                                Saúde & histórico
+                            </h3>
 
-                        <div className="pt-4">
-                            <Button
-                                className="w-full cursor-pointer disabled:opacity-100"
-                                disabled={loading}
-                            >
-                                {!loading && "Salvar"}
-                                {loading && <ButtonLoader />}
-                            </Button>
+                            <TextareaWithLabel
+                                label="Restrições médicas"
+                                value={form.medicalRestriction}
+                                onChange={(e) =>
+                                    handleChange(
+                                        "medicalRestriction",
+                                        e.target.value
+                                    )
+                                }
+                            />
+
+                            <TextareaWithLabel
+                                label="Dor crônica"
+                                value={form.cronicalPain}
+                                onChange={(e) =>
+                                    handleChange("cronicalPain", e.target.value)
+                                }
+                            />
+
+                            <TextareaWithLabel
+                                label="Remédios controlados"
+                                value={form.controledMedicine}
+                                onChange={(e) =>
+                                    handleChange(
+                                        "controledMedicine",
+                                        e.target.value
+                                    )
+                                }
+                            />
+
+                            <TextareaWithLabel
+                                label="Histórico cardíaco familiar"
+                                value={form.heartProblem}
+                                onChange={(e) =>
+                                    handleChange("heartProblem", e.target.value)
+                                }
+                            />
+
+                            <TextareaWithLabel
+                                label="Cirurgia recente?"
+                                value={form.recentSurgery}
+                                onChange={(e) =>
+                                    handleChange(
+                                        "recentSurgery",
+                                        e.target.value
+                                    )
+                                }
+                            />
+
+                            <InputWithLabel
+                                label="Tempo sem treinar"
+                                value={form.timeWithoutGym}
+                                onChange={(e) =>
+                                    handleChange(
+                                        "timeWithoutGym",
+                                        e.target.value
+                                    )
+                                }
+                            />
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Sticky Button */}
+                <div className="sticky bottom-0 bg-gray-50 py-4 mt-4">
+                    <Button
+                        className="w-full cursor-pointer"
+                        disabled={loading}
+                    >
+                        {!loading && "Salvar"}
+                        {loading && <ButtonLoader />}
+                    </Button>
+                </div>
             </form>
         </div>
     );

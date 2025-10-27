@@ -1,0 +1,137 @@
+import { useEffect, useRef, useState } from "react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRequest } from "@/api/request";
+import AvatarLoader from "@/components/ui/avatarLoader";
+import DeleteAvatarModal from "./DeleteAvatarModal";
+
+export default function EditableAvatar({ clientData }) {
+    const fileInputRef = useRef(null);
+    const request = useRequest();
+    const queryClient = useQueryClient();
+    const [client, setClient] = useState(null);
+
+    useEffect(() => {
+        if (!clientData) {
+            return;
+        }
+
+        setClient(clientData);
+    }, [clientData]);
+
+    const uploadMutation = useMutation({
+        mutationFn: async (file) => {
+            const formData = new FormData();
+            formData.append("avatar", file);
+
+            const url = await request({
+                method: "POST",
+                url: `/client/avatar/${client?.id}`,
+                data: formData,
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+
+            await request({
+                method: "PATCH",
+                url: `/client/${client?.id}`,
+                data: { avatarUrl: url },
+            });
+
+            return url;
+        },
+        onSuccess: (newUrl) => {
+            queryClient.setQueryData(["client", client?.id], (old) => ({
+                ...old,
+                avatarUrl: newUrl,
+            }));
+
+            setClient((prev) => ({
+                ...prev,
+                avatarUrl: newUrl,
+            }));
+        },
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: async () => {
+            await request({
+                method: "DELETE",
+                url: `/client/avatar/${client?.id}`,
+            });
+        },
+        onSuccess: () => {
+            queryClient.setQueryData(["client", client?.id], (old) => ({
+                ...old,
+                avatarUrl: null,
+            }));
+
+            setClient((prev) => ({
+                ...prev,
+                avatarUrl: null,
+            }));
+        },
+    });
+
+    const handleFileSelect = (e) => {
+        console.log(e);
+        const file = e.target.files[0];
+        if (file) {
+            uploadMutation.mutate(file);
+        }
+    };
+
+    const handleDelete = () => {
+        deleteMutation.mutate();
+    };
+
+    const isLoading = uploadMutation.isPending || deleteMutation.isPending;
+
+    return (
+        <div className="relative group">
+            <Avatar
+                key={client?.avatarUrl || "no-avatar"}
+                className="h-24 w-24 cursor-pointer"
+                onClick={() => {
+                    if (isLoading) {
+                        return;
+                    }
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                    fileInputRef.current?.click();
+                }}
+            >
+                {client?.avatarUrl ? (
+                    <AvatarImage
+                        key={client?.avatarUrl}
+                        src={client.avatarUrl}
+                        alt="Foto do cliente"
+                    />
+                ) : (
+                    <AvatarFallback className="bg-gray-200">
+                        {client?.name[0].toUpperCase()}
+                        {client?.lastName?.[0].toUpperCase()}
+                    </AvatarFallback>
+                )}
+
+                {!isLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-sm font-medium rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                        Trocar
+                    </div>
+                )}
+
+                {isLoading && <AvatarLoader />}
+            </Avatar>
+
+            {!isLoading && client?.avatarUrl && (
+                <DeleteAvatarModal onConfirm={handleDelete} />
+            )}
+
+            <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+            />
+        </div>
+    );
+}

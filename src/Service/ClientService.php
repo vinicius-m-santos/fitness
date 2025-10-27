@@ -6,6 +6,7 @@ use App\Entity\Client;
 use App\Entity\Personal;
 use App\Entity\User;
 use App\Repository\ClientRepository;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use Psr\Log\LoggerInterface;
@@ -17,7 +18,8 @@ class ClientService
         private readonly LoggerInterface $logger,
         private readonly ClientRepository $clientRepository,
         private EntityManagerInterface $em,
-        private UserPasswordHasherInterface $passwordHasher
+        private UserPasswordHasherInterface $passwordHasher,
+        private readonly UserRepository $userRepository
     )
     {
     }
@@ -30,18 +32,17 @@ class ClientService
     public function createClient(Personal $personal, Client $client): Client
     {
         $user = new User();
-        $user->setEmail(sprintf('%s%s@dummy.com', $client->getName(), $client->getLastName()));
+        $user->setEmail($client->getEmail());
         $user->setFirstName($client->getName());
         $user->setLastName($client->getLastName());
         $user->setRoles(['ROLE_CLIENT']);
-        $user->setPassword($this->passwordHasher->hashPassword($user, sprintf('%s%s@dummy.com', $client->getName(), $client->getLastName())));
+        $user->setPassword($this->passwordHasher->hashPassword($user, $client->getEmail()));
 
-        $this->em->persist($user);
+        $this->userRepository->add($user, false);
 
         $client->setUser($user);
         $client->setPersonal($personal);
-        $this->em->persist($client);
-        $this->em->flush();
+        $this->add($client);
 
         $personal->addClient($client);
 

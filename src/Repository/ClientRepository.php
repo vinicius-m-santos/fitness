@@ -50,6 +50,17 @@ class ClientRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    public function findWithAnamnese(int $id): ?Client
+    {
+        return $this->createQueryBuilder('c')
+            ->leftJoin('c.anamnese', 'a')
+            ->addSelect('a')
+            ->where('c.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
 //    /**
 //     * @return Client[] Returns an array of Client objects
 //     */
