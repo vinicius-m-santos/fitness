@@ -35,7 +35,7 @@ class TrainingService
         if (!$personal) {
             throw new UnprocessableEntityHttpException("Personal não encontrado");
         }
-        
+
         $clientId = $data['client'] ?? null;
         if (!$clientId) {
             throw new UnprocessableEntityHttpException("Cliente não fornecido");
@@ -46,9 +46,9 @@ class TrainingService
             throw new UnprocessableEntityHttpException("Cliente não encontrado");
         }
 
-        if(!$data["name"]) {
+        if (!$data["name"]) {
             throw new UnprocessableEntityHttpException("Nome do treino não informado");
-        }  
+        }
 
         $training = new Training();
         $training->setName($data['name']);
@@ -85,7 +85,7 @@ class TrainingService
         $periodExercise->getDataFromArray($data);
         $periodExercise->setTrainingPeriod($trainingPeriod);
         $periodExercise->setExercise($exercise);
-        
+
         return $this->periodExerciseService->add($periodExercise, true);
     }
 
@@ -108,10 +108,10 @@ class TrainingService
         $result = [];
         foreach ($trainings as $training) {
             $periods = [];
-            
+
             foreach ($training->getPeriods() as $period) {
                 $exercises = [];
-                
+
                 foreach ($period->getPeriodExercises() as $pe) {
                     $exercises[] = [
                         'id' => $pe->getExercise()->getId(),
@@ -141,8 +141,20 @@ class TrainingService
         return $result;
     }
 
-    public function updateTraining(Training $training, string $name, array $periodsData): void
+    public function updateTraining(User $user, array $data, int $id): void
     {
+        $training = $this->trainingRepository->find($id);
+        if (!$training || $training->getPersonal()->getId() !== $user->getId()) {
+            throw new UnprocessableEntityHttpException('Treino não encontrado');
+        }
+
+        $name = $data['name'] ?? null;
+        $periodsData = $data['periods'] ?? [];
+
+        if (!$name || !is_array($periodsData)) {
+            throw new UnprocessableEntityHttpException('Dados inválidos');
+        }
+
         $training->setName($name);
 
         foreach ($training->getPeriods() as $period) {
@@ -150,27 +162,22 @@ class TrainingService
         }
 
         foreach ($periodsData as $pData) {
-            $period = new TrainingPeriod();
-            $period->setTraining($training);
-            $period->setName($pData['name'] ?? 'Período');
-            $this->em->persist($period);
+            $trainingPeriod = $this->createTrainingPeriod(
+                $training,
+                $pData['name']
+            );
+            foreach ($pData['exercises'] as $exerciseData) {
+                $exercise = $this->exerciseRepository->find($exerciseData['id']);
+                if (!$exercise) {
+                    throw new UnprocessableEntityHttpException("Exercício não encontrado");
+                }
 
-            foreach ($pData['exercises'] as $eData) {
-                $exercise = $this->exerciseRepository->find($eData['id']);
-                if (!$exercise) continue;
-
-                $pe = new PeriodExercise();
-                $pe->setTrainingPeriod($period);
-                $pe->setExercise($exercise);
-                $pe->setSeries($eData['series'] ?? null);
-                $pe->setRepeats($eData['reps'] ?? null);
-                $pe->setRest($eData['rest'] ?? null);
-                $pe->setObservation($eData['obs'] ?? null);
-
-                $this->em->persist($pe);
+                $this->createPeriodExercise(
+                    $trainingPeriod,
+                    $exercise,
+                    $exerciseData
+                );
             }
         }
-
-        $this->em->flush();
     }
 }

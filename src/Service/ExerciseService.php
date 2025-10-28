@@ -30,31 +30,36 @@ class ExerciseService
             throw new UnprocessableEntityHttpException("Personal não encontrado");
         }
 
-        if (!$data['name'] || !$data['exerciseCategoryId']) {
-            throw new UnprocessableEntityHttpException("Necessário preencher todos os campos");
+        $exerciseName = $data['name'];
+        if (!$exerciseName) {
+            throw new UnprocessableEntityHttpException("Necessário preencher o nome do exercício");
+        }
+
+        $categoryId = $data['exerciseCategoryId'];
+        if (!$categoryId) {
+            throw new UnprocessableEntityHttpException("Necessário preencher a categoria do exercício");
         }
 
         $existing = $this->exerciseRepository->findOneBy([
-            'name' => $data['name'],
+            'name' => $exerciseName,
             'personal' => $personal
         ]);
 
         if ($existing) {
-            throw new \Exception('Já existe um exercício com esse nome.');
+            throw new UnprocessableEntityHttpException('Já existe um exercício com esse nome.');
         }
 
-        $category = $this->exerciseCategoryRepository->find($data['exerciseCategoryId']);
+        $category = $this->exerciseCategoryRepository->find($categoryId);
         if (!$category) {
-            throw new \Exception('Categoria não encontrada.');
+            throw new UnprocessableEntityHttpException('Categoria não encontrada.');
         }
 
         $exercise = new Exercise();
-        $exercise->setName($data['name']);
+        $exercise->setName($exerciseName);
         $exercise->setExerciseCategory($category);
         $exercise->setPersonal($personal);
 
-        $this->em->persist($exercise);
-        $this->em->flush();
+        $this->exerciseRepository->add($exercise, true);
 
         return $exercise;
     }
@@ -117,19 +122,45 @@ class ExerciseService
         $this->em->flush();
     }
 
-    public function updateExercise(Exercise $exercise, string $name, int $categoryId): Exercise
+    public function updateExercise(User $user, int $id, array $data): Exercise
     {
-        $exercise->setName($name);
-
-        $category = $this->exerciseCategoryRepository->find($categoryId);
-        if (!$category) {
-            throw new \Exception('Categoria não encontrada');
+        $personal = $this->personalRepository->findOneBy(['user' => $user]);
+        if (!$personal) {
+            throw new \Exception('Personal não encontrado.');
         }
 
-        $exercise->setExerciseCategory($category);
+        $exerciseName = $data['name'];
+        if (!$exerciseName) {
+            throw new UnprocessableEntityHttpException('Necessário preencher o nome do exercício');
+        }
 
-        $this->em->persist($exercise);
-        $this->em->flush();
+        $category = $data['category'];
+        if (!$category) {
+            throw new UnprocessableEntityHttpException('Necessário preencher a categoria do exercício');
+        }
+
+        $existing = $this->exerciseRepository->findOneBy([
+            'name' => $exerciseName,
+            'personal' => $personal
+        ]);
+
+        if ($existing) {
+            throw new UnprocessableEntityHttpException('Já existe um exercício com esse nome.');
+        }
+
+        $exercise = $this->exerciseRepository->find($id);
+        if (!$exercise || $exercise->getPersonal()->getUser()->getId() !== $user->getId()) {
+            throw new UnprocessableEntityHttpException('Exercício não encontrado');
+        }
+
+        $category = $this->exerciseCategoryRepository->find($data['category']);
+        if (!$category) {
+            throw new UnprocessableEntityHttpException('Categoria não encontrada');
+        }
+
+        $exercise->setName($exerciseName);
+        $exercise->setExerciseCategory($category);
+        $this->exerciseRepository->add($exercise, true);
 
         return $exercise;
     }

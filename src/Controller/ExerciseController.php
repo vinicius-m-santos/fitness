@@ -58,6 +58,8 @@ final class ExerciseController extends AbstractController
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 
+        $data = json_decode($request->getContent(), true);
+
         try {
             $exercise = $this->exerciseService->createExercise($user, $data);
             $normalizedData = $this->normalizer->normalize($exercise, 'json', ['groups' => ['exercise_all']]);
@@ -123,21 +125,10 @@ final class ExerciseController extends AbstractController
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 
-        $exercise = $this->exerciseRepository->find($id);
-        if (!$exercise || $exercise->getPersonal()->getUser()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Exercício não encontrado'], 404);
-        }
-
         $data = json_decode($request->getContent(), true);
-        $name = $data['name'] ?? null;
-        $categoryId = $data['category'] ?? null;
-
-        if (!$name || !$categoryId) {
-            return new JsonResponse(['error' => 'Invalid data'], 400);
-        }
 
         try {
-            $exercise = $this->exerciseService->updateExercise($exercise, $name, $categoryId);
+            $exercise = $this->exerciseService->updateExercise($user, $id, $data);
             $normalizedData = $this->normalizer->normalize($exercise, null, ['groups' => ['exercise_all']]);
 
             return new JsonResponse([

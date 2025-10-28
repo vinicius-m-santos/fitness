@@ -131,7 +131,6 @@ const ExerciseCreateModal = ({ openProp }: ExerciseCreateModalProps) => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nome do exercício"
-                required
               />
             </div>
             <div>
@@ -147,10 +146,7 @@ const ExerciseCreateModal = ({ openProp }: ExerciseCreateModalProps) => {
                 onValueChange={(val) => setCategoryId(Number(val))}
               >
                 {" "}
-                <SelectTrigger
-                  className="w-full px-3 py-2 text-sm rounded-md bg-gray-100 border border-gray-300 focus:ring-1 outline-none"
-                  required
-                >
+                <SelectTrigger className="w-full px-3 py-2 text-sm rounded-md bg-gray-100 border border-gray-300 focus:ring-1 outline-none">
                   {" "}
                   <SelectValue placeholder="Selecione a categoria" />{" "}
                 </SelectTrigger>{" "}

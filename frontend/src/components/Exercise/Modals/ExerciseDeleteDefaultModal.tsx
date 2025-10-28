@@ -1,10 +1,15 @@
-import * as Dialog from "@radix-ui/react-dialog";
-import { Cross2Icon, Pencil1Icon, TrashIcon } from "@radix-ui/react-icons";
 import { useEffect, useState } from "react";
+import { TrashIcon } from "@radix-ui/react-icons";
 import { useApi } from "../../../api/Api";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { Button } from "../../ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type ExerciseDeleteDefaultModalProps = {
   openProp: boolean;
@@ -20,91 +25,69 @@ const ExerciseDeleteDefaultModal = ({
   const [open, setOpen] = useState(openProp);
 
   useEffect(() => {
-    console.log("Deleting exerciseId:", exerciseId);
+    console.log("Deleting default exerciseId:", exerciseId);
   }, [exerciseId]);
 
   const deleteDefaultExercise = async () => {
     const res = await api.delete(`/exercise/default/${exerciseId}`);
-    console.log(res.data);
     return res.data;
-  };
-
-  const handleDelete = async () => {
-    await mutation.mutateAsync();
   };
 
   const mutation = useMutation({
     mutationFn: deleteDefaultExercise,
     onSuccess: (data) => {
-      toast.success(data.message || "Exercício excluído com sucesso!");
+      toast.success(data.message || "Exercício padrão excluído com sucesso!");
       queryExercise.invalidateQueries({ queryKey: ["exercises"] });
       setOpen(false);
     },
     onError: (error: any) => {
       const message =
         error?.response?.data?.error ||
-        "Ocorreu um erro ao excluir o exercício.";
+        "Ocorreu um erro ao excluir o exercício padrão.";
       toast.error(message);
     },
   });
 
+  const handleDelete = async () => {
+    await mutation.mutateAsync();
+  };
+
   return (
-    <Dialog.Root open={open} onOpenChange={setOpen}>
-      <Dialog.Trigger asChild>
-        <button className="default ml-2 border border-red-500 hover:border-red-400 outline-none hover:text-red-400 text-red-500">
-          <TrashIcon className="w-4 h-4" />
-        </button>
-      </Dialog.Trigger>
+    <Dialog open={open} onOpenChange={setOpen}>
+      {/* Botão para abrir o modal */}
+      <button
+        onClick={() => setOpen(true)}
+        className="default ml-2 border border-red-500 hover:border-red-400 outline-none hover:text-red-400 text-red-500 rounded p-2"
+      >
+        <TrashIcon className="w-4 h-4" />
+      </button>
 
-      <Dialog.Portal>
-        {/* Overlay */}
-        <Dialog.Overlay className="z-2 fixed inset-0 bg-black/20" />
-
-        {/* Modal Content */}
-        <Dialog.Content
-          className="z-3 fixed left-1/2 top-1/2 w-[90vw] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl bg-gray-100 p-6 shadow-xl
-         [data-state=open]:scale-100 transition-all duration-300 focus:outline-none"
-          aria-describedby={undefined}
-        >
-          {/* Close Button */}
-          <Dialog.Close asChild>
-            <button
-              className="absolute top-4 right-4 text-gray-400 hover:text-white focus:outline-none"
-              aria-label="Close"
-            >
-              <Cross2Icon className="w-5 h-5" />
-            </button>
-          </Dialog.Close>
-
-          {/* Title */}
-          <Dialog.Title className="text-2xl font-semibold">
+      {/* Conteúdo do modal */}
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-semibold">
             Excluir Exercício Padrão
-          </Dialog.Title>
+          </DialogTitle>
+        </DialogHeader>
 
-          {/* Body Content */}
-          <div>
-            <div className="mt-4">
-              <p>Deseja mesmo excluir este exercício padrão?</p>
-            </div>
-          </div>
+        <div className="mt-4">
+          <p>Tem certeza que deseja excluir este exercício padrão?</p>
+        </div>
 
-          {/* Actions */}
-          <div className="mt-6 flex justify-end gap-2">
-            <Dialog.Close asChild>
-              <Button variant={"outline"}>Cancel</Button>
-            </Dialog.Close>
-
-            <Button
-              variant={"destructive"}
-              onClick={handleDelete}
-              className="default px-4 py-2 text-white"
-            >
-              Confirmar
-            </Button>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        <div className="mt-6 flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            className="default px-4 py-2 text-white"
+          >
+            Confirmar
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

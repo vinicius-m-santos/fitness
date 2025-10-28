@@ -79,7 +79,6 @@ const ExerciseUpdateModal = ({
   });
 
   const handleSave = async () => {
-    if (!name || !category) return;
     await mutation.mutateAsync({ name, category });
   };
 
@@ -146,7 +145,6 @@ const ExerciseUpdateModal = ({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nome"
-                required
               />
             </div>
 

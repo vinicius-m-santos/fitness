@@ -21,9 +21,7 @@ final class TrainingController extends AbstractController
         private readonly TrainingService $trainingService,
         private readonly NormalizerInterface $normalizer,
         private readonly TrainingRepository $trainingRepository,
-    )
-    {
-    }
+    ) {}
 
     #[Route('/training', name: 'app_training')]
     public function index(): JsonResponse
@@ -37,7 +35,7 @@ final class TrainingController extends AbstractController
     #[Route('/create', name: 'create_training', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-         /** @var \App\Entity\User $user */
+        /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$user) {
@@ -65,21 +63,10 @@ final class TrainingController extends AbstractController
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 
-        $training = $this->trainingRepository->find($id);
-        if (!$training || $training->getPersonal()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Treino não encontrado'], 404);
-        }
-
         $data = json_decode($request->getContent(), true);
-        $name = $data['name'] ?? null;
-        $periodsData = $data['periods'] ?? [];
-
-        if (!$name || !is_array($periodsData)) {
-            return new JsonResponse(['error' => 'Dados inválidos'], 400);
-        }
 
         try {
-            $this->trainingService->updateTraining($training, $name, $periodsData);
+            $this->trainingService->updateTraining($user, $data, $id);
             return new JsonResponse(['message' => 'Treino atualizado com sucesso']);
         } catch (\Exception $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
