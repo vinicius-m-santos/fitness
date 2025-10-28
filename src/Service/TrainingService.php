@@ -180,4 +180,24 @@ class TrainingService
             }
         }
     }
+
+    public function deleteTraining(int $trainingId, User $user): void
+    {
+        $personal = $this->personalRepository->findOneBy(['user' => $user]);
+        if (!$personal) {
+            throw new \Exception('Personal não encontrado.');
+        }
+
+        $training = $this->trainingRepository->findOneBy([
+            'id' => $trainingId,
+            'personal' => $personal
+        ]);
+
+        if (!$training) {
+            throw new \Exception('Treino não encontrado.');
+        }
+
+        $this->em->remove($training);
+        $this->em->flush();
+    }
 }

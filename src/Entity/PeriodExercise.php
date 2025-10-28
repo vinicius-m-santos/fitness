@@ -27,11 +27,11 @@ class PeriodExercise
     #[Groups(['training_client'])]
     private ?Exercise $exercise = null;
 
-    #[ORM\Column(type: "integer", nullable: true)]
+    #[ORM\Column(type: "string", length: 10, nullable: true)]
     #[Groups(['training_client'])]
     private ?string $series = null;
 
-    #[ORM\Column(type: "integer", nullable: true)]
+    #[ORM\Column(type: "string", length: 10, nullable: true)]
     #[Groups(['training_client'])]
     private ?string $repeats = null;
 
@@ -89,23 +89,23 @@ class PeriodExercise
         return $this;
     }
 
-    public function getSeries(): ?int
+    public function getSeries(): ?string
     {
         return $this->series;
     }
 
-    public function setSeries(?int $series): self
+    public function setSeries(?string $series): self
     {
         $this->series = $series;
         return $this;
     }
 
-    public function getRepeats(): ?int
+    public function getRepeats(): ?string
     {
         return $this->repeats;
     }
 
-    public function setRepeats(?int $repeats): self
+    public function setRepeats(?string $repeats): self
     {
         $this->repeats = $repeats;
         return $this;

@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20251026233529 extends AbstractMigration
+final class Version20251028165934 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -29,7 +29,7 @@ final class Version20251026233529 extends AbstractMigration
         $this->addSql('CREATE INDEX IDX_FA149915D430949 ON exercises (personal_id)');
         $this->addSql('COMMENT ON COLUMN exercises.created_at IS \'(DC2Type:datetime_immutable)\'');
         $this->addSql('COMMENT ON COLUMN exercises.updated_at IS \'(DC2Type:datetime_immutable)\'');
-        $this->addSql('CREATE TABLE period_exercises (id SERIAL NOT NULL, training_period_id INT NOT NULL, exercise_id INT NOT NULL, series INT DEFAULT NULL, repeats INT DEFAULT NULL, rest VARCHAR(50) DEFAULT NULL, observation VARCHAR(255) DEFAULT NULL, created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, updated_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL, PRIMARY KEY(id))');
+        $this->addSql('CREATE TABLE period_exercises (id SERIAL NOT NULL, training_period_id INT NOT NULL, exercise_id INT NOT NULL, series VARCHAR(10) DEFAULT NULL, repeats VARCHAR(10) DEFAULT NULL, rest VARCHAR(50) DEFAULT NULL, observation VARCHAR(255) DEFAULT NULL, created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, updated_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL, PRIMARY KEY(id))');
         $this->addSql('CREATE INDEX IDX_DB7F32438207192A ON period_exercises (training_period_id)');
         $this->addSql('CREATE INDEX IDX_DB7F3243E934951A ON period_exercises (exercise_id)');
         $this->addSql('COMMENT ON COLUMN period_exercises.created_at IS \'(DC2Type:datetime_immutable)\'');

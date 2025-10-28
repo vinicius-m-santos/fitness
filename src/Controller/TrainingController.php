@@ -91,4 +91,27 @@ final class TrainingController extends AbstractController
 
         return $this->json(['trainings' => $normalized]);
     }
+
+    #[Route('/{id}', name: 'delete_training', methods: ['DELETE'])]
+    public function delete(int $id): JsonResponse
+    {
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $this->trainingService->deleteTraining($id, $user);
+
+            return new JsonResponse([
+                'message' => 'Exercício deletado com sucesso'
+            ], 200);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'error' => $e->getMessage()
+            ], 400);
+        }
+    }
 }

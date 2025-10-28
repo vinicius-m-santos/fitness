@@ -5,12 +5,7 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -22,10 +17,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dumbbell, Trash } from "lucide-react";
-import TrainingCreateModal from "../../Training/Modals/TrainingCreateModal";
-import TrainingUpdateModal from "../../Training/Modals/TrainingUpdateModal";
-import TrainingDeleteModal from "../../Training/Modals/TrainingDeleteModal";
-import { useApi } from "../../../api/Api";
+import TrainingCreateModal from "@/components/Training/Modals/TrainingCreateModal";
+import TrainingUpdateModal from "@/components/Training/Modals/TrainingUpdateModal";
+import TrainingDeleteModal from "@/components/Training/Modals/TrainingDeleteModal";
+import { useApi } from "@/api/Api";
 import { useParams } from "react-router-dom";
 import { Edit } from "lucide-react";
 
@@ -40,23 +35,23 @@ export default function WorkoutsTab() {
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [trainingToDelete, setTrainingToDelete] = useState<any | null>(null);
 
-    const handleEditWorkout = (workout: any) => {
-      setEditingWorkout(workout);
-      setOpenUpdateModal(true);
-    };
+  const handleEditWorkout = (workout: any) => {
+    setEditingWorkout(workout);
+    setOpenUpdateModal(true);
+  };
 
-    const loadWorkouts = async () => {
-      try {
-        const res = await api.get(`/training/all/${client}`);
-        setWorkouts(res.data.trainings || []);
-      } catch (err) {
-        console.error("Erro ao carregar treinos", err);
-      }
-    };
+  const loadWorkouts = async () => {
+    try {
+      const res = await api.get(`/training/all/${client}`);
+      setWorkouts(res.data.trainings || []);
+    } catch (err) {
+      console.error("Erro ao carregar treinos", err);
+    }
+  };
 
-    useEffect(() => {
-      if (client) loadWorkouts();
-    }, [client]);
+  useEffect(() => {
+    if (client) loadWorkouts();
+  }, [client]);
 
   return (
     <div className="space-y-6">
@@ -75,13 +70,13 @@ export default function WorkoutsTab() {
           client={client}
         />
 
-        <Button onClick={() => setOpenModal(true)}>
-          + Novo treino
-        </Button>
+        <Button onClick={() => setOpenModal(true)}>+ Novo treino</Button>
       </div>
 
       {workouts.length === 0 ? (
-        <p className="text-muted-foreground text-sm">Nenhum treino cadastrado.</p>
+        <p className="text-muted-foreground text-sm">
+          Nenhum treino cadastrado.
+        </p>
       ) : (
         <Accordion type="single" collapsible className="space-y-3">
           {workouts.map((workout, wi) => (
@@ -109,35 +104,38 @@ export default function WorkoutsTab() {
                     client={client}
                   />
                   <div className="flex gap-x-2 text-black">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex items-center gap-1"
-                    onClick={() => handleEditWorkout(workout)}
-                  >
-                    <Edit className="h-4 w-4 mr-1 text-black" /> Editar
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="text-white flex items-center gap-1"
-                    variant="destructive"
-                    onClick={() => {
-                      setTrainingToDelete(workout);
-                      setOpenDeleteModal(true);
-                    }}
-                  >
-                    <Trash className="h-4 w-4 mr-1" /> Excluir
-                  </Button>
-                  {trainingToDelete && (
-                    <TrainingDeleteModal
-                      openProp={openDeleteModal}
-                      trainingId={trainingToDelete.id}
-                      onOpenChange={(open) => {
-                        setOpenDeleteModal(open);
-                        if (!open) setTrainingToDelete(null);
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex items-center gap-1"
+                      onClick={() => handleEditWorkout(workout)}
+                    >
+                      <Edit className="h-4 w-4 mr-1 text-black" /> Editar
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="text-white flex items-center gap-1"
+                      variant="destructive"
+                      onClick={() => {
+                        setTrainingToDelete(workout);
+                        setOpenDeleteModal(true);
                       }}
-                    />
-                  )}
+                    >
+                      <Trash className="h-4 w-4 mr-1" /> Excluir
+                    </Button>
+                    {trainingToDelete && (
+                      <TrainingDeleteModal
+                        openProp={openDeleteModal}
+                        trainingId={trainingToDelete.id}
+                        onOpenChange={(open) => {
+                          setOpenDeleteModal(open);
+                          if (!open) {
+                            setTrainingToDelete(null);
+                            loadWorkouts();
+                          }
+                        }}
+                      />
+                    )}
                   </div>
                 </div>
                 {workout.periods.map((period, pi) => (
@@ -161,7 +159,9 @@ export default function WorkoutsTab() {
                         <TableBody>
                           {period.exercises.map((ex, ei) => (
                             <TableRow key={ei}>
-                              <TableCell className="font-medium">{ex.name}</TableCell>
+                              <TableCell className="font-medium">
+                                {ex.name}
+                              </TableCell>
                               <TableCell>{ex.series}</TableCell>
                               <TableCell>{ex.reps}</TableCell>
                               <TableCell>{ex.rest}</TableCell>
