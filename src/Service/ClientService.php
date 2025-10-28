@@ -48,4 +48,10 @@ class ClientService
 
         return $client;
     }
+
+    public function find(int $clientId): ?Client
+    {   
+        return $this->clientRepository->find($clientId);
+    }
+
 }

@@ -8,6 +8,7 @@ import {
     MenuIcon,
     User,
     X,
+    Dumbbell,
 } from "lucide-react";
 
 const Menu = () => {
@@ -44,6 +45,13 @@ const Menu = () => {
                             <User size={16} className="mr-2" />
                             Alunos
                         </Link>
+                        <Link
+                            to="/exercises"
+                            className="flex items-center px-4 py-2 text-sm font-bold hover:text-gray-600 rounded-lg transition duration-500"
+                        >
+                            <Dumbbell size={16} className="mr-2" />
+                            Exercícios
+                        </Link>
                         <UserDropdown />
                     </div>
 
@@ -75,6 +83,14 @@ const Menu = () => {
                                 className="mr-2"
                             />
                             Dashboard
+                        </Link>
+                        <Link
+                            to="/exercises"
+                            className="flex items-center px-4 py-2 mb-1 rounded-lg hover:bg-gray-200 transition"
+                            onClick={() => setMobileMenuOpen(false)}
+                        >
+                            <Dumbbell size={16} className="mr-2" />
+                            Exercícios
                         </Link>
                         <Link
                             to="/logout"
