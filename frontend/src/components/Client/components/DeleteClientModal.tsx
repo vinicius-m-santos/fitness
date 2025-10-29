@@ -9,23 +9,38 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import DangerButton from "@/components/ui/Buttons/components/DangerButton";
 import OutlineButton from "@/components/ui/Buttons/components/OutlineButton";
 import DefaultTooltip from "@/components/ui/Tooltip/DefaultTooltip";
 import { Trash } from "lucide-react";
 
-export default function DeleteClientModal({ onConfirm }) {
+export default function DeleteClientModal({ onConfirm, isMobile = false }) {
     return (
         <AlertDialog>
-            <DefaultTooltip tooltipText="Excluir aluno" delay={0}>
-                <AlertDialogTrigger asChild>
-                    <button className="cursor-pointer p-1 text-red-500 hover:text-red-700 transition">
+            {!isMobile && (
+                <DefaultTooltip tooltipText="Excluir aluno" delay={0}>
+                    <AlertDialogTrigger asChild>
+                        <button className="cursor-pointer p-1 text-red-500 hover:text-red-700 transition">
+                            <Trash className="w-5 h-5" />
+                        </button>
+                    </AlertDialogTrigger>
+                </DefaultTooltip>
+            )}
+            {isMobile && (
+                <AlertDialogTrigger className="w-full" asChild>
+                    <Button
+                        variant="default"
+                        size="sm"
+                        className="w-full bg-red-500 text-white hover:text-white focus:text-white transition"
+                    >
                         <Trash className="w-5 h-5" />
-                    </button>
+                        <span>Excluir</span>
+                    </Button>
                 </AlertDialogTrigger>
-            </DefaultTooltip>
+            )}
 
-            <AlertDialogContent>
+            <AlertDialogContent className="max-w-[300px] sm:max-w-[500px] rounded-md">
                 <AlertDialogHeader>
                     <AlertDialogTitle>Excluir aluno?</AlertDialogTitle>
                     <AlertDialogDescription>
@@ -34,7 +49,7 @@ export default function DeleteClientModal({ onConfirm }) {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel asChild>
-                        <OutlineButton />
+                        <OutlineButton styling="mt-2 sm:mt-0" />
                     </AlertDialogCancel>
                     <AlertDialogAction onClick={onConfirm} asChild>
                         <DangerButton />

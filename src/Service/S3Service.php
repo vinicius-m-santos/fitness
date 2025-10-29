@@ -2,12 +2,23 @@
 
 namespace App\Service;
 
+use Aws\Result;
 use Aws\S3\S3Client;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 class S3Service
 {
     private S3Client $s3Client;
+    private const ALLOWED_MIME_TYPES = [
+        'jpeg',
+        'jpg',
+        'png',
+        'webp',
+        'gif'
+    ];
+    private const ALLOWED_FILE_MAX_SIZE = 5000000;
 
     public function __construct(
         private readonly LoggerInterface $logger
@@ -22,8 +33,35 @@ class S3Service
             ]
         ]);
     }
+    
+    public function saveFile(File $file, string $filePath): Result
+    {
+        if ($this->checkIfFileTypeIsAllowed($file->guessExtension()) === false) {
+            throw new UnprocessableEntityHttpException('Tipo de arquivo inválido');
+        }
 
-    public function putObject(array $data)
+        if ($this->checkIfFileSizeIsAllowed($file->getSize()) === false) {
+            throw new UnprocessableEntityHttpException('Arquivo deve ser menor que 5mb');
+        }
+
+        return $this->putObject([
+            'Bucket' => $_ENV['AWS_BUCKET'],
+            'Key' => $filePath,
+            'SourceFile' => $file->getPathname()
+        ]);
+    }
+
+    private function checkIfFileSizeIsAllowed(int $size): bool
+    {
+        return !($size > self::ALLOWED_FILE_MAX_SIZE);
+    }
+
+    private function checkIfFileTypeIsAllowed(string $mimeType): bool
+    {
+        return in_array($mimeType, self::ALLOWED_MIME_TYPES);
+    }
+
+    private function putObject(array $data): Result
     {
         return $this->s3Client->putObject($data);
     }

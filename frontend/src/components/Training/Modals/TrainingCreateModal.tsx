@@ -116,7 +116,6 @@ const TrainingCreateModal = ({
     const loadExercises = async () => {
       try {
         const res = await api.get("/exercise/all");
-        console.log(res);
         setExercises(res.data.exercises);
       } catch (err) {
         console.error("Erro ao carregar exercícios", err);

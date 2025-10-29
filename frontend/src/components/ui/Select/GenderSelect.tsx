@@ -10,7 +10,10 @@ import {
 export default function GenderSelect({ value, handleChange }) {
     return (
         <>
-            <Label htmlFor="gender" className="text-right text-sm font-medium">
+            <Label
+                htmlFor="gender"
+                className="sm:text-right text-sm font-medium"
+            >
                 Sexo
             </Label>
             <div className="col-span-3">

@@ -25,6 +25,7 @@ class Personal
 
     #[ORM\OneToOne(inversedBy: 'personal', cascade: ['persist', 'remove'])]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['client_all', 'personal_all'])]
     private ?User $user = null;
 
     #[ORM\OneToMany(mappedBy: 'personal', targetEntity: Client::class, cascade: ['persist', 'remove'])]
@@ -35,11 +36,11 @@ class Personal
     private ?array $deleted_default_exercises = [];
 
     #[ORM\Column(type: "datetime_immutable")]
-    #[Groups(['client_all', 'personal_all'])]
+    #[Groups(['personal_all'])]
     private \DateTimeImmutable $createdAt;
 
     #[ORM\Column(type: "datetime_immutable", nullable: true)]
-    #[Groups(['client_all', 'personal_all'])]
+    #[Groups(['personal_all'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
     public function __construct()

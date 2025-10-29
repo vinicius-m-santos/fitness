@@ -159,31 +159,31 @@ class Anamnese
 
     public function getDataFromArray(array $data): self
     {
-        if (isset($data['medicalRestriction'])) {
+        if (isset($data['medicalRestriction']) && !empty($data['medicalRestriction'])) {
             $this->medicalRestriction = $data['medicalRestriction'];
         }
 
-        if (isset($data['cronicalPain'])) {
+        if (isset($data['cronicalPain']) && !empty($data['cronicalPain'])) {
             $this->cronicalPain = $data['cronicalPain'];
         }
 
-        if (isset($data['controledMedicine'])) {
+        if (isset($data['controledMedicine']) && !empty($data['controledMedicine'])) {
             $this->controledMedicine = $data['controledMedicine'];
         }
 
-        if (isset($data['heartProblem'])) {
+        if (isset($data['heartProblem']) && !empty($data['heartProblem'])) {
             $this->heartProblem = $data['heartProblem'];
         }
 
-        if (isset($data['recentSurgery'])) {
+        if (isset($data['recentSurgery']) && !empty($data['recentSurgery'])) {
             $this->recentSurgery = $data['recentSurgery'];
         }
 
-        if (isset($data['timeWithoutGym'])) {
+        if (isset($data['timeWithoutGym']) && !empty($data['timeWithoutGym'])) {
             $this->timeWithoutGym = $data['timeWithoutGym'];
         }
 
-        if (isset($data['ocupation'])) {
+        if (isset($data['ocupation']) && !empty($data['ocupation'])) {
             $this->ocupation = $data['ocupation'];
         }
 
