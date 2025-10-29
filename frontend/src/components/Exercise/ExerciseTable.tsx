@@ -68,11 +68,11 @@ const CategoryBadge = (params: any) => {
       "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
 
     switch (exerciseCategory) {
-      case "Superior":
+      case "Superiores":
         bgClass =
           "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
         break;
-      case "Inferior":
+      case "Inferiores":
         bgClass =
           "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
         break;

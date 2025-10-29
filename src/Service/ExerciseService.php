@@ -30,28 +30,31 @@ class ExerciseService
             throw new UnprocessableEntityHttpException("Personal não encontrado");
         }
 
-        $exerciseName = $data['name'];
+        $exerciseName = trim($data['name'] ?? '');
         if (!$exerciseName) {
             throw new UnprocessableEntityHttpException("Necessário preencher o nome do exercício");
         }
 
-        $categoryId = $data['exerciseCategoryId'];
+        if (mb_strlen($exerciseName) > 50) {
+            throw new UnprocessableEntityHttpException("O nome do exercício não pode exceder 50 caracteres");
+        }
+
+        $categoryId = $data['exerciseCategoryId'] ?? null;
         if (!$categoryId) {
             throw new UnprocessableEntityHttpException("Necessário preencher a categoria do exercício");
+        }
+
+        $category = $this->exerciseCategoryRepository->find($categoryId);
+        if (!$category) {
+            throw new UnprocessableEntityHttpException('Categoria não encontrada.');
         }
 
         $existing = $this->exerciseRepository->findOneBy([
             'name' => $exerciseName,
             'personal' => $personal
         ]);
-
         if ($existing) {
             throw new UnprocessableEntityHttpException('Já existe um exercício com esse nome.');
-        }
-
-        $category = $this->exerciseCategoryRepository->find($categoryId);
-        if (!$category) {
-            throw new UnprocessableEntityHttpException('Categoria não encontrada.');
         }
 
         $exercise = new Exercise();
@@ -63,6 +66,7 @@ class ExerciseService
 
         return $exercise;
     }
+
 
     public function deleteExercise(int $exerciseId, User $user): void
     {
@@ -129,37 +133,40 @@ class ExerciseService
             throw new \Exception('Personal não encontrado.');
         }
 
-        $exerciseName = $data['name'];
+        $exerciseName = trim($data['name'] ?? '');
         if (!$exerciseName) {
-            throw new UnprocessableEntityHttpException('Necessário preencher o nome do exercício');
+            throw new UnprocessableEntityHttpException('Necessário preencher o nome do exercício.');
         }
 
-        $category = $data['category'];
+        if (mb_strlen($exerciseName) > 50) {
+            throw new UnprocessableEntityHttpException('O nome do exercício não pode exceder 50 caracteres.');
+        }
+
+        if (empty($data['category'])) {
+            throw new UnprocessableEntityHttpException('Necessário preencher a categoria do exercício.');
+        }
+
+        $category = $this->exerciseCategoryRepository->find($data['category']);
         if (!$category) {
-            throw new UnprocessableEntityHttpException('Necessário preencher a categoria do exercício');
+            throw new UnprocessableEntityHttpException('Categoria não encontrada.');
         }
 
         $existing = $this->exerciseRepository->findOneBy([
             'name' => $exerciseName,
             'personal' => $personal
         ]);
-
-        if ($existing) {
+        if ($existing && $existing->getId() !== $id) {
             throw new UnprocessableEntityHttpException('Já existe um exercício com esse nome.');
         }
 
         $exercise = $this->exerciseRepository->find($id);
         if (!$exercise || $exercise->getPersonal()->getUser()->getId() !== $user->getId()) {
-            throw new UnprocessableEntityHttpException('Exercício não encontrado');
-        }
-
-        $category = $this->exerciseCategoryRepository->find($data['category']);
-        if (!$category) {
-            throw new UnprocessableEntityHttpException('Categoria não encontrada');
+            throw new UnprocessableEntityHttpException('Exercício não encontrado.');
         }
 
         $exercise->setName($exerciseName);
         $exercise->setExerciseCategory($category);
+
         $this->exerciseRepository->add($exercise, true);
 
         return $exercise;

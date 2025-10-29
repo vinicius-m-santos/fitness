@@ -75,13 +75,17 @@ const ExerciseDeleteDefaultModal = ({
         </div>
 
         <div className="mt-6 flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button
+            variant="outline"
+            className="cursor-pointer"
+            onClick={() => setOpen(false)}
+          >
             Cancelar
           </Button>
           <Button
             variant="destructive"
             onClick={handleDelete}
-            className="default px-4 py-2 text-white"
+            className="default px-4 py-2 text-white cursor-pointer"
           >
             Confirmar
           </Button>

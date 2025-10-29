@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dumbbell, Trash } from "lucide-react";
+import { Dumbbell, Trash, File } from "lucide-react";
 import TrainingCreateModal from "@/components/Training/Modals/TrainingCreateModal";
 import TrainingUpdateModal from "@/components/Training/Modals/TrainingUpdateModal";
 import TrainingDeleteModal from "@/components/Training/Modals/TrainingDeleteModal";
@@ -38,6 +38,24 @@ export default function WorkoutsTab() {
   const handleEditWorkout = (workout: any) => {
     setEditingWorkout(workout);
     setOpenUpdateModal(true);
+  };
+
+  const handleGeneratePDF = async (trainingId: number, name: string) => {
+    try {
+      const res = await api.get(`/training/pdf/${trainingId}`, {
+        responseType: "blob",
+      });
+
+      const blob = new Blob([res.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${name || "treino"}.pdf`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Erro ao gerar PDF", err);
+    }
   };
 
   const loadWorkouts = async () => {
@@ -70,7 +88,9 @@ export default function WorkoutsTab() {
           client={client}
         />
 
-        <Button onClick={() => setOpenModal(true)}>+ Novo treino</Button>
+        <Button className="cursor-pointer" onClick={() => setOpenModal(true)}>
+          + Novo treino
+        </Button>
       </div>
 
       {workouts.length === 0 ? (
@@ -106,15 +126,24 @@ export default function WorkoutsTab() {
                   <div className="flex gap-x-2 text-black">
                     <Button
                       size="sm"
+                      className="flex bg-blue-400 hover:bg-blue-500 items-center gap-1 cursor-pointer"
+                      onClick={() =>
+                        handleGeneratePDF(workout.id, workout.name)
+                      }
+                    >
+                      <File className="h-4 w-4 mr-1 text-white" /> Gerar PDF
+                    </Button>
+                    <Button
+                      size="sm"
                       variant="outline"
-                      className="flex items-center gap-1"
+                      className="flex items-center gap-1 cursor-pointer"
                       onClick={() => handleEditWorkout(workout)}
                     >
                       <Edit className="h-4 w-4 mr-1 text-black" /> Editar
                     </Button>
                     <Button
                       size="sm"
-                      className="text-white flex items-center gap-1"
+                      className="text-white flex items-center gap-1 cursor-pointer"
                       variant="destructive"
                       onClick={() => {
                         setTrainingToDelete(workout);

@@ -23,6 +23,7 @@ import {
 import toast from "react-hot-toast";
 import { useApi } from "../../../api/Api";
 import { TrashIcon } from "lucide-react";
+import { z, ZodError } from "zod";
 
 type TrainingCreateModalProps = {
   openProp: boolean;
@@ -30,22 +31,75 @@ type TrainingCreateModalProps = {
   client: number;
 };
 
-const TrainingCreateModal = ({ openProp, onOpenChange, client }: TrainingCreateModalProps) => {
+const TrainingCreateModal = ({
+  openProp,
+  onOpenChange,
+  client,
+}: TrainingCreateModalProps) => {
   const api = useApi();
   const [step, setStep] = useState(1);
   const [trainingName, setTrainingName] = useState("");
   const [periods, setPeriods] = useState<any[]>([]);
   const [newPeriod, setNewPeriod] = useState("");
   const [exercises, setExercises] = useState<any[]>([]);
-  const [selectedExercises, setSelectedExercises] = useState<{ [key: number]: string }>({});
+  const [selectedExercises, setSelectedExercises] = useState<{
+    [key: number]: string;
+  }>({});
+
+  const trainingStep1Schema = z.object({
+    trainingName: z
+      .string()
+      .min(1, "O nome do treino precisa ter pelo menos 3 caracteres")
+      .max(50, "O nome do treino pode ter no máximo 50 caracteres"),
+  });
+
+  const trainingStep2Schema = z.object({
+    periods: z
+      .array(
+        z.object({
+          name: z
+            .string()
+            .min(3, "O nome do período precisa ter pelo menos 3 caracteres")
+            .max(50, "O nome do período pode ter no máximo 50 caracteres"),
+          exercises: z.array(z.any()),
+        })
+      )
+      .min(1, "Adicione pelo menos um período"),
+  });
+
+  const trainingStep3Schema = z.object({
+    periods: z.array(
+      z.object({
+        name: z.string(),
+        exercises: z
+          .array(
+            z.object({
+              id: z.number(),
+              name: z.string(),
+              series: z.string().optional(),
+              reps: z.string().optional(),
+              rest: z.string().optional(),
+              obs: z.string().optional(),
+            })
+          )
+          .min(1, "Cada período precisa ter pelo menos um exercício"),
+      })
+    ),
+  });
 
   useEffect(() => {
-    if (!openProp) return;
+    if (!openProp) {
+      setStep(1);
+      setTrainingName("");
+      setPeriods([]);
+      setNewPeriod("");
+      setSelectedExercises({});
+    }
 
     const loadExercises = async () => {
       try {
         const res = await api.get("/exercise/all");
-        console.log(res)
+        console.log(res);
         setExercises(res.data.exercises);
       } catch (err) {
         console.error("Erro ao carregar exercícios", err);
@@ -57,61 +111,77 @@ const TrainingCreateModal = ({ openProp, onOpenChange, client }: TrainingCreateM
 
   const addPeriod = () => {
     if (!newPeriod.trim()) return;
-    setPeriods([...periods, { id: Date.now(), name: newPeriod, exercises: [] }]);
+    setPeriods([
+      ...periods,
+      { id: Date.now(), name: newPeriod, exercises: [] },
+    ]);
     setNewPeriod("");
   };
 
   const removePeriod = (periodId: number) => {
-    setPeriods(prev => prev.filter(p => p.id !== periodId));
+    setPeriods((prev) => prev.filter((p) => p.id !== periodId));
   };
 
   const addExercise = (periodId: number) => {
     const exerciseId = selectedExercises[periodId];
     if (!exerciseId) return;
-    
-    const exercise = exercises.find(e => e.id.toString() === exerciseId);
+
+    const exercise = exercises.find((e) => e.id.toString() === exerciseId);
     if (!exercise) return;
 
-    setPeriods(periods.map(p =>
-      p.id === periodId
-        ? {
-            ...p,
-            exercises: [
-              ...p.exercises,
-              {
-                id: exercise.id,
-                name: exercise.name,
-                series: "",
-                reps: "",
-                rest: "",
-                obs: ""
-              }
-            ]
-          }
-        : p
-    ));
+    setPeriods(
+      periods.map((p) =>
+        p.id === periodId
+          ? {
+              ...p,
+              exercises: [
+                ...p.exercises,
+                {
+                  instanceId: Date.now() + Math.random(),
+                  id: exercise.id,
+                  name: exercise.name,
+                  series: "",
+                  reps: "",
+                  rest: "",
+                  obs: "",
+                },
+              ],
+            }
+          : p
+      )
+    );
 
-    setSelectedExercises(prev => ({ ...prev, [periodId]: "" }));
+    setSelectedExercises((prev) => ({ ...prev, [periodId]: "" }));
   };
 
-  const removeExercise = (periodId: number, exerciseId: number) => {
-    setPeriods(prev =>
-      prev.map(p =>
+  const removeExercise = (periodId: number, instanceId: number) => {
+    setPeriods((prev) =>
+      prev.map((p) =>
         p.id === periodId
-          ? { ...p, exercises: p.exercises.filter(ex => ex.id !== exerciseId) }
+          ? {
+              ...p,
+              exercises: p.exercises.filter(
+                (ex) => ex.instanceId !== instanceId
+              ),
+            }
           : p
       )
     );
   };
 
-  const updateExerciseField = (periodId: number, exerciseId: number, field: string, value: string) => {
-    setPeriods(prev =>
-      prev.map(p =>
+  const updateExerciseField = (
+    periodId: number,
+    instanceId: number,
+    field: string,
+    value: string
+  ) => {
+    setPeriods((prev) =>
+      prev.map((p) =>
         p.id === periodId
           ? {
               ...p,
-              exercises: p.exercises.map(ex =>
-                ex.id === exerciseId ? { ...ex, [field]: value } : ex
+              exercises: p.exercises.map((ex) =>
+                ex.instanceId === instanceId ? { ...ex, [field]: value } : ex
               ),
             }
           : p
@@ -120,46 +190,43 @@ const TrainingCreateModal = ({ openProp, onOpenChange, client }: TrainingCreateM
   };
 
   const handleNextStep = () => {
-    if (step === 1) {
-      if (!trainingName.trim()) {
-        toast.error("Digite o nome do treino.");
-        return;
+    try {
+      if (step === 1) trainingStep1Schema.parse({ trainingName });
+      if (step === 2) trainingStep2Schema.parse({ periods });
+      if (step === 3) trainingStep3Schema.parse({ periods });
+
+      setStep(step + 1);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        toast.error(err.issues[0]?.message);
       }
     }
-
-    if (step === 2) {
-      if (periods.length === 0) {
-        toast.error("Adicione pelo menos um período.");
-        return;
-      }
-    }
-
-    if (step === 3) {
-      const hasEmptyPeriod = periods.some(p => p.exercises.length === 0);
-      if (hasEmptyPeriod) {
-        toast.error("Cada período precisa ter pelo menos um exercício.");
-        return;
-      }
-    }
-
-    setStep(step + 1);
   };
 
   const saveTraining = async () => {
     try {
+      trainingStep1Schema.parse({ trainingName });
+      trainingStep2Schema.parse({ periods });
+      trainingStep3Schema.parse({ periods });
+
       await api.post("/training/create", {
         name: trainingName,
         client,
         periods,
       });
+
       toast.success("Treino criado com sucesso!");
       onOpenChange(false);
       setStep(1);
       setTrainingName("");
       setPeriods([]);
     } catch (err) {
-      console.error("Erro ao salvar treino", err);
-      toast.error("Erro ao salvar treino");
+      if (err instanceof ZodError) {
+        toast.error(err.issues[0]?.message || "Erro de validação");
+      } else {
+        console.error("Erro ao salvar treino", err);
+        toast.error("Erro ao salvar treino");
+      }
     }
   };
 
@@ -195,11 +262,16 @@ const TrainingCreateModal = ({ openProp, onOpenChange, client }: TrainingCreateM
                 value={newPeriod}
                 onChange={(e) => setNewPeriod(e.target.value)}
               />
-              <Button onClick={addPeriod}>Adicionar</Button>
+              <Button className="cursor-pointer" onClick={addPeriod}>
+                Adicionar
+              </Button>
             </div>
             <ul className="text-sm space-y-1">
-              {periods.map(p => (
-                <li key={p.id} className="flex justify-between items-center border p-2 rounded-md">
+              {periods.map((p) => (
+                <li
+                  key={p.id}
+                  className="flex justify-between items-center border p-2 rounded-md"
+                >
                   <span>{p.name}</span>
                   <button
                     onClick={() => removePeriod(p.id)}
@@ -215,8 +287,8 @@ const TrainingCreateModal = ({ openProp, onOpenChange, client }: TrainingCreateM
 
         {/* STEP 3 - EXERCÍCIOS */}
         {step === 3 && (
-          <Accordion type="multiple" className="space-y-2">
-            {periods.map(period => (
+          <Accordion type="single" className="space-y-2">
+            {periods.map((period) => (
               <AccordionItem key={period.id} value={period.id.toString()}>
                 <AccordionTrigger>{period.name}</AccordionTrigger>
                 <AccordionContent>
@@ -224,32 +296,92 @@ const TrainingCreateModal = ({ openProp, onOpenChange, client }: TrainingCreateM
                     <Select
                       value={selectedExercises[period.id] || ""}
                       onValueChange={(val) =>
-                        setSelectedExercises(prev => ({ ...prev, [period.id]: val }))
+                        setSelectedExercises((prev) => ({
+                          ...prev,
+                          [period.id]: val,
+                        }))
                       }
                     >
                       <SelectTrigger className="w-[200px]">
                         <SelectValue placeholder="Escolher exercício" />
                       </SelectTrigger>
                       <SelectContent>
-                        {exercises.map(ex => (
-                          <SelectItem key={ex.id} value={ex.id.toString()}>{ex.name}</SelectItem>
+                        {exercises.map((ex) => (
+                          <SelectItem key={ex.id} value={ex.id.toString()}>
+                            {ex.name}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button onClick={() => addExercise(period.id,)}>Adicionar</Button>
+                    <Button onClick={() => addExercise(period.id)}>
+                      Adicionar
+                    </Button>
                   </div>
 
                   <div className="space-y-2">
-                    {period.exercises.map(ex => (
-                      <div key={ex.id} className="flex items-center gap-2 text-sm border rounded-md p-2">
+                    {period.exercises.map((ex) => (
+                      <div
+                        key={ex.instanceId}
+                        className="flex flex-wrap items-center gap-2 text-sm border rounded-md p-2"
+                      >
                         <span className="w-40">{ex.name}</span>
-                        <Input className="w-20" placeholder="Séries" value={ex.series} onChange={e => updateExerciseField(period.id, ex.id, "series", e.target.value)} />
-                        <Input className="w-32" placeholder="Reps" value={ex.reps} onChange={e => updateExerciseField(period.id, ex.id, "reps", e.target.value)} />
-                        <Input className="w-32" placeholder="Descanso (s)" value={ex.rest} onChange={e => updateExerciseField(period.id, ex.id, "rest", e.target.value)} />
-                        <Input className="w-32" placeholder="Obs." value={ex.obs} onChange={e => updateExerciseField(period.id, ex.id, "obs", e.target.value)} />
+                        <Input
+                          className="w-20"
+                          placeholder="Séries"
+                          value={ex.series}
+                          onChange={(e) =>
+                            updateExerciseField(
+                              period.id,
+                              ex.instanceId,
+                              "series",
+                              e.target.value
+                            )
+                          }
+                        />
+                        <Input
+                          className="w-32"
+                          placeholder="Reps"
+                          value={ex.reps}
+                          onChange={(e) =>
+                            updateExerciseField(
+                              period.id,
+                              ex.instanceId,
+                              "reps",
+                              e.target.value
+                            )
+                          }
+                        />
+                        <Input
+                          className="w-32"
+                          placeholder="Descanso (s)"
+                          value={ex.rest}
+                          onChange={(e) =>
+                            updateExerciseField(
+                              period.id,
+                              ex.instanceId,
+                              "rest",
+                              e.target.value
+                            )
+                          }
+                        />
+                        <Input
+                          className="w-32"
+                          placeholder="Obs."
+                          value={ex.obs}
+                          onChange={(e) =>
+                            updateExerciseField(
+                              period.id,
+                              ex.instanceId,
+                              "obs",
+                              e.target.value
+                            )
+                          }
+                        />
                         <button
-                          onClick={() => removeExercise(period.id, ex.id)}
-                          className="text-red-500 font-bold px-2"
+                          onClick={() =>
+                            removeExercise(period.id, ex.instanceId)
+                          }
+                          className="text-red-500 font-bold px-2 cursor-pointer"
                         >
                           <TrashIcon className="w-4 h-4" />
                         </button>
@@ -266,14 +398,17 @@ const TrainingCreateModal = ({ openProp, onOpenChange, client }: TrainingCreateM
         {step === 4 && (
           <div className="space-y-3 text-sm">
             <h3 className="font-semibold text-lg mb-3">{trainingName}</h3>
-            {periods.map(p => (
+            {periods.map((p) => (
               <div key={p.id} className="border p-3 rounded-md">
                 <h3 className="font-semibold mb-2">{p.name}</h3>
                 <ul className="space-y-1">
-                  {p.exercises.map(e => (
+                  {p.exercises.map((e) => (
                     <li key={e.id} className="flex justify-between">
                       <span>{e.name}</span>
-                      <span>{e.series || "--"}x{e.reps || "--"} reps / {e.rest || "--"} descanso</span>
+                      <span>
+                        {e.series || "--"}x{e.reps || "--"} reps /{" "}
+                        {e.rest || "--"} descanso / {e.obs || ""}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -284,9 +419,25 @@ const TrainingCreateModal = ({ openProp, onOpenChange, client }: TrainingCreateM
 
         {/* NAVEGAÇÃO */}
         <div className="flex justify-between pt-4">
-          {step > 1 && <Button variant="outline" onClick={() => setStep(step - 1)}>Voltar</Button>}
-          {step < 4 && <Button onClick={handleNextStep}>Próximo</Button>}
-          {step === 4 && <Button onClick={saveTraining}>Salvar treino</Button>}
+          {step > 1 && (
+            <Button
+              variant="outline"
+              className="cursor-pointer"
+              onClick={() => setStep(step - 1)}
+            >
+              Voltar
+            </Button>
+          )}
+          {step < 4 && (
+            <Button className="cursor-pointer" onClick={handleNextStep}>
+              Próximo
+            </Button>
+          )}
+          {step === 4 && (
+            <Button className="cursor-pointer" onClick={saveTraining}>
+              Salvar treino
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

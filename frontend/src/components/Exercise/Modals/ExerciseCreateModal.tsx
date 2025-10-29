@@ -19,6 +19,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { Button } from "../../ui/button";
 import { LogOut, PlusIcon } from "lucide-react";
+import { z, ZodError, treeifyError } from "zod";
+import { zstdCompress } from "zlib";
 
 type ExerciseCreateModalProps = {
   openProp: boolean;
@@ -34,6 +36,15 @@ const ExerciseCreateModal = ({ openProp }: ExerciseCreateModalProps) => {
     []
   );
   const [open, setOpen] = useState<boolean>(openProp);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const exerciseSchema = z.object({
+    name: z
+      .string()
+      .min(3, "O nome precisa ter pelo menos 3 caracteres")
+      .max(50, "O nome pode ter no máximo 50 caracteres"),
+    exerciseCategoryId: z.number().min(1, "A categoria é obrigatória"),
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -74,10 +85,22 @@ const ExerciseCreateModal = ({ openProp }: ExerciseCreateModalProps) => {
   });
 
   const handleSave = async () => {
-    await mutation.mutateAsync({
-      name,
-      exerciseCategoryId: categoryId,
-    });
+    try {
+      const data = exerciseSchema.parse({
+        name,
+        exerciseCategoryId: categoryId,
+      });
+
+      await mutation.mutateAsync(data);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        err.issues.forEach((e) => {
+          toast.error(e.message);
+        });
+      } else {
+        toast.error("Erro inesperado ao validar formulário");
+      }
+    }
   };
 
   const clearModalData = () => {
@@ -167,6 +190,7 @@ const ExerciseCreateModal = ({ openProp }: ExerciseCreateModalProps) => {
             <Button
               type="button"
               variant={"outline"}
+              className="cursor-pointer"
               onClick={() => {
                 clearModalData();
                 setOpen(false);
@@ -175,7 +199,9 @@ const ExerciseCreateModal = ({ openProp }: ExerciseCreateModalProps) => {
               Cancelar
             </Button>
 
-            <Button type="submit">Salvar</Button>
+            <Button type="submit" className="cursor-pointer">
+              Salvar
+            </Button>
           </div>
         </form>
       </DialogContent>

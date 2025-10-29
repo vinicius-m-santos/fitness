@@ -19,6 +19,7 @@ import { useApi } from "../../../api/Api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../ui/button";
 import toast from "react-hot-toast";
+import { z, ZodError } from "zod";
 
 type ExerciseUpdateModalProps = {
   openProp: boolean;
@@ -41,6 +42,14 @@ const ExerciseUpdateModal = ({
 
   const [open, setOpen] = useState(openProp);
 
+  const exerciseSchema = z.object({
+    name: z
+      .string()
+      .min(3, "O nome precisa ter pelo menos 3 caracteres")
+      .max(50, "O nome pode ter no máximo 50 caracteres"),
+    category: z.number().min(1, "A categoria é obrigatória"),
+  });
+
   const fetchExercise = async (exerciseId: number) => {
     const res = await api.get(`/exercise/${exerciseId}`);
     return res.data.exercise;
@@ -48,7 +57,7 @@ const ExerciseUpdateModal = ({
 
   type ExerciseData = {
     name: string;
-    category: string;
+    category: number;
   };
 
   const saveExercise = async (data: ExerciseData) => {
@@ -79,7 +88,22 @@ const ExerciseUpdateModal = ({
   });
 
   const handleSave = async () => {
-    await mutation.mutateAsync({ name, category });
+    try {
+      const data = exerciseSchema.parse({
+        name,
+        category: Number(category),
+      });
+
+      await mutation.mutateAsync(data);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        err.issues.forEach((e) => {
+          toast.error(e.message);
+        });
+      } else {
+        toast.error("Erro inesperado ao validar formulário");
+      }
+    }
   };
 
   useEffect(() => {
@@ -108,7 +132,7 @@ const ExerciseUpdateModal = ({
     <Dialog open={open} onOpenChange={setOpen}>
       <button
         onClick={() => setOpen(true)}
-        className="default px-4 py-2 font-bold text-blue-500 rounded outline-none"
+        className="default px-4 py-2 font-bold text-blue-500 rounded outline-none cursor-pointer"
       >
         <Pencil1Icon className="w-4 h-4" />
       </button>
@@ -172,11 +196,17 @@ const ExerciseUpdateModal = ({
         )}
 
         <div className="mt-6 flex justify-end gap-2">
-          <Button variant={"outline"} onClick={() => setOpen(false)}>
+          <Button
+            variant={"outline"}
+            className="cursor-pointer"
+            onClick={() => setOpen(false)}
+          >
             Cancelar
           </Button>
 
-          <Button onClick={handleSave}>Salvar</Button>
+          <Button onClick={handleSave} className="cursor-pointer">
+            Salvar
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

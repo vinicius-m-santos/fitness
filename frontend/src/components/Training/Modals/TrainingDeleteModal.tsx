@@ -61,7 +61,7 @@ const TrainingDeleteModal = ({
           <Dialog.Close asChild>
             <button
               onClick={() => onOpenChange(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white focus:outline-none"
+              className="absolute top-4 right-4 text-gray-400 hover:text-white focus:outline-none cursor-pointer"
               aria-label="Close"
             >
               <Cross2Icon className="w-5 h-5" />
@@ -81,13 +81,15 @@ const TrainingDeleteModal = ({
           {/* Actions */}
           <div className="mt-6 flex justify-end gap-2">
             <Dialog.Close asChild>
-              <Button variant={"outline"}>Cancel</Button>
+              <Button className="cursor-pointer" variant={"outline"}>
+                Cancelar
+              </Button>
             </Dialog.Close>
 
             <Button
               variant={"destructive"}
               onClick={handleDelete}
-              className="default px-4 py-2 text-white"
+              className="default px-4 py-2 text-white cursor-pointer"
             >
               Confirmar
             </Button>
