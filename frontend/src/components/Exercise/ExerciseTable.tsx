@@ -106,7 +106,6 @@ const ExerciseTable = () => {
   const api = useApi();
   async function loadExercises() {
     const res = await api.get("/exercise/all");
-    console.log(res);
     return res.data.exercises;
   }
 

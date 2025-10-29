@@ -70,7 +70,7 @@ class ClientController extends AbstractController
             throw new Exception($e->getMessage());
         }
 
-        $normalizedData = $this->normalizer->normalize($client, 'json', ['client_all']);
+        $normalizedData = $this->normalizer->normalize($client, 'json', ['groups' => ['client_all']]);
 
         return $this->json(['success' => true, 'data' => $normalizedData], 200);
     }
@@ -87,26 +87,8 @@ class ClientController extends AbstractController
         if (!$user) {
             throw new UnprocessableEntityHttpException('Erro ao realizar upload');
         }
-
-        $filename = sprintf('%s-%s', uniqid(), $file->getClientOriginalName());
-
-        $filePath = sprintf('%s/clients/%s/%s', $user->getUuid(), $client->getId(), $filename);
-        $this->s3Service->putObject([
-            'Bucket' => $_ENV['AWS_BUCKET'],
-            'Key' => $filePath,
-            'SourceFile' => $file->getPathname()
-        ]);
-
-        $key = $client->getAvatarKey();
-        if (!empty($key)) {
-            $this->s3Service->deleteObject($key);
-        }
-
-        $client->setAvatarKey($filePath);
-        $url = $this->s3Service->generateFileUrl($filePath);
-        $client->setAvatarUrl($url);
-        $this->clientService->add($client);
-
+        
+        $url = $this->clientService->saveClientProfileImage($file, $user, $client);
         return new JsonResponse(['data' => $url]);
     }
 
@@ -148,7 +130,7 @@ class ClientController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
         
-        $client = $this->clientRepository->findOneBy(['uuid' => $client]);
+        $client = $this->clientService->findOneBy(['uuid' => $client]);
         if ($client === null) {
             throw new UnprocessableEntityHttpException('Link de Personal inválido');
         }
@@ -176,8 +158,10 @@ class ClientController extends AbstractController
             $anamnese->setClient($client);
             $this->anamneseService->add($anamnese);
 
-            $normalizedData = $this->normalizer->normalize($client, 'json', ['client_all']);
+            $client->getDataFromArray($data);
+            $this->clientService->add($client);
 
+            $normalizedData = $this->normalizer->normalize($client, 'json', ['groups' => ['client_all']]);
             return $this->json(['success' => true, 'data' => $normalizedData], 200);
         } catch (Exception $e) {
             throw new Exception($e);

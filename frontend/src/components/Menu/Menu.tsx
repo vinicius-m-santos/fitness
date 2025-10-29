@@ -20,10 +20,12 @@ const Menu = () => {
                 <div className="flex justify-between items-center py-4">
                     {/* Logo */}
                     <div className="flex items-center space-x-2">
-                        <img
-                            src={logo}
-                            className="w-30 h-10 mt-2 object-contain"
-                        />
+                        <Link to="/clients">
+                            <img
+                                src={logo}
+                                className="w-30 h-10 mt-2 object-contain"
+                            />
+                        </Link>
                     </div>
 
                     {/* Desktop Menu */}
@@ -74,15 +76,12 @@ const Menu = () => {
                 {mobileMenuOpen && (
                     <div className="md:hidden pb-4 flex flex-col">
                         <Link
-                            to="/dashboard"
+                            to="/clients"
                             className="flex items-center px-4 py-2 mb-1 rounded-lg hover:bg-gray-200 transition"
                             onClick={() => setMobileMenuOpen(false)}
                         >
-                            <ChartNoAxesColumnIncreasing
-                                size={16}
-                                className="mr-2"
-                            />
-                            Dashboard
+                            <User size={16} className="mr-2" />
+                            Alunos
                         </Link>
                         <Link
                             to="/exercises"

@@ -47,10 +47,10 @@ export default function EditClientModal({
         email: "",
         phone: "",
         gender: "",
-        age: null,
-        height: null,
-        weight: null,
-        objective: null,
+        age: "",
+        height: "",
+        weight: "",
+        objective: "",
         observation: "",
     });
 
@@ -89,6 +89,10 @@ export default function EditClientModal({
         onSubmit(form, setOpen);
     };
 
+    const formatInputParam = (val) => {
+        return val ? String(val) : "";
+    };
+
     useEffect(() => {
         if (!clientData) {
             return;
@@ -97,18 +101,16 @@ export default function EditClientModal({
         setForm((prev) => {
             return {
                 ...prev,
-                name: clientData?.name,
-                lastName: clientData?.lastName,
-                email: clientData?.email,
-                phone: clientData?.phone,
-                gender: clientData?.gender,
-                age: clientData?.age,
-                height: clientData?.height,
-                weight: clientData?.weight,
-                objective: clientData?.objective
-                    ? String(clientData?.objective)
-                    : undefined,
-                observation: clientData?.observation,
+                name: formatInputParam(clientData?.name),
+                lastName: formatInputParam(clientData?.lastName),
+                email: formatInputParam(clientData?.email),
+                phone: formatInputParam(clientData?.phone),
+                gender: formatInputParam(clientData?.gender),
+                age: formatInputParam(clientData?.age),
+                height: formatInputParam(clientData?.height),
+                weight: formatInputParam(clientData?.weight),
+                objective: formatInputParam(clientData?.objective),
+                observation: formatInputParam(clientData?.observation),
             };
         });
     }, [clientData]);
@@ -126,7 +128,7 @@ export default function EditClientModal({
                 </Button>
             </DialogTrigger>
 
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="rounded-md w-[90vw] max-w-[400px] sm:max-w-[500px] md:max-w-[600px] max-h-[85vh] overflow-y-auto sm:overflow-y-hidden">
                 <DialogHeader>
                     <DialogTitle>Editar dados do aluno</DialogTitle>
                     <DialogDescription>
@@ -136,39 +138,42 @@ export default function EditClientModal({
                 </DialogHeader>
 
                 <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-2">
-                        <Label htmlFor="name" className="text-right">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
+                        <Label htmlFor="name" className="sm:text-right">
                             Nome
                         </Label>
                         <Input
                             id="name"
                             name="name"
+                            placeholder="Nome"
                             value={form.name}
                             onChange={handleChange}
                             className="col-span-3"
                         />
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-2">
-                        <Label htmlFor="lastName" className="text-right">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
+                        <Label htmlFor="lastName" className="sm:text-right">
                             Sobrenome
                         </Label>
                         <Input
                             id="lastName"
                             name="lastName"
+                            placeholder="Sobrenome"
                             value={form.lastName}
                             onChange={handleChange}
                             className="col-span-3"
                         />
                     </div>
 
-                    <div className="grid grid-cols-4 items-center gap-2">
-                        <Label htmlFor="email" className="text-right">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
+                        <Label htmlFor="email" className="sm:text-right">
                             Email
                         </Label>
                         <Input
                             id="email"
                             name="email"
                             type="email"
+                            placeholder="Email"
                             disabled={true}
                             required={true}
                             value={form.email}
@@ -177,8 +182,8 @@ export default function EditClientModal({
                         />
                     </div>
 
-                    <div className="grid grid-cols-4 items-center gap-2">
-                        <Label htmlFor="phone" className="text-right">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
+                        <Label htmlFor="phone" className="sm:text-right">
                             WhatsApp
                         </Label>
                         <PhoneInput
@@ -188,58 +193,61 @@ export default function EditClientModal({
                         />
                     </div>
 
-                    <div className="grid grid-cols-4 items-center gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
                         <GenderSelect
                             value={form.gender}
                             handleChange={handleChangeWithField}
                         />
                     </div>
 
-                    <div className="grid grid-cols-4 items-center gap-2">
-                        <Label htmlFor="age" className="text-right">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
+                        <Label htmlFor="age" className="sm:text-right">
                             Idade
                         </Label>
                         <Input
                             id="age"
                             name="age"
                             type="number"
+                            placeholder="Idade"
                             value={form.age}
                             onChange={handleChange}
                             className="col-span-3"
                         />
                     </div>
 
-                    <div className="grid grid-cols-4 items-center gap-2">
-                        <Label htmlFor="height" className="text-right">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
+                        <Label htmlFor="height" className="sm:text-right">
                             Altura (cm)
                         </Label>
                         <Input
                             id="height"
                             name="height"
                             type="number"
+                            placeholder="Altura"
                             value={form.height}
                             onChange={handleChange}
                             className="col-span-3"
                         />
                     </div>
 
-                    <div className="grid grid-cols-4 items-center gap-2">
-                        <Label htmlFor="weight" className="text-right">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
+                        <Label htmlFor="weight" className="sm:text-right">
                             Peso (kg)
                         </Label>
                         <Input
                             id="weight"
                             name="weight"
                             type="number"
+                            placeholder="Peso"
                             value={form.weight}
                             onChange={handleChange}
                             className="col-span-3"
                         />
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
                         <Label
                             htmlFor="objetivo"
-                            className="text-right text-sm font-medium"
+                            className="sm:text-right text-sm font-medium"
                         >
                             Objetivo
                         </Label>
@@ -266,20 +274,21 @@ export default function EditClientModal({
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-4 items-start gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-start gap-2">
                         <Label
                             htmlFor="observation"
-                            className="text-right mt-2"
+                            className="sm:text-right mt-2"
                         >
                             Observações
                         </Label>
                         <Textarea
                             id="observation"
                             name="observation"
+                            placeholder="Observações"
                             value={form.observation}
                             maxLength={255}
                             onChange={handleChange}
-                            className="col-span-3"
+                            className="sm:col-span-3"
                             rows={3}
                         />
                     </div>

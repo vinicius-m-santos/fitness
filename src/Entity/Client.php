@@ -82,6 +82,7 @@ class Client
     
     #[ORM\ManyToOne(inversedBy: 'clients')]
     #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['client_all'])]
     private ?Personal $personal = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -333,67 +334,67 @@ class Client
 
     public function getDataFromArray(array $data): self
     {
-        if (isset($data['name'])) {
+        if (isset($data['name']) && !empty($data['name'])) {
             $this->name = $data['name'];
         }
 
-        if (isset($data['lastName'])) {
+        if (isset($data['lastName']) && !empty($data['lastName'])) {
             $this->lastName = $data['lastName'];
         }
 
-        if (isset($data['age'])) {
+        if (isset($data['age']) && !empty($data['age'])) {
             $this->age = (int) $data['age'];
         }
 
-        if (isset($data['gender'])) {
+        if (isset($data['gender']) && !empty($data['gender'])) {
             $this->gender = $data['gender'];
         }
 
-        if (isset($data['weight'])) {
-            $this->weight = (float) $data['weight'];
+        if (isset($data['weight']) && !empty($data['weight'])) {
+            $this->weight = (float) preg_replace('/[^0-9.,]/', '', $data['weight']);
         }
 
-        if (isset($data['height'])) {
-            $this->height = (float) $data['height'];
+        if (isset($data['height']) && !empty($data['height'])) {
+            $this->height = (float) preg_replace('/\D/', '', $data['height']);
         }
 
-        if (isset($data['objective'])) {
+        if (isset($data['objective']) && !empty($data['objective'])) {
             $this->objective = (int) $data['objective'];
         }
 
-        if (isset($data['workoutDaysPerWeek'])) {
+        if (isset($data['workoutDaysPerWeek']) && !empty($data['workoutDaysPerWeek'])) {
             $this->workoutDaysPerWeek = (int) $data['workoutDaysPerWeek'];
         }
 
-        if (isset($data['bloodPressureProblem'])) {
+        if (isset($data['bloodPressureProblem']) && !empty($data['bloodPressureProblem'])) {
             $this->bloodPressure = (int) $data['bloodPressureProblem'];
         }
 
-        if (isset($data['active'])) {
+        if (isset($data['active']) && !empty($data['active'])) {
             $this->active = $data['active'];
         }
 
-        if (isset($data['user'])) {
+        if (isset($data['user']) && !empty($data['user'])) {
             $this->user = $data['user'];
         }
 
-        if (isset($data['observation'])) {
+        if (isset($data['observation']) && !empty($data['observation'])) {
             $this->observation = $data['observation'];
         }
 
-        if (isset($data['avatarKey'])) {
+        if (isset($data['avatarKey']) && !empty($data['avatarKey'])) {
             $this->avatarKey = $data['avatarKey'];
         }
 
-        if (isset($data['avatarUrl'])) {
+        if (isset($data['avatarUrl']) && !empty($data['avatarUrl'])) {
             $this->avatarUrl = $data['avatarUrl'];
         }
 
-        if (isset($data['phone'])) {
+        if (isset($data['phone']) && !empty($data['phone'])) {
             $this->phone = $data['phone'];
         }
 
-        if (isset($data['email'])) {
+        if (isset($data['email']) && !empty($data['email'])) {
             $this->email = $data['email'];
         }
 

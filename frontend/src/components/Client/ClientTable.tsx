@@ -20,24 +20,13 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const themeDarkBlue = themeQuartz.withPart(colorSchemeLightWarm);
 
-interface IRow {
-    id: string;
-    name: string;
-    description: number;
-    active: boolean;
-    createdAt: string;
-}
-
-const DateConverter = (data: { value: string }) => {
-    return DateConverterComponent(data.value, null);
-};
+const DateConverter = (data: { value: string }) =>
+    DateConverterComponent(data.value, null);
 
 const ActionButtons = (params: any) => {
     const { navigate, queryClient, request, user } = params;
 
-    const handleView = () => {
-        return navigate(`/client-view/${params.data.id}`);
-    };
+    const handleView = () => navigate(`/client-view/${params.data.id}`);
 
     const handleAnamneseLinkCopy = () => {
         if (!user.uuid || !params.data?.uuid) {
@@ -65,7 +54,7 @@ const ActionButtons = (params: any) => {
     };
 
     return (
-        <div className="flex h-full items-center gap-3">
+        <div className="flex items-center gap-2 justify-center">
             <DefaultTooltip tooltipText="Visualizar aluno" delay={0}>
                 <button
                     onClick={handleView}
@@ -92,18 +81,15 @@ const showAvatar = (params: any) => {
 
     return (
         <div className="flex items-center justify-center h-full">
-            <Avatar
-                key={client?.avatarUrl || "no-avatar"}
-                className="h-8 w-8 cursor-pointer"
-            >
+            <Avatar className="h-8 w-8 cursor-pointer">
                 {client?.avatarUrl ? (
                     <AvatarImage
-                        key={client?.avatarUrl}
                         src={client.avatarUrl}
                         alt="Foto do cliente"
+                        className="object-cover object-center"
                     />
                 ) : (
-                    <AvatarFallback className="bg-gray-200">
+                    <AvatarFallback className="bg-gray-200 text-gray-800">
                         {client?.name[0].toUpperCase()}
                         {client?.lastName?.[0].toUpperCase()}
                     </AvatarFallback>
@@ -115,20 +101,12 @@ const showAvatar = (params: any) => {
 
 const genderRenderer = (params: any) => {
     const hasValue = Object.keys(GENDERS).includes(params.value);
-    if (!hasValue) {
-        return "-";
-    }
-
-    return GENDERS[params.value];
+    return hasValue ? GENDERS[params.value] : "-";
 };
 
 const nameRenderer = (params: any) => {
-    const value = params.value.toString();
-    if (!value) {
-        return value;
-    }
-
-    return value.slice(0, 1).toUpperCase() + value.slice(1);
+    const value = params.value?.toString() ?? "";
+    return value ? value.charAt(0).toUpperCase() + value.slice(1) : "-";
 };
 
 const ClientTable = ({ clientTableData, loading }) => {
@@ -137,7 +115,7 @@ const ClientTable = ({ clientTableData, loading }) => {
     const queryClient = useQueryClient();
     const { user } = useAuth();
 
-    const [columnDefs, setColumnDefs] = useState([
+    const [columnDefs] = useState([
         { headerName: "", cellRenderer: showAvatar },
         {
             headerName: "Nome",
@@ -183,6 +161,9 @@ const ClientTable = ({ clientTableData, loading }) => {
 
     const defaultColDef: ColDef = {
         flex: 1,
+        resizable: true,
+        wrapText: true,
+        autoHeight: true,
     };
 
     return (
@@ -202,6 +183,13 @@ const ClientTable = ({ clientTableData, loading }) => {
                 suppressMenuHide={false}
                 loading={loading}
             />
+            <style>
+                {`
+                    .ag-cell-wrapper {
+                        height: 100%;
+                    }
+                `}
+            </style>
         </div>
     );
 };

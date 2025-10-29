@@ -1,4 +1,6 @@
 import { useRequest } from "@/api/request";
+import ClientCards from "@/components/Client/ClientCards";
+import { ClientList } from "@/components/Client/ClientList";
 import ClientTable from "@/components/Client/ClientTable";
 import CreateClientModal from "@/components/Client/components/CreateClientModal";
 import { useQuery } from "@tanstack/react-query";
@@ -27,7 +29,7 @@ export default function Clients() {
             </div>
 
             <div className="">
-                <ClientTable
+                <ClientList
                     clientTableData={data}
                     loading={isLoading || isFetching}
                 />
