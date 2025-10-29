@@ -74,10 +74,25 @@ const TrainingUpdateModal = ({
             z.object({
               id: z.number(),
               name: z.string(),
-              series: z.string().optional(),
-              reps: z.string().optional(),
-              rest: z.string().optional(),
-              obs: z.string().optional(),
+              series: z
+                .string()
+                .max(10, "O campo série pode ter no máximo 10 caracteres.")
+                .optional(),
+              reps: z
+                .string()
+                .max(10, "O campo repetições pode ter no máximo 20 caracteres.")
+                .optional(),
+              rest: z
+                .string()
+                .max(10, "O campo descanso pode ter no máximo 20 caracteres.")
+                .optional(),
+              obs: z
+                .string()
+                .max(
+                  255,
+                  "Ultrapassado o limite de caracteres do campo observações"
+                )
+                .optional(),
             })
           )
           .min(1, "Cada período precisa ter pelo menos um exercício."),
