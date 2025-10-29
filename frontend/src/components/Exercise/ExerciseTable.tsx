@@ -136,18 +136,10 @@ const ExerciseTable = () => {
     flex: 1,
   };
 
-  if (isLoading)
-    return (
-      <div className="w-full h-full min-h-[75vh] flex items-center justify-center">
-        {/* <Spinner /> */}
-      </div>
-    );
-  if (error) return <p>Erro ao carregar tabela</p>;
-
   return (
     <div
       className="bg-gray-900 rounded-xl shadow-md overflow-hidden border border-gray-200"
-      style={{ width: "100%", height: "30rem" }}
+      style={{ width: "100%", minHeight: "15rem", height: "30rem" }}
     >
       <AgGridReact
         rowData={data}
@@ -159,6 +151,7 @@ const ExerciseTable = () => {
         paginationPageSize={20}
         enableBrowserTooltips={true}
         suppressMenuHide={false}
+        loading={isLoading}
       />
     </div>
   );
