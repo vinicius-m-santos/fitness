@@ -20,6 +20,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../ui/button";
 import toast from "react-hot-toast";
 import { z, ZodError } from "zod";
+import SaveButton from "@/components/ui/Buttons/components/SaveButton";
 
 type ExerciseUpdateModalProps = {
   openProp: boolean;
@@ -34,6 +35,7 @@ const ExerciseUpdateModal = ({
   const api = useApi();
   const queryExercise = useQueryClient();
 
+  const [loading, setLoading] = useState<boolean>(false);
   const [name, setName] = useState<string>("");
   const [category, setCategory] = useState("");
   const [categories, setCategories] = useState<{ id: number; name: string }[]>(
@@ -89,6 +91,7 @@ const ExerciseUpdateModal = ({
 
   const handleSave = async () => {
     try {
+      setLoading(true);
       const data = exerciseSchema.parse({
         name,
         category: Number(category),
@@ -103,6 +106,8 @@ const ExerciseUpdateModal = ({
       } else {
         toast.error("Erro inesperado ao validar formulário");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -166,6 +171,7 @@ const ExerciseUpdateModal = ({
               <Input
                 id="name"
                 type="text"
+                maxLength={50}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nome"
@@ -204,9 +210,7 @@ const ExerciseUpdateModal = ({
             Cancelar
           </Button>
 
-          <Button onClick={handleSave} className="cursor-pointer">
-            Salvar
-          </Button>
+          <SaveButton loading={loading} onClick={handleSave} />
         </div>
       </DialogContent>
     </Dialog>

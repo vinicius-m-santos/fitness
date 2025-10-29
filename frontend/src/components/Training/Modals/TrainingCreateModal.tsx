@@ -24,6 +24,7 @@ import toast from "react-hot-toast";
 import { useApi } from "../../../api/Api";
 import { TrashIcon } from "lucide-react";
 import { z, ZodError } from "zod";
+import SaveButton from "@/components/ui/Buttons/components/SaveButton";
 
 type TrainingCreateModalProps = {
   openProp: boolean;
@@ -45,6 +46,7 @@ const TrainingCreateModal = ({
   const [selectedExercises, setSelectedExercises] = useState<{
     [key: number]: string;
   }>({});
+  const [loading, setLoading] = useState<boolean>(false);
 
   const trainingStep1Schema = z.object({
     trainingName: z
@@ -220,6 +222,7 @@ const TrainingCreateModal = ({
 
   const saveTraining = async () => {
     try {
+      setLoading(true);
       trainingStep1Schema.parse({ trainingName });
       trainingStep2Schema.parse({ periods });
       trainingStep3Schema.parse({ periods });
@@ -242,6 +245,8 @@ const TrainingCreateModal = ({
         console.error("Erro ao salvar treino", err);
         toast.error("Erro ao salvar treino");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -264,6 +269,7 @@ const TrainingCreateModal = ({
               placeholder="Digite o nome do treino (ex: Treino de força)"
               value={trainingName}
               onChange={(e) => setTrainingName(e.target.value)}
+              maxLength={100}
             />
           </div>
         )}
@@ -276,6 +282,7 @@ const TrainingCreateModal = ({
                 placeholder="Nome do período (ex: Treino A)"
                 value={newPeriod}
                 onChange={(e) => setNewPeriod(e.target.value)}
+                maxLength={100}
               />
               <Button className="cursor-pointer" onClick={addPeriod}>
                 Adicionar
@@ -344,6 +351,7 @@ const TrainingCreateModal = ({
                           className="w-20"
                           placeholder="Séries"
                           value={ex.series}
+                          maxLength={10}
                           onChange={(e) =>
                             updateExerciseField(
                               period.id,
@@ -357,6 +365,7 @@ const TrainingCreateModal = ({
                           className="w-32"
                           placeholder="Reps"
                           value={ex.reps}
+                          maxLength={20}
                           onChange={(e) =>
                             updateExerciseField(
                               period.id,
@@ -370,6 +379,7 @@ const TrainingCreateModal = ({
                           className="w-32"
                           placeholder="Descanso (s)"
                           value={ex.rest}
+                          maxLength={20}
                           onChange={(e) =>
                             updateExerciseField(
                               period.id,
@@ -383,6 +393,7 @@ const TrainingCreateModal = ({
                           className="w-32"
                           placeholder="Obs."
                           value={ex.obs}
+                          maxLength={255}
                           onChange={(e) =>
                             updateExerciseField(
                               period.id,
@@ -449,9 +460,10 @@ const TrainingCreateModal = ({
             </Button>
           )}
           {step === 4 && (
-            <Button className="cursor-pointer" onClick={saveTraining}>
-              Salvar treino
-            </Button>
+            <SaveButton loading={loading} onClick={saveTraining} />
+            // <Button className="cursor-pointer" onClick={}>
+            //   Salvar treino
+            // </Button>
           )}
         </div>
       </DialogContent>

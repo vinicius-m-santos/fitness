@@ -18,9 +18,10 @@ import { useApi } from "../../../api/Api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { Button } from "../../ui/button";
-import { LogOut, PlusIcon } from "lucide-react";
+import { LogOut, Plus, PlusIcon } from "lucide-react";
 import { z, ZodError, treeifyError } from "zod";
 import { zstdCompress } from "zlib";
+import SaveButton from "@/components/ui/Buttons/components/SaveButton";
 
 type ExerciseCreateModalProps = {
   openProp: boolean;
@@ -30,8 +31,9 @@ const ExerciseCreateModal = ({ openProp }: ExerciseCreateModalProps) => {
   const api = useApi();
   const queryExercise = useQueryClient();
 
+  const [loading, setLoading] = useState<boolean>(false);
   const [name, setName] = useState<string>("");
-  const [categoryId, setCategoryId] = useState<number | "">("");
+  const [categoryId, setCategoryId] = useState<string>("");
   const [categories, setCategories] = useState<{ id: number; name: string }[]>(
     []
   );
@@ -43,7 +45,7 @@ const ExerciseCreateModal = ({ openProp }: ExerciseCreateModalProps) => {
       .string()
       .min(3, "O nome precisa ter pelo menos 3 caracteres")
       .max(50, "O nome pode ter no máximo 50 caracteres"),
-    exerciseCategoryId: z.number().min(1, "A categoria é obrigatória"),
+    exerciseCategoryId: z.string().min(1, "A categoria é obrigatória"),
   });
 
   useEffect(() => {
@@ -86,6 +88,7 @@ const ExerciseCreateModal = ({ openProp }: ExerciseCreateModalProps) => {
 
   const handleSave = async () => {
     try {
+      setLoading(true);
       const data = exerciseSchema.parse({
         name,
         exerciseCategoryId: categoryId,
@@ -94,16 +97,19 @@ const ExerciseCreateModal = ({ openProp }: ExerciseCreateModalProps) => {
       await mutation.mutateAsync(data);
     } catch (err) {
       if (err instanceof ZodError) {
+        console.log(err);
         err.issues.forEach((e) => {
           toast.error(e.message);
         });
       } else {
         toast.error("Erro inesperado ao validar formulário");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
-  const clearModalData = () => {
+  const resetForm = () => {
     setName("");
     setCategoryId("");
   };
@@ -112,7 +118,7 @@ const ExerciseCreateModal = ({ openProp }: ExerciseCreateModalProps) => {
     console.log(value);
     setOpen(value);
     if (value === false) {
-      clearModalData();
+      resetForm();
     }
   };
 
@@ -120,9 +126,11 @@ const ExerciseCreateModal = ({ openProp }: ExerciseCreateModalProps) => {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <Button
         onClick={() => setOpen(true)}
-        className="default border-2 text-white rounded outline-none"
+        variant="default"
+        size="sm"
+        className="flex cursor-pointer items-center gap-2"
       >
-        <PlusIcon size={16} />
+        <Plus className="h-4 w-4 mr-2" />
         Novo Exercício
       </Button>
 
@@ -151,6 +159,7 @@ const ExerciseCreateModal = ({ openProp }: ExerciseCreateModalProps) => {
               <Input
                 id="name"
                 type="text"
+                maxLength={50}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nome do exercício"
@@ -161,29 +170,24 @@ const ExerciseCreateModal = ({ openProp }: ExerciseCreateModalProps) => {
                 htmlFor="category"
                 className="block text-sm font-bold mb-1"
               >
-                {" "}
-                Categoria{" "}
-              </label>{" "}
+                Categoria
+              </label>
               <Select
-                value={categoryId.toString()}
-                onValueChange={(val) => setCategoryId(Number(val))}
+                value={categoryId}
+                onValueChange={(val) => setCategoryId(val)}
               >
-                {" "}
                 <SelectTrigger className="w-full px-3 py-2 text-sm rounded-md bg-gray-100 border border-gray-300 focus:ring-1 outline-none">
-                  {" "}
-                  <SelectValue placeholder="Selecione a categoria" />{" "}
-                </SelectTrigger>{" "}
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
                 <SelectContent position="popper">
-                  {" "}
                   {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id.toString()}>
-                      {" "}
-                      {cat.name}{" "}
+                    <SelectItem key={cat.id} value={String(cat.id)}>
+                      {cat.name}
                     </SelectItem>
-                  ))}{" "}
-                </SelectContent>{" "}
-              </Select>{" "}
-            </div>{" "}
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="mt-6 flex justify-end gap-2">
@@ -192,16 +196,14 @@ const ExerciseCreateModal = ({ openProp }: ExerciseCreateModalProps) => {
               variant={"outline"}
               className="cursor-pointer"
               onClick={() => {
-                clearModalData();
+                resetForm();
                 setOpen(false);
               }}
             >
               Cancelar
             </Button>
 
-            <Button type="submit" className="cursor-pointer">
-              Salvar
-            </Button>
+            <SaveButton loading={loading} onClick={handleSave} />
           </div>
         </form>
       </DialogContent>

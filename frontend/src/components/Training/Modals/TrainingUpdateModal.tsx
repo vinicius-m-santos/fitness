@@ -24,6 +24,7 @@ import toast from "react-hot-toast";
 import { useApi } from "../../../api/Api";
 import { TrashIcon } from "lucide-react";
 import { z, ZodError } from "zod";
+import SaveButton from "@/components/ui/Buttons/components/SaveButton";
 
 type TrainingUpdateModalProps = {
   openProp: boolean;
@@ -47,6 +48,7 @@ const TrainingUpdateModal = ({
   const [selectedExercises, setSelectedExercises] = useState<{
     [key: number]: string;
   }>({});
+  const [loading, setLoading] = useState<boolean>(false);
 
   const step1Schema = z.object({
     trainingName: z.string().min(1, "Digite o nome do treino."),
@@ -205,6 +207,7 @@ const TrainingUpdateModal = ({
 
   const saveTraining = async () => {
     try {
+      setLoading(true);
       step1Schema.parse({ trainingName });
       step2Schema.parse({ periods });
       step3Schema.parse({ periods });
@@ -220,6 +223,8 @@ const TrainingUpdateModal = ({
         console.error("Erro ao atualizar treino", err);
         toast.error("Erro ao atualizar treino");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -237,6 +242,7 @@ const TrainingUpdateModal = ({
               placeholder="Nome do treino"
               value={trainingName}
               onChange={(e) => setTrainingName(e.target.value)}
+              maxLength={100}
             />
           </div>
         )}
@@ -249,6 +255,7 @@ const TrainingUpdateModal = ({
                 placeholder="Nome do período (ex: Treino A)"
                 value={newPeriod}
                 onChange={(e) => setNewPeriod(e.target.value)}
+                maxLength={100}
               />
               <Button className="cursor-pointer" onClick={addPeriod}>
                 Adicionar
@@ -353,6 +360,7 @@ const TrainingUpdateModal = ({
                           className="w-20"
                           placeholder="Séries"
                           value={ex.series}
+                          maxLength={10}
                           onChange={(e) =>
                             updateExerciseField(
                               period.id,
@@ -366,6 +374,7 @@ const TrainingUpdateModal = ({
                           className="w-20"
                           placeholder="Reps"
                           value={ex.reps}
+                          maxLength={20}
                           onChange={(e) =>
                             updateExerciseField(
                               period.id,
@@ -379,6 +388,7 @@ const TrainingUpdateModal = ({
                           className="w-24"
                           placeholder="Descanso (s)"
                           value={ex.rest}
+                          maxLength={30}
                           onChange={(e) =>
                             updateExerciseField(
                               period.id,
@@ -392,6 +402,7 @@ const TrainingUpdateModal = ({
                           className="w-32"
                           placeholder="Obs."
                           value={ex.obs}
+                          maxLength={255}
                           onChange={(e) =>
                             updateExerciseField(
                               period.id,
