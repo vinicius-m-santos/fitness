@@ -103,41 +103,41 @@ class TrainingService
         $trainings = $this->trainingRepository->findWithRelations($clientId, $personalId);
 
         $result = [];
-        foreach ($trainings as $training) {
-            $periods = [];
+        // foreach ($trainings as $training) {
+        //     $periods = [];
 
-            // foreach ($training->getPeriods() as $period) {
-            foreach ($training['periods'] as $period) {
-                $exercises = [];
+        //     // foreach ($training->getPeriods() as $period) {
+        //     foreach ($training['periods'] as $period) {
+        //         $exercises = [];
 
-                // foreach ($period->getPeriodExercises() as $pe) {
-                foreach ($period['periodExercises'] as $pe) {
-                    $exercises[] = [
-                        'id' => $pe['exercise']['id'],
-                        'name' => $pe['exercise']['name'],
-                        'series' => $pe['series'],
-                        'reps' => $pe['repeats'],
-                        'rest' => $pe['rest'],
-                        'notes' => $pe['observation'],
-                    ];
-                }
+        //         // foreach ($period->getPeriodExercises() as $pe) {
+        //         foreach ($period['periodExercises'] as $pe) {
+        //             $exercises[] = [
+        //                 'id' => $pe['exercise']['id'],
+        //                 'name' => $pe['exercise']['name'],
+        //                 'series' => $pe['series'],
+        //                 'reps' => $pe['repeats'],
+        //                 'rest' => $pe['rest'],
+        //                 'notes' => $pe['observation'],
+        //             ];
+        //         }
 
-                $periods[] = [
-                    'id' => $period['id'],
-                    'name' => $period['name'],
-                    'exercises' => $exercises,
-                ];
-            }
+        //         $periods[] = [
+        //             'id' => $period['id'],
+        //             'name' => $period['name'],
+        //             'exercises' => $exercises,
+        //         ];
+        //     }
 
-            $result[] = [
-                'id' => $training['id'],
-                'name' => $training['name'],
-                'createdAt' => $training['createdAt']->format('d/m/Y'),
-                'periods' => $periods,
-            ];
-        }
+        //     $result[] = [
+        //         'id' => $training['id'],
+        //         'name' => $training['name'],
+        //         'createdAt' => $training['createdAt']->format('d/m/Y'),
+        //         'periods' => $periods,
+        //     ];
+        // }
 
-        return $trainings;
+        return [$clientId, $personalId, $trainings, 'test'];
     }
 
     public function updateTraining(User $user, array $data, int $id): void
