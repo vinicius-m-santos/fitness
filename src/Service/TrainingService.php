@@ -137,7 +137,7 @@ class TrainingService
             ];
         }
 
-        return $result;
+        return $trainings;
     }
 
     public function updateTraining(User $user, array $data, int $id): void
