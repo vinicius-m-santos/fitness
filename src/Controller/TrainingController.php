@@ -23,15 +23,6 @@ final class TrainingController extends AbstractController
         private readonly TrainingRepository $trainingRepository,
     ) {}
 
-    #[Route('/training', name: 'app_training')]
-    public function index(): JsonResponse
-    {
-        return $this->json([
-            'message' => 'Welcome to your new controller!',
-            'path' => 'src/Controller/TrainingController.php',
-        ]);
-    }
-
     #[Route('/create', name: 'create_training', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
@@ -49,7 +40,7 @@ final class TrainingController extends AbstractController
         }
 
         $training = $this->trainingService->createTraining($user, $data);
-        $normalizedData = $this->normalizer->normalize($training, 'json', ['groups' => ['training_all']]);
+        $normalizedData = $this->normalizer->normalize($training, 'json', ['groups' => ['training_client']]);
 
         return $this->json($normalizedData);
     }

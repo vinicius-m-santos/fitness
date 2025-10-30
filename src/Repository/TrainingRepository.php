@@ -31,6 +31,24 @@ class TrainingRepository extends ServiceEntityRepository
 
         return $training;
     }
+
+    public function findWithRelations(int $clientId, int $personalId): mixed
+    {
+         return $this->createQueryBuilder('t')
+            ->leftJoin('t.periods', 'p')
+            ->addSelect('p')
+            ->leftJoin('p.periodExercises', 'pe')
+            ->addSelect('pe')
+            ->leftJoin('pe.exercise', 'e')
+            ->addSelect('e')
+            ->where('t.client = :client')
+            ->andWhere('t.personal = :personal')
+            ->setParameter('client', $clientId)
+            ->setParameter('personal', $personalId)
+            ->orderBy('t.createdAt', 'DESC')
+            ->getQuery()
+            ->getArrayResult();
+    }
     //    /**
     //     * @return Training[] Returns an array of Training objects
     //     */

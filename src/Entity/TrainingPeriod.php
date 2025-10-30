@@ -23,9 +23,8 @@ class TrainingPeriod
     #[Groups(['training_client'])]
     private string $name;
 
-    #[ORM\ManyToOne(targetEntity: Training::class)]
+    #[ORM\ManyToOne(targetEntity: Training::class, inversedBy: 'periods')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    #[Groups(['training_client'])]
     private ?Training $training = null;
 
     #[ORM\Column(type: 'datetime_immutable')]
