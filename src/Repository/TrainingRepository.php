@@ -46,7 +46,7 @@ class TrainingRepository extends ServiceEntityRepository
             ->setParameter('client', $client)
             ->setParameter('personal', $personal)
             ->getQuery()
-            ->getArrayResult();
+            ->getResult();
     }
     //    /**
     //     * @return Training[] Returns an array of Training objects

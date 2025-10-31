@@ -83,20 +83,20 @@ final class TrainingController extends AbstractController
 
         $trainings = $this->trainingService->getTrainingsByClient($client, $personal);
 
-        // $normalized = $this->normalizer->normalize($trainings, 'json', [
-        //     'groups' => ['training_client']
-        // ]);
+        $normalized = $this->normalizer->normalize($trainings, 'json', [
+            'groups' => ['training_client']
+        ]);
         // $data = $this->trainingRepository->createQueryBuilder('t')
         //         ->select('t.id', 't.name')
         //         ->setMaxResults(5)
         //         ->getQuery()
         //         ->getArrayResult();
 
-            return new JsonResponse([
-                'count' => count($trainings),
-                'data' => $trainings,
-            ]);
-        return $this->json(['trainings' => $trainings]);
+            // return new JsonResponse([
+            //     'count' => count($trainings),
+            //     'data' => $trainings,
+            // ]);
+        return $this->json(['trainings' => $normalized]);
     }
 
     #[Route('/{id}', name: 'delete_training', methods: ['DELETE'])]
