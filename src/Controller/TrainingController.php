@@ -65,7 +65,7 @@ final class TrainingController extends AbstractController
         }
     }
 
-    #[Route('/all/{clientId}', name: 'get_all_trainings', methods: ['GET'])]
+    #[Route('/all/{client}', name: 'get_all_trainings', methods: ['GET'])]
     public function getAllTrainings(Client $client): JsonResponse
     {
         /** @var \App\Entity\User $user */
