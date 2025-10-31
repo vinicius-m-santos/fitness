@@ -20,12 +20,12 @@ class Training
 
     #[ORM\ManyToOne(inversedBy: 'trainings')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['training_client'])]
+    // #[Groups(['training_client'])]
     private ?Personal $personal = null;
 
     #[ORM\ManyToOne(inversedBy: 'trainings')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['training_client'])]
+    // #[Groups(['training_client'])]
     private ?Client $client = null;
 
     #[ORM\Column(length: 255)]

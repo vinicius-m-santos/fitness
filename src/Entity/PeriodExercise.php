@@ -19,10 +19,9 @@ class PeriodExercise
 
     #[ORM\ManyToOne(targetEntity: TrainingPeriod::class, inversedBy: "periodExercises")]
     #[ORM\JoinColumn(nullable: false, onDelete: "CASCADE")]
-    #[Groups(['training_client'])]
     private ?TrainingPeriod $trainingPeriod = null;
 
-    #[ORM\ManyToOne(targetEntity: Exercise::class, inversedBy: "periodExercises")]
+    #[ORM\ManyToOne(targetEntity: Exercise::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: "CASCADE")]
     #[Groups(['training_client'])]
     private ?Exercise $exercise = null;

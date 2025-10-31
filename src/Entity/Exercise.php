@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\ExerciseRepository;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
 
@@ -29,6 +30,9 @@ class Exercise
     #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
     #[Groups(['exercise_all', 'training_client'])]
     private ?Personal $personal = null;
+
+    #[ORM\OneToMany(mappedBy: "trainingPeriod", targetEntity: PeriodExercise::class, cascade: ["persist", "remove"])]
+    private Collection $periodExercises;
 
     #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['exercise_all', 'training_client'])]

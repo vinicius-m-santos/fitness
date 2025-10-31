@@ -36,6 +36,7 @@ class TrainingPeriod
 
     #[ORM\OneToMany(mappedBy: "trainingPeriod", targetEntity: PeriodExercise::class, cascade: ["persist", "remove"], orphanRemoval: true)]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['training_client'])]
     private Collection $periodExercises;
 
     public function __construct()
