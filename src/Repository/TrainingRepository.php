@@ -35,10 +35,12 @@ class TrainingRepository extends ServiceEntityRepository
     public function findWithRelations(Client $client, Personal $personal): mixed
     {
          return $this->createQueryBuilder('t')
-                ->select('t.id', 't.name')
-                ->setMaxResults(5)
-                ->getQuery()
-                ->getArrayResult();
+            ->where('t.client = :client')
+            ->andWhere('t.personal = :personal')
+            ->setParameter('client', $client)
+            ->setParameter('personal', $personal)
+            ->getQuery()
+            ->getArrayResult();
     }
     //    /**
     //     * @return Training[] Returns an array of Training objects
