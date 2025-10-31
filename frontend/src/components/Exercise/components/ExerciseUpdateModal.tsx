@@ -41,14 +41,22 @@ const ExerciseUpdateModal = ({
   const [categories, setCategories] = useState<{ id: number; name: string }[]>(
     []
   );
-
   const [open, setOpen] = useState(openProp);
+
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const exerciseSchema = z.object({
     name: z
       .string()
       .min(3, "O nome precisa ter pelo menos 3 caracteres")
-      .max(50, "O nome pode ter no máximo 50 caracteres"),
+      .max(50),
     category: z.number().min(1, "A categoria é obrigatória"),
   });
 
@@ -76,15 +84,14 @@ const ExerciseUpdateModal = ({
   const mutation = useMutation({
     mutationFn: saveExercise,
     onSuccess: () => {
-      const message = data?.message || "Exercício atualizado com sucesso!";
-      toast.success(message);
+      toast.success("Exercício atualizado com sucesso!");
       queryExercise.invalidateQueries({ queryKey: ["exercises"] });
       setOpen(false);
     },
     onError: (error: any) => {
       const message =
         error?.response?.data?.error ||
-        "Ocorreu um erro ao atualizado o exercício.";
+        "Ocorreu um erro ao atualizar o exercício.";
       toast.error(message);
     },
   });
@@ -96,13 +103,10 @@ const ExerciseUpdateModal = ({
         name,
         category: Number(category),
       });
-
       await mutation.mutateAsync(data);
     } catch (err) {
       if (err instanceof ZodError) {
-        err.issues.forEach((e) => {
-          toast.error(e.message);
-        });
+        err.issues.forEach((e) => toast.error(e.message));
       } else {
         toast.error("Erro inesperado ao validar formulário");
       }
@@ -121,9 +125,7 @@ const ExerciseUpdateModal = ({
       }
     };
 
-    if (open) {
-      fetchCategories();
-    }
+    if (open) fetchCategories();
   }, [open]);
 
   useEffect(() => {
@@ -135,23 +137,34 @@ const ExerciseUpdateModal = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <button
-        onClick={() => setOpen(true)}
-        className="default px-4 py-2 font-bold text-blue-500 rounded outline-none cursor-pointer"
-      >
-        <Pencil1Icon className="w-4 h-4" />
-      </button>
+      {!isMobile && (
+        <button
+          onClick={() => setOpen(true)}
+          className="cursor-pointer p-1 text-blue-500 hover:text-blue-700 transition"
+        >
+          <Pencil1Icon className="w-5 h-5" />
+        </button>
+      )}
+
+      {isMobile && (
+        <Button
+          onClick={() => setOpen(true)}
+          variant="default"
+          size="sm"
+          className="w-full bg-blue-500 text-white hover:text-white transition"
+        >
+          <Pencil1Icon className="w-5 h-5" />
+          <span>Editar</span>
+        </Button>
+      )}
 
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-2xl font-semibold">
             Atualizar Exercício
           </DialogTitle>
-          <button
-            onClick={() => setOpen(false)}
-            className="absolute top-4 right-4 text-gray-400 hover:text-white"
-          ></button>
         </DialogHeader>
+
         {(isLoading || categories.length === 0 || !category) && (
           <div className="flex justify-center items-center py-8">
             <Loader className="animate-spin w-6 h-6 text-gray-400" />
@@ -209,7 +222,6 @@ const ExerciseUpdateModal = ({
           >
             Cancelar
           </Button>
-
           <SaveButton loading={loading} onClick={handleSave} />
         </div>
       </DialogContent>

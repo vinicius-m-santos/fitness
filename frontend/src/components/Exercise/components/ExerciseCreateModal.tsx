@@ -23,11 +23,9 @@ import { z, ZodError, treeifyError } from "zod";
 import { zstdCompress } from "zlib";
 import SaveButton from "@/components/ui/Buttons/components/SaveButton";
 
-type ExerciseCreateModalProps = {
-  openProp: boolean;
-};
+type ExerciseCreateModalProps = {};
 
-const ExerciseCreateModal = ({ openProp }: ExerciseCreateModalProps) => {
+const ExerciseCreateModal = ({}: ExerciseCreateModalProps) => {
   const api = useApi();
   const queryExercise = useQueryClient();
 
@@ -37,7 +35,7 @@ const ExerciseCreateModal = ({ openProp }: ExerciseCreateModalProps) => {
   const [categories, setCategories] = useState<{ id: number; name: string }[]>(
     []
   );
-  const [open, setOpen] = useState<boolean>(openProp);
+  const [open, setOpen] = useState<boolean>(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const exerciseSchema = z.object({
