@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Entity\Client;
 use App\Entity\Exercise;
 use App\Entity\PeriodExercise;
 use App\Repository\TrainingRepository;
@@ -98,9 +99,9 @@ class TrainingService
         return $this->trainingPeriodRepository->add($period, true);
     }
 
-    public function getTrainingsByClient(int $clientId, int $personalId): array
+    public function getTrainingsByClient(Client $client, Personal $personal): array
     {
-        $trainings = $this->trainingRepository->findWithRelations($clientId, $personalId);
+        $trainings = $this->trainingRepository->findWithRelations($client, $personal);
 
         $result = [];
         // foreach ($trainings as $training) {

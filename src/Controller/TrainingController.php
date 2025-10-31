@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Client;
 use App\Repository\ExerciseRepository;
 use App\Repository\PersonalRepository;
 use App\Repository\TrainingRepository;
@@ -65,7 +66,7 @@ final class TrainingController extends AbstractController
     }
 
     #[Route('/all/{clientId}', name: 'get_all_trainings', methods: ['GET'])]
-    public function getAllTrainings(int $clientId): JsonResponse
+    public function getAllTrainings(Client $client): JsonResponse
     {
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
@@ -74,20 +75,26 @@ final class TrainingController extends AbstractController
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 
-        $trainings = $this->trainingService->getTrainingsByClient($clientId, $user->getId());
+        $personal = $this->personalRepository->findOneByUserUuid($user->getUuid());
+
+        if (!$personal) {
+            return new JsonResponse(['error' => 'Personal não encontrado'], 404);
+        }
+
+        $trainings = $this->trainingService->getTrainingsByClient($client, $personal);
 
         // $normalized = $this->normalizer->normalize($trainings, 'json', [
         //     'groups' => ['training_client']
         // ]);
-        $data = $this->trainingRepository->createQueryBuilder('t')
-                ->select('t.id', 't.name')
-                ->setMaxResults(5)
-                ->getQuery()
-                ->getArrayResult();
+        // $data = $this->trainingRepository->createQueryBuilder('t')
+        //         ->select('t.id', 't.name')
+        //         ->setMaxResults(5)
+        //         ->getQuery()
+        //         ->getArrayResult();
 
             return new JsonResponse([
-                'count' => count($data),
-                'data' => $data,
+                'count' => count($trainings),
+                'data' => $trainings,
             ]);
         return $this->json(['trainings' => $trainings]);
     }
