@@ -91,8 +91,8 @@ export default function ExerciseCard({ exercise }: ExerciseCardProps) {
   };
 
   return (
-    <Card className="bg-gray-100 text-gray-100 rounded-2xl shadow-md">
-      <CardHeader className="flex flex-row items-center gap-3">
+    <Card className="flex flex-col justify-between bg-gray-100 text-gray-100 rounded-2xl shadow-md">
+      <CardHeader className="flex flex-row flex-grow-1 items-center gap-3">
         <div>
           <h3 className="font-semibold text-black text-lg capitalize">
             {exercise.name}
