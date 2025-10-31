@@ -79,7 +79,16 @@ final class TrainingController extends AbstractController
         // $normalized = $this->normalizer->normalize($trainings, 'json', [
         //     'groups' => ['training_client']
         // ]);
+        $data = $this->trainingRepository->createQueryBuilder('t')
+                ->select('t.id', 't.name')
+                ->setMaxResults(5)
+                ->getQuery()
+                ->getArrayResult();
 
+            return new JsonResponse([
+                'count' => count($data),
+                'data' => $data,
+            ]);
         return $this->json(['trainings' => $trainings]);
     }
 
