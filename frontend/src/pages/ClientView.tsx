@@ -6,8 +6,8 @@ import MeasurementsTab from "@/components/ClientView/MeasurementsTab";
 import GalleryTab from "@/components/ClientView/GalleryTab";
 import AnamneseTab from "@/components/ClientView/AnamneseTab";
 import WorkoutsTab from "@/components/ClientView/WorkoutsTab";
-import { useLocation, useParams } from "react-router-dom";
-import EditClientModal from "@/components/ClientView/Client/EditClientModal";
+import { useParams } from "react-router-dom";
+import ClientUpdateModal from "@/components/ClientView/Client/ClientUpdateModal";
 import { OBJECTIVES } from "@/utils/constants/Client/constants";
 import { useRequest } from "@/api/request";
 import Loader from "@/components/ui/loader";
@@ -109,7 +109,7 @@ export default function ClientView() {
           </p>
         </div>
         <div className="flex gap-2">
-          <EditClientModal
+          <ClientUpdateModal
             clientData={client}
             onSubmit={handleClientUpdate}
             isLoading={updateClientMutation.isPending}

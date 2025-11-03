@@ -156,7 +156,7 @@ const ExerciseUpdateModal = ({
         </DialogTrigger>
       )}
 
-      <DialogContent className="max-w-lg">
+      <DialogContent className="rounded-md w-[90vw] max-w-[400px] sm:max-w-[500px] md:max-w-[600px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-semibold">
             Atualizar Exercício
