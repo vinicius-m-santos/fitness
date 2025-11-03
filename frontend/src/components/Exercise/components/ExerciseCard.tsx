@@ -38,36 +38,30 @@ export default function ExerciseCard({ exercise }: ExerciseCardProps) {
     }
 
     if (exerciseCategory) {
-      let bgClass =
-        "bg-gray-100 mb-2 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+      let color = "gray";
 
       switch (exerciseCategory) {
         case "Superiores":
-          bgClass =
-            "bg-blue-100 mb-2 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+          color = "blue";
           break;
         case "Inferiores":
-          bgClass =
-            "bg-green-100 mb-2 text-green-800 dark:bg-green-900 dark:text-green-300";
+          color = "green";
           break;
         case "Full-body":
-          bgClass =
-            "bg-purple-100 mb-2 text-purple-800 dark:bg-purple-900 dark:text-purple-300";
+          color = "purple";
           break;
         case "Mobilidade":
-          bgClass =
-            "bg-red-100 mb-2 text-red-800 dark:bg-red-900 dark:text-red-300";
+          color = "red";
           break;
         case "Funcional":
-          bgClass =
-            "bg-yellow-100 mb-2 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+          color = "yellow";
           break;
       }
 
       badges.push(
         <span
           key="category"
-          className={`${bgClass} text-xs font-medium px-2.5 py-0.5 rounded-sm`}
+          className={`bg-${color}-100 mb-2 text-${color}-800 dark:bg-${color}-700 dark:text-${color}-300`}
         >
           {exerciseCategory}
         </span>

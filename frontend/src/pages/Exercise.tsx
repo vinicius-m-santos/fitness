@@ -2,7 +2,7 @@ import { useRequest } from "@/api/request";
 import ExerciseCards from "@/components/Exercise/ExerciseCards";
 import { ExerciseList } from "@/components/Exercise/ExerciseList";
 import ExerciseTable from "@/components/Exercise/ExerciseTable";
-import CreateExerciseModal from "@/components/Exercise/components/ExerciseCreateModal";
+import ExerciseCreateModal from "@/components/Exercise/components/ExerciseCreateModal";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -28,7 +28,7 @@ export default function Exercises() {
         <h1 className="text-3xl font-bold text-gray-900 pr-20 tracking-wide">
           Exercícios
         </h1>
-        <CreateExerciseModal />
+        <ExerciseCreateModal />
       </div>
 
       <div className="">

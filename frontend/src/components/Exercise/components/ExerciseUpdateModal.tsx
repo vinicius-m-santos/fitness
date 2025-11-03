@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -21,6 +22,7 @@ import { Button } from "../../ui/button";
 import toast from "react-hot-toast";
 import { z, ZodError } from "zod";
 import SaveButton from "@/components/ui/Buttons/components/SaveButton";
+import { useMediaQuery } from "react-responsive";
 
 type ExerciseUpdateModalProps = {
   openProp: boolean;
@@ -42,15 +44,7 @@ const ExerciseUpdateModal = ({
     []
   );
   const [open, setOpen] = useState(openProp);
-
-  const [isMobile, setIsMobile] = useState<boolean>(false);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const exerciseSchema = z.object({
     name: z
@@ -138,24 +132,28 @@ const ExerciseUpdateModal = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {!isMobile && (
-        <button
-          onClick={() => setOpen(true)}
-          className="cursor-pointer p-1 text-blue-500 hover:text-blue-700 transition"
-        >
-          <Pencil1Icon className="w-5 h-5" />
-        </button>
+        <DialogTrigger asChild>
+          <button
+            onClick={() => setOpen(true)}
+            className="cursor-pointer p-1 text-blue-500 hover:text-blue-700 transition"
+          >
+            <Pencil1Icon className="w-5 h-5" />
+          </button>
+        </DialogTrigger>
       )}
 
       {isMobile && (
-        <Button
-          onClick={() => setOpen(true)}
-          variant="default"
-          size="sm"
-          className="w-full bg-blue-500 text-white hover:text-white transition"
-        >
-          <Pencil1Icon className="w-5 h-5" />
-          <span>Editar</span>
-        </Button>
+        <DialogTrigger asChild>
+          <Button
+            onClick={() => setOpen(true)}
+            variant="default"
+            size="sm"
+            className="w-full bg-blue-500 text-white hover:text-white transition"
+          >
+            <Pencil1Icon className="w-5 h-5" />
+            <span>Editar</span>
+          </Button>
+        </DialogTrigger>
       )}
 
       <DialogContent className="max-w-lg">
