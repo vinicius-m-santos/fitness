@@ -5,6 +5,7 @@ import { useApi } from "../../../api/Api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { Button } from "../../ui/button";
+import DangerButton from "@/components/ui/Buttons/components/DangerButton";
 
 type TrainingDeleteModalProps = {
   openProp: boolean;
@@ -20,12 +21,14 @@ const TrainingDeleteModal = ({
   const api = useApi();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(openProp);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setOpen(openProp);
   }, [openProp]);
 
   const deleteTraining = async () => {
+    setLoading(true);
     const res = await api.delete(`/training/${trainingId}`);
     return res.data;
   };
@@ -33,11 +36,13 @@ const TrainingDeleteModal = ({
   const mutation = useMutation({
     mutationFn: deleteTraining,
     onSuccess: (data) => {
+      setLoading(false);
       toast.success(data.message || "Treino excluído com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["trainings"] });
       onOpenChange(false);
     },
     onError: (error: any) => {
+      setLoading(false);
       const message =
         error?.response?.data?.error || "Ocorreu um erro ao excluir o treino.";
       toast.error(message);
@@ -85,14 +90,7 @@ const TrainingDeleteModal = ({
                 Cancelar
               </Button>
             </Dialog.Close>
-
-            <Button
-              variant={"destructive"}
-              onClick={handleDelete}
-              className="default px-4 py-2 text-white cursor-pointer"
-            >
-              Confirmar
-            </Button>
+            <DangerButton onClick={handleDelete} loading={loading} />
           </div>
         </Dialog.Content>
       </Dialog.Portal>

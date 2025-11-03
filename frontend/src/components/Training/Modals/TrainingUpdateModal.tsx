@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,29 +24,32 @@ import {
 } from "@/components/ui/select";
 import toast from "react-hot-toast";
 import { useApi } from "../../../api/Api";
-import { TrashIcon } from "lucide-react";
+import { Edit, TrashIcon } from "lucide-react";
 import { z, ZodError } from "zod";
 import SaveButton from "@/components/ui/Buttons/components/SaveButton";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRequest } from "@/api/request";
+import { useMediaQuery } from "react-responsive";
 
 type TrainingUpdateModalProps = {
-  openProp: boolean;
-  onOpenChange: (open: boolean) => void;
   workout: any;
   onUpdated?: () => void;
 };
 
 const TrainingUpdateModal = ({
-  openProp,
-  onOpenChange,
   workout,
   onUpdated,
 }: TrainingUpdateModalProps) => {
+  const isMobile = useMediaQuery({ maxWidth: 768 });
   const api = useApi();
+  const request = useRequest();
+  const queryClient = useQueryClient();
+
+  const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [trainingName, setTrainingName] = useState("");
   const [periods, setPeriods] = useState<any[]>([]);
   const [newPeriod, setNewPeriod] = useState("");
-  const [exercises, setExercises] = useState<any[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<{
     [key: number]: string;
   }>({});
@@ -102,49 +107,15 @@ const TrainingUpdateModal = ({
     ),
   });
 
-  useEffect(() => {
-    if (!openProp) return;
-    const loadExercises = async () => {
-      try {
-        const res = await api.get("/exercise/all");
-        setExercises(res.data.exercises);
-      } catch (err) {
-        console.error("Erro ao carregar exercícios", err);
-      }
-    };
-    loadExercises();
-  }, [openProp]);
-
-  useEffect(() => {
-    if (openProp && workout) {
-      setTrainingName(workout.name || "");
-      const cloned = (workout.periods || []).map((p: any) => ({
-        id: p.id || Date.now() + Math.random(),
-        name: p.name,
-        exercises: (p.exercises || []).map((e: any) => ({
-          instanceId: Date.now() + Math.random(),
-          id: e.id,
-          name: e.name,
-          series: e.series?.toString() || "",
-          reps: e.reps?.toString() || "",
-          rest: e.rest || "",
-          obs: e.notes || "",
-        })),
-      }));
-      setPeriods(cloned);
-      setStep(1);
-    }
-  }, [openProp, workout]);
-
-  useEffect(() => {
-    if (!openProp) {
-      setStep(1);
-      setTrainingName("");
-      setPeriods([]);
-      setNewPeriod("");
-      setSelectedExercises({});
-    }
-  }, [openProp]);
+  const { data: exercises, isLoading } = useQuery({
+    queryKey: ["exercises"],
+    queryFn: async () => {
+      const res = await request({ method: "GET", url: "/exercise/all" });
+      return res.exercises;
+    },
+    refetchOnMount: true,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const updateExerciseField = (
     periodId: number,
@@ -214,7 +185,8 @@ const TrainingUpdateModal = ({
 
       await api.put(`/training/${workout.id}`, { name: trainingName, periods });
       toast.success("Treino atualizado com sucesso!");
-      onOpenChange(false);
+      queryClient.invalidateQueries({ queryKey: ["trainings"] });
+      setOpen(false);
       if (onUpdated) onUpdated();
     } catch (err) {
       if (err instanceof ZodError)
@@ -228,17 +200,62 @@ const TrainingUpdateModal = ({
     }
   };
 
+  useEffect(() => {
+    if (open && workout) {
+      setTrainingName(workout.name || "");
+      const cloned = (workout.periods || []).map((p: any) => ({
+        id: p.id || Date.now() + Math.random(),
+        name: p.name,
+        exercises: (p.exercises || []).map((e: any) => ({
+          instanceId: Date.now() + Math.random(),
+          id: e.id,
+          name: e.name,
+          series: e.series?.toString() || "",
+          reps: e.reps?.toString() || "",
+          rest: e.rest || "",
+          obs: e.notes || "",
+        })),
+      }));
+      setPeriods(cloned);
+      setStep(1);
+    }
+  }, [open, workout]);
+
+  useEffect(() => {
+    if (!open) {
+      setStep(1);
+      setTrainingName("");
+      setPeriods([]);
+      setNewPeriod("");
+      setSelectedExercises({});
+    }
+  }, [open]);
+
   return (
-    <Dialog open={openProp} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex cursor-pointer items-center gap-2"
+        >
+          <Edit className="h-4 w-4 mr-2 mr-1 text-black" />
+          Editar
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="rounded-md w-[90vw] max-w-[400px] sm:max-w-[500px] md:max-w-[700px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar treino</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            Atualize as informações do treino
+          </DialogDescription>
         </DialogHeader>
 
         {/* STEP 1 */}
         {step === 1 && (
           <div className="space-y-4">
             <Input
+              className="max-h-[2rem] text-sm font-medium"
               placeholder="Nome do treino"
               value={trainingName}
               onChange={(e) => setTrainingName(e.target.value)}
@@ -252,12 +269,13 @@ const TrainingUpdateModal = ({
           <div className="space-y-3">
             <div className="flex gap-2">
               <Input
+                className="max-h-[2rem] text-sm font-medium"
                 placeholder="Nome do período (ex: Treino A)"
                 value={newPeriod}
                 onChange={(e) => setNewPeriod(e.target.value)}
                 maxLength={100}
               />
-              <Button className="cursor-pointer" onClick={addPeriod}>
+              <Button className="cursor-pointer" size="sm" onClick={addPeriod}>
                 Adicionar
               </Button>
             </div>
@@ -297,7 +315,7 @@ const TrainingUpdateModal = ({
                         }))
                       }
                     >
-                      <SelectTrigger className="w-[200px]">
+                      <SelectTrigger className="max-h-[2rem] w-[200px]">
                         <SelectValue placeholder="Escolher exercício" />
                       </SelectTrigger>
                       <SelectContent>
@@ -310,6 +328,7 @@ const TrainingUpdateModal = ({
                     </Select>
                     <Button
                       className="cursor-pointer"
+                      size="sm"
                       onClick={() => {
                         const exerciseId = selectedExercises[period.id];
                         if (!exerciseId) return;
@@ -353,53 +372,105 @@ const TrainingUpdateModal = ({
                     {period.exercises.map((ex) => (
                       <div
                         key={ex.instanceId}
-                        className="flex items-center gap-2 text-sm border rounded-md p-2"
+                        className="flex flex-wrap items-center gap-2 text-sm border rounded-md p-2"
                       >
-                        <span className="w-40">{ex.name}</span>
+                        <span className="w-[9rem] max-w-[9rem] text-sm font-medium">
+                          {ex.name}
+                        </span>
+                        {isMobile && (
+                          <div className="w-full flex justify-between">
+                            <Input
+                              className="max-h-[2rem] w-full md:w-20 text-sm font-medium"
+                              placeholder="Séries"
+                              value={ex.series}
+                              maxLength={10}
+                              onChange={(e) =>
+                                updateExerciseField(
+                                  period.id,
+                                  ex.id,
+                                  "series",
+                                  e.target.value
+                                )
+                              }
+                            />
+                            <Input
+                              className="max-h-[2rem] mx-1 w-full md:w-20 text-sm font-medium"
+                              placeholder="Reps"
+                              value={ex.reps}
+                              maxLength={20}
+                              onChange={(e) =>
+                                updateExerciseField(
+                                  period.id,
+                                  ex.id,
+                                  "reps",
+                                  e.target.value
+                                )
+                              }
+                            />
+                            <Input
+                              className="max-h-[2rem] w-full md:w-24 text-sm font-medium"
+                              placeholder="Descanso (s)"
+                              value={ex.rest}
+                              maxLength={30}
+                              onChange={(e) =>
+                                updateExerciseField(
+                                  period.id,
+                                  ex.id,
+                                  "rest",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </div>
+                        )}
+                        {!isMobile && (
+                          <>
+                            <Input
+                              className="max-h-[2rem] w-full md:w-20 text-sm font-medium"
+                              placeholder="Séries"
+                              value={ex.series}
+                              maxLength={10}
+                              onChange={(e) =>
+                                updateExerciseField(
+                                  period.id,
+                                  ex.id,
+                                  "series",
+                                  e.target.value
+                                )
+                              }
+                            />
+                            <Input
+                              className="max-h-[2rem] mx-1 w-full md:w-20 text-sm font-medium"
+                              placeholder="Reps"
+                              value={ex.reps}
+                              maxLength={20}
+                              onChange={(e) =>
+                                updateExerciseField(
+                                  period.id,
+                                  ex.id,
+                                  "reps",
+                                  e.target.value
+                                )
+                              }
+                            />
+                            <Input
+                              className="max-h-[2rem] w-full md:w-24 text-sm font-medium"
+                              placeholder="Descanso (s)"
+                              value={ex.rest}
+                              maxLength={30}
+                              onChange={(e) =>
+                                updateExerciseField(
+                                  period.id,
+                                  ex.id,
+                                  "rest",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </>
+                        )}
                         <Input
-                          className="w-20"
-                          placeholder="Séries"
-                          value={ex.series}
-                          maxLength={10}
-                          onChange={(e) =>
-                            updateExerciseField(
-                              period.id,
-                              ex.id,
-                              "series",
-                              e.target.value
-                            )
-                          }
-                        />
-                        <Input
-                          className="w-20"
-                          placeholder="Reps"
-                          value={ex.reps}
-                          maxLength={20}
-                          onChange={(e) =>
-                            updateExerciseField(
-                              period.id,
-                              ex.id,
-                              "reps",
-                              e.target.value
-                            )
-                          }
-                        />
-                        <Input
-                          className="w-24"
-                          placeholder="Descanso (s)"
-                          value={ex.rest}
-                          maxLength={30}
-                          onChange={(e) =>
-                            updateExerciseField(
-                              period.id,
-                              ex.id,
-                              "rest",
-                              e.target.value
-                            )
-                          }
-                        />
-                        <Input
-                          className="w-32"
+                          className="max-h-[2rem] w-full md:w-32 text-sm font-medium"
                           placeholder="Obs."
                           value={ex.obs}
                           maxLength={255}
@@ -412,14 +483,27 @@ const TrainingUpdateModal = ({
                             )
                           }
                         />
-                        <button
-                          onClick={() =>
-                            removeExercise(period.id, ex.instanceId)
-                          }
-                          className="text-red-500 font-bold px-2 cursor-pointer"
-                        >
-                          <TrashIcon className="w-4 h-4" />
-                        </button>
+                        {isMobile && (
+                          <Button
+                            className="w-full max-h-[2rem]"
+                            onClick={() =>
+                              removeExercise(period.id, ex.instanceId)
+                            }
+                            variant="destructive"
+                          >
+                            <TrashIcon className="w-4 h-4 text-white" />
+                          </Button>
+                        )}
+                        {!isMobile && (
+                          <button
+                            onClick={() =>
+                              removeExercise(period.id, ex.instanceId)
+                            }
+                            className="text-red-500 font-bold px-2 cursor-pointer"
+                          >
+                            <TrashIcon className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -433,6 +517,7 @@ const TrainingUpdateModal = ({
           {step > 1 && (
             <Button
               variant="outline"
+              size="sm"
               className="cursor-pointer"
               onClick={() => setStep(step - 1)}
             >
@@ -440,14 +525,16 @@ const TrainingUpdateModal = ({
             </Button>
           )}
           {step < 3 && (
-            <Button className="cursor-pointer" onClick={handleNextStep}>
+            <Button
+              size="sm"
+              className="cursor-pointer"
+              onClick={handleNextStep}
+            >
               Próximo
             </Button>
           )}
           {step === 3 && (
-            <Button className="cursor-pointer" onClick={saveTraining}>
-              Salvar alterações
-            </Button>
+            <SaveButton size="sm" onClick={saveTraining} loading={loading} />
           )}
         </div>
       </DialogContent>

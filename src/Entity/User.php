@@ -25,7 +25,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?Uuid $uuid = null;
 
     #[ORM\Column(type: "string", unique: true)]
-    #[Groups(['user_all'])]
+    #[Groups(['user_all', 'client_all'])]
     private string $email;
     
     #[ORM\Column(type: 'json')]
@@ -40,7 +40,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private string $firstName;
 
     #[ORM\Column]
-    #[Groups(['user_all'])]
+    #[Groups(['user_all', 'client_all'])]
     private string $lastName;
 
     #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
