@@ -14,7 +14,7 @@ import { GENDERS } from "@/utils/constants/Client/constants";
 import { useAuth } from "@/providers/AuthProvider";
 import toast from "react-hot-toast";
 import DefaultTooltip from "../ui/Tooltip/DefaultTooltip";
-import DeleteClientModal from "./components/DeleteClientModal";
+import ClientDeleteModal from "./components/ClientDeleteModal";
 import { useRequest } from "@/api/request";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -42,7 +42,7 @@ const ActionButtons = (params: any) => {
     toast.success("Link copiado!");
   };
 
-  const handleDeleteClient = async () => {
+  const handleClientDelete = async () => {
     const res = await request({
       method: "DELETE",
       url: `/client/${params.data.id}`,
@@ -70,7 +70,7 @@ const ActionButtons = (params: any) => {
           <Copy className="w-5 h-5" />
         </button>
       </DefaultTooltip>
-      <DeleteClientModal onConfirm={handleDeleteClient} />
+      <ClientDeleteModal onConfirm={handleClientDelete} />
     </div>
   );
 };

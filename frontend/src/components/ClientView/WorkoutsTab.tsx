@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import {
   Accordion,
   AccordionItem,
@@ -20,56 +20,58 @@ import { Dumbbell, Trash, File } from "lucide-react";
 import TrainingCreateModal from "@/components/Training/Modals/TrainingCreateModal";
 import TrainingUpdateModal from "@/components/Training/Modals/TrainingUpdateModal";
 import TrainingDeleteModal from "@/components/Training/Modals/TrainingDeleteModal";
-import { useApi } from "@/api/Api";
 import { useParams } from "react-router-dom";
-import { Edit } from "lucide-react";
+import { PdfExercise } from "../Exercise/PdfExercise";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRequest } from "@/api/request";
+import ContainerLoader from "../ui/containerLoader";
+import { pdf } from "@react-pdf/renderer";
+import ButtonLoader from "../ui/buttonLoader";
 
 export default function WorkoutsTab() {
   const { id } = useParams();
-  const client = Number(id);
-  const api = useApi();
   const [openModal, setOpenModal] = useState(false);
-  const [workouts, setWorkouts] = useState<any[]>([]);
-  const [editingWorkout, setEditingWorkout] = useState<any | null>(null);
-  const [openUpdateModal, setOpenUpdateModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [trainingToDelete, setTrainingToDelete] = useState<any | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const request = useRequest();
+  const queryClient = useQueryClient();
 
-  const handleEditWorkout = (workout: any) => {
-    setEditingWorkout(workout);
-    setOpenUpdateModal(true);
+  const { data: client } = useQuery({
+    queryKey: ["client", id],
+    queryFn: async () => request({ method: "GET", url: `/client/${id}` }),
+    enabled: !!id,
+  });
+
+  const handleGeneratePdf = async (client, workout) => {
+    setPdfLoading(true);
+
+    const doc = <PdfExercise client={client} workout={workout} />;
+    const asPdf = pdf(doc);
+    const blob = await asPdf.toBlob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${workout.name || "treino"}.pdf`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+    setPdfLoading(false);
   };
 
-  const handleGeneratePDF = async (trainingId: number, name: string) => {
-    try {
-      const res = await api.get(`/training/pdf/${trainingId}`, {
-        responseType: "blob",
-      });
+  const { data: workouts, isFetching } = useQuery({
+    queryKey: ["trainings", id],
+    queryFn: async () => {
+      const res = await request({ method: "GET", url: `/training/all/${id}` });
+      return res.trainings;
+    },
+    enabled: !!id,
+    refetchOnMount: true,
+    staleTime: 5 * 60 * 1000,
+  });
 
-      const blob = new Blob([res.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${name || "treino"}.pdf`;
-      link.click();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Erro ao gerar PDF", err);
-    }
-  };
-
-  const loadWorkouts = async () => {
-    try {
-      const res = await api.get(`/training/all/${client}`);
-      setWorkouts(res.data.trainings || []);
-    } catch (err) {
-      console.error("Erro ao carregar treinos", err);
-    }
-  };
-
-  useEffect(() => {
-    if (client) loadWorkouts();
-  }, [client]);
+  if (isFetching) {
+    return <ContainerLoader />;
+  }
 
   return (
     <div className="space-y-6">
@@ -81,14 +83,15 @@ export default function WorkoutsTab() {
 
         <TrainingCreateModal
           openProp={openModal}
-          onOpenChange={(open) => {
-            setOpenModal(open);
-            if (!open) loadWorkouts();
-          }}
-          client={client}
+          onOpenChange={(open) => setOpenModal(open)}
+          client={client?.id}
         />
 
-        <Button className="cursor-pointer" onClick={() => setOpenModal(true)}>
+        <Button
+          size="sm"
+          className="cursor-pointer"
+          onClick={() => setOpenModal(true)}
+        >
           + Novo treino
         </Button>
       </div>
@@ -101,7 +104,7 @@ export default function WorkoutsTab() {
         <Accordion type="single" collapsible className="space-y-3">
           {workouts.map((workout, wi) => (
             <AccordionItem key={wi} value={workout.name}>
-              <AccordionTrigger className="text-lg text-black font-medium">
+              <AccordionTrigger className="cursor-pointer text-lg text-black font-medium">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full text-left">
                   <span>{workout.name}</span>
                   <Badge variant="secondary" className="mt-1 sm:mt-0">
@@ -111,36 +114,24 @@ export default function WorkoutsTab() {
               </AccordionTrigger>
               <AccordionContent className="space-y-3">
                 <div className="flex justify-end">
-                  <TrainingUpdateModal
-                    openProp={openUpdateModal}
-                    onOpenChange={(open) => {
-                      setOpenUpdateModal(open);
-                      if (!open) {
-                        setEditingWorkout(null);
-                        loadWorkouts();
-                      }
-                    }}
-                    workout={editingWorkout}
-                    client={client}
-                  />
                   <div className="flex gap-x-2 text-black">
                     <Button
                       size="sm"
-                      className="flex bg-blue-400 hover:bg-blue-500 items-center gap-1 cursor-pointer"
-                      onClick={() =>
-                        handleGeneratePDF(workout.id, workout.name)
-                      }
+                      disabled={pdfLoading}
+                      className="flex bg-blue-500 hover:bg-blue-400 items-center gap-1 cursor-pointer"
+                      onClick={() => handleGeneratePdf(client, workout)}
                     >
-                      <File className="h-4 w-4 mr-1 text-white" /> Gerar PDF
+                      {!pdfLoading && (
+                        <>
+                          <File className="h-4 w-4 mr-1 text-white" /> Gerar PDF
+                        </>
+                      )}
+                      {pdfLoading && <ButtonLoader />}
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex items-center gap-1 cursor-pointer"
-                      onClick={() => handleEditWorkout(workout)}
-                    >
-                      <Edit className="h-4 w-4 mr-1 text-black" /> Editar
-                    </Button>
+                    <TrainingUpdateModal
+                      workout={workout}
+                      client={client?.id}
+                    />
                     <Button
                       size="sm"
                       className="text-white flex items-center gap-1 cursor-pointer"
@@ -160,7 +151,9 @@ export default function WorkoutsTab() {
                           setOpenDeleteModal(open);
                           if (!open) {
                             setTrainingToDelete(null);
-                            loadWorkouts();
+                            queryClient.invalidateQueries({
+                              queryKey: ["trainings"],
+                            });
                           }
                         }}
                       />
