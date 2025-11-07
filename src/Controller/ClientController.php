@@ -197,7 +197,7 @@ class ClientController extends AbstractController
         }
         $this->clientService->add($client);
 
-        $normalizedData = $this->normalizer->normalize($client, 'json', ['groups' => ['client_list']]);
+        $normalizedData = $this->normalizer->normalize($client, 'json', ['groups' => ['client_all']]);
         return new JsonResponse(['data' => $normalizedData]);
     }
 
