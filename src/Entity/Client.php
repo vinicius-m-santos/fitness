@@ -390,7 +390,7 @@ class Client
             $this->avatarUrl = $data['avatarUrl'];
         }
 
-        if (isset($data['phone']) && !empty($data['phone'])) {
+        if (isset($data['phone'])) {
             $this->phone = $data['phone'];
         }
 

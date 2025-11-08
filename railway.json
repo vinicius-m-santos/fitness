@@ -1,14 +1,8 @@
 {
   "build": {
-    "builder": "NIXPACKS",
-    "commands": [
-        "mkdir -p config/jwt",
-        "openssl genpkey -out config/jwt/private.pem -algorithm RSA -pkeyopt rsa_keygen_bits:4096",
-        "openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout",
-        "chmod 600 config/jwt/private.pem && chmod 644 config/jwt/public.pem"
-    ]
+    "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "php -S 0.0.0.0:8080 -t public"
+    "startCommand": "./start.sh && php -S 0.0.0.0:8080 -t public"
   }
 }
