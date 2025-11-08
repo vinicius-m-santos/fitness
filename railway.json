@@ -3,6 +3,6 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "bash start.sh && php -S 0.0.0.0:8080 -t public"
+    "startCommand": "bash start.sh"
   }
 }

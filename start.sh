@@ -11,5 +11,5 @@ if [ ! -f config/jwt/private.pem ]; then
   openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout
 fi
 
-# Start Apache
-# vendor/bin/heroku-php-apache2 public/
+# Start server
+php -S 0.0.0.0:8080 -t publi
