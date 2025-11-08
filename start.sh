@@ -12,4 +12,4 @@ if [ ! -f config/jwt/private.pem ]; then
 fi
 
 # Start server
-php -S 0.0.0.0:8080 -t public
+php -c ./public/.user.ini -S 0.0.0.0:8080 -t public
