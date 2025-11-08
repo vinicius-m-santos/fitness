@@ -1,9 +1,8 @@
 {
   "build": {
-    "builder": "NIXPACKS",
-    "buildCommand": "chmod +x start.sh"
+    "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "./start.sh && php -S 0.0.0.0:8080 -t public"
+    "startCommand": "bash start.sh && php -S 0.0.0.0:8080 -t public"
   }
 }
