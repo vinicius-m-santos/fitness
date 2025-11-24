@@ -102,7 +102,7 @@ export default function ClientView() {
             {getClientNameFormatted(client?.name, client?.lastName)}
           </h2>
           <p className="text-sm text-muted-foreground">
-            {client?.age ? `Idade: ${client.age} anos •` : ""}
+            {client?.age ? `Idade: ${client.age} anos • ` : ""}
             {client?.objective
               ? `Objetivo: ${OBJECTIVES[client.objective]}`
               : ""}
@@ -123,10 +123,14 @@ export default function ClientView() {
         <TabsList className="grid grid-cols-3 sm:grid-cols-6 mb-6">
           {/* <TabsTrigger value="evolucao">Evolução</TabsTrigger>
                     <TabsTrigger value="medidas">Medidas</TabsTrigger> */}
-          <TabsTrigger value="treinos">Treinos</TabsTrigger>
-          {/* <TabsTrigger value="galeria">Galeria</TabsTrigger>
-                    <TabsTrigger value="anamnese">Anamnese</TabsTrigger>
-                    <TabsTrigger value="dados">Dados Pessoais</TabsTrigger> */}
+          <TabsTrigger className="cursor-pointer" value="treinos">
+            Treinos
+          </TabsTrigger>
+          {/* <TabsTrigger value="galeria">Galeria</TabsTrigger> */}
+          <TabsTrigger className="cursor-pointer" value="anamnese">
+            Anamnese
+          </TabsTrigger>
+          {/* <TabsTrigger value="dados">Dados Pessoais</TabsTrigger> */}
         </TabsList>
         <motion.div
           key={tab}
@@ -164,17 +168,17 @@ export default function ClientView() {
                                 <GalleryTab />
                             </CardContent>
                         </Card>
-                    </TabsContent>
+                    </TabsContent> */}
 
-                    <TabsContent value="anamnese">
-                        <Card>
-                            <CardContent className="p-6 text-sm text-muted-foreground">
-                                <AnamneseTab />
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
+          <TabsContent value="anamnese">
+            <Card>
+              <CardContent className="p-6 text-sm text-muted-foreground">
+                <AnamneseTab />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-                    <TabsContent value="dados">
+          {/* <TabsContent value="dados">
                         <Card>
                             <CardContent className="p-6 text-sm text-muted-foreground">
                                 Dados cadastrais e pessoais do aluno.

@@ -41,6 +41,8 @@ export default function WorkoutsTab() {
     queryKey: ["client", id],
     queryFn: async () => request({ method: "GET", url: `/client/${id}` }),
     enabled: !!id,
+    refetchOnMount: true,
+    staleTime: 5 * 60 * 1000,
   });
 
   const handleGeneratePdf = async (client, workout) => {

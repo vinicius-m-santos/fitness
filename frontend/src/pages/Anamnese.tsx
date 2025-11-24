@@ -81,7 +81,7 @@ export default function Anamnese({ clientData }: ClientData) {
     medicalRestriction: "",
     cronicalPain: "",
     controledMedicine: "",
-    bloodPressureProblem: "",
+    bloodPressure: "",
     heartProblem: "",
     recentSurgery: "",
     timeWithoutGym: "",
@@ -230,7 +230,7 @@ export default function Anamnese({ clientData }: ClientData) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <SelectWithLabel
                   label="Algum problema de pressão?"
-                  onValueChange={(v) => handleChange("bloodPressureProblem", v)}
+                  onValueChange={(v) => handleChange("bloodPressure", v)}
                   items={[
                     ["1", "Nenhum"],
                     ["2", "Hipertensão"],

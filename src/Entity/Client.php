@@ -105,6 +105,10 @@ class Client
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private ?string $email = null;
 
+    #[ORM\Column(type: 'json', nullable: true)]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
+    private ?array $tags = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -332,6 +336,17 @@ class Client
         return $this->uuid;
     }
 
+    public function getTags(): array|null
+    {
+        return $this->tags;
+    }
+
+    public function setTags(array $tags): self
+    {
+        $this->tags = $tags;
+        return $this;
+    }
+
     public function getDataFromArray(array $data): self
     {
         if (isset($data['name']) && !empty($data['name'])) {
@@ -351,6 +366,7 @@ class Client
         }
 
         if (isset($data['weight']) && !empty($data['weight'])) {
+            $data['weight'] = str_replace(',', '.', $data['weight']);
             $this->weight = (float) preg_replace('/[^0-9.,]/', '', $data['weight']);
         }
 
@@ -366,8 +382,8 @@ class Client
             $this->workoutDaysPerWeek = (int) $data['workoutDaysPerWeek'];
         }
 
-        if (isset($data['bloodPressureProblem']) && !empty($data['bloodPressureProblem'])) {
-            $this->bloodPressure = (int) $data['bloodPressureProblem'];
+        if (isset($data['bloodPressure']) && !empty($data['bloodPressure'])) {
+            $this->bloodPressure = (int) $data['bloodPressure'];
         }
 
         if (isset($data['active']) && !empty($data['active'])) {
@@ -396,6 +412,10 @@ class Client
 
         if (isset($data['email']) && !empty($data['email'])) {
             $this->email = $data['email'];
+        }
+
+        if (is_array($data['tags'])) {
+            $this->tags = $data['tags'];
         }
 
         return $this;

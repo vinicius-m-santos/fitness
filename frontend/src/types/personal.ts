@@ -1,4 +1,4 @@
-import { UserClientAll } from "./user";
+import { UserClientAll } from "@/types/user";
 
 export type Personal = {
   id: number;

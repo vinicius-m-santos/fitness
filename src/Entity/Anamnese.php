@@ -45,6 +45,22 @@ class Anamnese
     #[Groups(['client_all', 'anamnese_all'])]
     private string $ocupation = "";
 
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['client_all', 'anamnese_all'])]
+    private string $observation = "";
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['client_all', 'anamnese_all'])]
+    private string $diet = "";
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['client_all', 'anamnese_all'])]
+    private string $sleep = "";
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['client_all', 'anamnese_all'])]
+    private string $physicalActivity = "";
+
     #[ORM\OneToOne(inversedBy: "anamnese")]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['anamnese_all'])]
@@ -146,6 +162,50 @@ class Anamnese
         return $this;
     }
 
+    public function getObservation(): string
+    {
+        return $this->observation;
+    }
+
+    public function setObservation(string $observation): self
+    {
+        $this->observation = $observation;
+        return $this;
+    }
+
+    public function getDiet(): string
+    {
+        return $this->diet;
+    }
+
+    public function setDiet(string $diet): self
+    {
+        $this->diet = $diet;
+        return $this;
+    }
+
+    public function getSleep(): string
+    {
+        return $this->sleep;
+    }
+
+    public function setSleep(string $sleep): self
+    {
+        $this->sleep = $sleep;
+        return $this;
+    }
+
+    public function getPhysicalActivity(): string
+    {
+        return $this->physicalActivity;
+    }
+
+    public function setPhysicalActivity(string $physicalActivity): self
+    {
+        $this->physicalActivity = $physicalActivity;
+        return $this;
+    }
+
     public function getClient(): ?Client
     {
         return $this->client;
@@ -185,6 +245,22 @@ class Anamnese
 
         if (isset($data['ocupation']) && !empty($data['ocupation'])) {
             $this->ocupation = $data['ocupation'];
+        }
+
+        if (isset($data['observation']) && !empty($data['observation'])) {
+            $this->observation = $data['observation'];
+        }
+
+        if (isset($data['diet']) && !empty($data['diet'])) {
+            $this->diet = $data['diet'];
+        }
+
+        if (isset($data['sleep']) && !empty($data['sleep'])) {
+            $this->sleep = $data['sleep'];
+        }
+
+        if (isset($data['physicalActivity']) && !empty($data['physicalActivity'])) {
+            $this->physicalActivity = $data['physicalActivity'];
         }
 
         return $this;

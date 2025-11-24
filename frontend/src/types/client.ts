@@ -1,5 +1,16 @@
-import { AnamneseClientAll } from "./anamnese";
-import { Personal } from "./personal";
+import {
+  BloodPressureKey,
+  ObjectiveKey,
+} from "@/utils/constants/Client/constants";
+import { AnamneseClientAll } from "@/types/anamnese";
+import { Personal } from "@/types/personal";
+
+type ClientTag = {
+  id: string;
+  label: string;
+};
+
+type ClientTags = ClientTag[];
 
 export type Client = {
   id: number;
@@ -28,11 +39,12 @@ export type ClientAllData = {
   age: number;
   weight: number;
   height: number;
-  bloodPressure: string;
-  objective: number;
+  bloodPressure: BloodPressureKey;
+  objective: ObjectiveKey;
   workoutDaysPerWeek: number;
   observation: string;
   createdAt: string;
   personal?: Personal;
   anamnese?: AnamneseClientAll;
+  tags: ClientTags;
 };

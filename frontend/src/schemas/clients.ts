@@ -29,7 +29,7 @@ export type ClientFormSchema = z.infer<typeof clientFormSchema>;
 export const clientAnamneseSchema = z.object({
   age: z.string().min(1, "Preencha a Idade"),
   gender: z.string().min(1, "Preencha o Sexo"),
-  bloodPressureProblem: z.string().min(1, "Preencha sobre Problema de pressão"),
+  bloodPressure: z.string().min(1, "Preencha sobre Problema de pressão"),
   ocupation: z.string().min(1, "Preencha a Ocupação"),
   weight: z.string().min(1, "Preencha o Peso"),
   height: z.string().min(1, "Preencha a Altura"),
@@ -56,6 +56,13 @@ export const clientAnamneseSchema = z.object({
     .string()
     .min(1, "Preencha o campo Tempo sem treinar")
     .max(200),
+  observation: z.string().optional(),
+  tags: z.array(
+    z.object({
+      id: z.string(),
+      label: z.string(),
+    })
+  ),
 });
 
 export type ClientAnamneseSchema = z.infer<typeof clientAnamneseSchema>;
