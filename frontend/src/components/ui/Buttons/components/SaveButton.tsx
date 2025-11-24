@@ -1,22 +1,31 @@
 import BaseButton from "@/components/ui/Buttons/BaseButton";
 import ButtonLoader from "../../buttonLoader";
 
+type Props = {
+  text?: string;
+  loading?: boolean;
+  styling?: string;
+  size?: string;
+  disabled?: boolean;
+  type?: "button" | "submit";
+};
+
 export default function SaveButton({
   text = "Salvar",
-  onClick = () => {},
-  loading,
+  loading = false,
   styling = "",
   size = "default",
-}) {
+  disabled = false,
+  type = "button",
+}: Props) {
   return (
     <BaseButton
-      disabled={loading}
+      disabled={disabled || loading}
       size={size}
-      styling={`cursor-pointer text-white font-semibold rounded-lg py-2 transition-colors disabled:opacity-100 ${styling}`}
-      onClick={onClick}
+      type={type}
+      styling={`flex items-center gap-2 cursor-pointer font-semibold ${styling}`}
     >
-      {loading && <ButtonLoader />}
-      {!loading && text}
+      {loading ? <ButtonLoader /> : text}
     </BaseButton>
   );
 }
