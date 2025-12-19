@@ -47,3 +47,12 @@ export const BLOOD_PRESSURE = {
 };
 
 export type BloodPressureKey = keyof typeof BLOOD_PRESSURE;
+
+export const EXERCISES_LABELS = {
+  series: "Séries",
+  reps: "Repetições",
+  rest: "Descanso",
+  obs: "Observações",
+};
+
+export type ExerciseLabels = keyof typeof EXERCISES_LABELS;

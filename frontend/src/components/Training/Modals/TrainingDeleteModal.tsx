@@ -78,6 +78,10 @@ const TrainingDeleteModal = ({
             Excluir Treino
           </Dialog.Title>
 
+          <Dialog.Description className="text-sm text-muted-foreground">
+            Essa ação não pode ser desfeita
+          </Dialog.Description>
+
           {/* Body Content */}
           <div className="mt-4">
             <p>Deseja mesmo excluir este treino?</p>
