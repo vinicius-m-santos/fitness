@@ -26,15 +26,15 @@ class PeriodExercise
     #[Groups(['training_client'])]
     private ?Exercise $exercise = null;
 
-    #[ORM\Column(type: "string", length: 10, nullable: true)]
+    #[ORM\Column(type: "string", length: 50, nullable: true)]
     #[Groups(['training_client'])]
     private ?string $series = null;
 
-    #[ORM\Column(type: "string", length: 10, nullable: true)]
+    #[ORM\Column(type: "string", length: 50, nullable: true)]
     #[Groups(['training_client'])]
     private ?string $repeats = null;
 
-    #[ORM\Column(type: "string", length: 50, nullable: true)]
+    #[ORM\Column(type: "string", length: 100, nullable: true)]
     #[Groups(['training_client'])]
     private ?string $rest = null;
 

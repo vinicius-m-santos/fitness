@@ -84,7 +84,7 @@ export default function WorkoutsTab() {
         </h3>
 
         <TrainingCreateModal
-          openProp={openModal}
+          open={openModal}
           onOpenChange={(open) => setOpenModal(open)}
           client={client?.id}
         />
@@ -105,7 +105,7 @@ export default function WorkoutsTab() {
       ) : (
         <Accordion type="single" collapsible className="space-y-3">
           {workouts.map((workout, wi) => (
-            <AccordionItem key={wi} value={workout.name}>
+            <AccordionItem key={wi} value={workout.id}>
               <AccordionTrigger className="cursor-pointer text-lg text-black font-medium">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full text-left">
                   <span>{workout.name}</span>
