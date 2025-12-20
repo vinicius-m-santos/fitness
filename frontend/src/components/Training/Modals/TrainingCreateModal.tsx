@@ -105,26 +105,39 @@ export default function TrainingCreateModal({
             )}
 
             {/* FOOTER */}
-            <div className="flex justify-between pt-4">
+            <div
+              className={
+                training.currentStep === 1
+                  ? "flex justify-end pt-4"
+                  : "flex justify-between pt-4"
+              }
+            >
               {training.currentStep > 1 && (
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
                   onClick={training.prevStep}
+                  className="cursor-pointer"
                 >
                   Voltar
                 </Button>
               )}
 
               {training.currentStep < 4 && (
-                <Button type="button" size="sm" onClick={training.nextStep}>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={training.nextStep}
+                  className="cursor-pointer"
+                >
                   Próximo
                 </Button>
               )}
 
               {training.currentStep === 4 && (
                 <SaveButton
+                  size="sm"
                   type="submit"
                   loading={loading}
                   disabled={!training.form.formState.isValid}

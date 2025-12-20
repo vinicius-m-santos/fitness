@@ -17,7 +17,7 @@ export const trainingCreateSchema = z.object({
         exercises: z
           .array(
             z.object({
-              instanceId: z.number(),
+              instanceId: z.string().optional(),
               id: z.number(),
               name: z.string(),
               series: z.string().optional(),
