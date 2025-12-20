@@ -24,7 +24,7 @@ export default function EditableAvatar({ clientData }) {
   const uploadMutation = useMutation({
     mutationFn: async (file) => {
       if (file.size > UPLOAD_PROFILE_PHOTO_MAX_FILE_SIZE) {
-        toast.error("Tamanho máximo de 5mb");
+        toast.error("Tamanho máximo de 5MB");
         return;
       }
 

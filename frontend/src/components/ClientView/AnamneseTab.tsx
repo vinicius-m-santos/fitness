@@ -27,7 +27,6 @@ export default function AnamneseTab() {
 
   const updateClientMutation = useMutation({
     mutationFn: async (payload) => {
-      console.log(payload);
       const res = await request({
         method: "PATCH",
         url: `/client/${id}`,
@@ -76,16 +75,22 @@ export default function AnamneseTab() {
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
           <div>
             <span className="text-muted-foreground">Idade:</span>
-            <p className="font-medium">{client?.age} anos</p>
+            <p className="font-medium">
+              {client?.age ? `${client.age} anos` : "-"}
+            </p>
           </div>
           <div>
             <span className="text-muted-foreground">Altura:</span>
-            <p className="font-medium">{client?.height} cm</p>
+            <p className="font-medium">
+              {client?.height ? `${client.height} cm` : "-"}
+            </p>
           </div>
           <div>
             <span className="text-muted-foreground">Peso atual:</span>
             <p className="font-medium">
-              {client?.weight.toString().replace(".", ",")} kg
+              {client?.weight
+                ? `${client?.weight.toString().replace(".", ",")} kg`
+                : "-"}
             </p>
           </div>
           <div>
@@ -125,7 +130,7 @@ export default function AnamneseTab() {
             </span>{" "}
             {client?.anamnese?.heartProblem
               ? client?.anamnese.heartProblem
-              : ""}
+              : "-"}
           </p>
           <p>
             <span className="text-muted-foreground">
@@ -141,29 +146,31 @@ export default function AnamneseTab() {
             <span className="text-muted-foreground">Uso de medicamentos:</span>{" "}
             {client?.anamnese?.controledMedicine
               ? client?.anamnese.controledMedicine
-              : ""}
+              : "-"}
           </p>
           <p>
             <span className="text-muted-foreground">Dores crônicas:</span>{" "}
             {client?.anamnese?.cronicalPain
               ? client?.anamnese.cronicalPain
-              : ""}
+              : "-"}
           </p>
           <p>
             <span className="text-muted-foreground">Cirurgias recentes:</span>{" "}
             {client?.anamnese?.recentSurgery
               ? client?.anamnese.recentSurgery
-              : ""}
+              : "-"}
           </p>
           <p>
             <span className="text-muted-foreground">Restrições médicas:</span>{" "}
             {client?.anamnese?.medicalRestriction
               ? client?.anamnese.medicalRestriction
-              : ""}
+              : "-"}
           </p>
           <p>
             <span className="text-muted-foreground">Pressão:</span>{" "}
-            {client?.bloodPressure ? BLOOD_PRESSURE[client?.bloodPressure] : ""}
+            {client?.bloodPressure
+              ? BLOOD_PRESSURE[client?.bloodPressure]
+              : "-"}
           </p>
         </CardContent>
       </Card>
@@ -175,16 +182,18 @@ export default function AnamneseTab() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <p>
-            <span className="text-muted-foreground">Alimentação:</span> Segue
-            dieta hipercalórica com acompanhamento nutricional.
+            <span className="text-muted-foreground">Alimentação:</span>{" "}
+            {client?.anamnese?.diet ? client?.anamnese?.diet : "-"}
           </p>
           <p>
-            <span className="text-muted-foreground">Sono:</span> Média de 7
-            horas por noite.
+            <span className="text-muted-foreground">Sono:</span>{" "}
+            {client?.anamnese?.sleep ? client?.anamnese?.sleep : "-"}
           </p>
           <p>
             <span className="text-muted-foreground">Atividade física:</span>{" "}
-            Treino de musculação com foco em força e volume.
+            {client?.anamnese?.physicalActivity
+              ? client?.anamnese?.physicalActivity
+              : "-"}
           </p>
           <p>
             <span className="text-muted-foreground">Ocupação:</span>{" "}
@@ -208,7 +217,9 @@ export default function AnamneseTab() {
             <span className="text-muted-foreground">
               Observações do personal:
             </span>{" "}
-            {client?.observation}
+            {client?.observation?.trim().length
+              ? client?.observation?.trim()
+              : "-"}
           </p>
           <div className="flex flex-wrap gap-2 mt-2">
             {client?.tags?.map((tag) => {

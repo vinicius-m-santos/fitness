@@ -87,7 +87,7 @@ class ClientController extends AbstractController
         if (!$user) {
             throw new UnprocessableEntityHttpException('Erro ao realizar upload');
         }
-        
+
         $url = $this->clientService->saveClientProfileImage($file, $user, $client);
         return new JsonResponse(['data' => $url]);
     }
@@ -190,6 +190,16 @@ class ClientController extends AbstractController
 
             throw new Exception($errorMessage, 400);
         }
+
+        $anamnese = $client->getAnamnese();
+        if (!$anamnese) {
+            $anamnese = new Anamnese();
+        }
+
+        $anamnese->getDataFromArray($data);
+
+        $anamnese->setClient($client);
+        $this->anamneseService->add($anamnese);
 
         $avatarKey = $client->getAvatarKey();
         if (isset($avatarKey)) {

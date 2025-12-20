@@ -66,3 +66,34 @@ export const clientAnamneseSchema = z.object({
 });
 
 export type ClientAnamneseSchema = z.infer<typeof clientAnamneseSchema>;
+
+export const anamneseUpdateModalSchema = z.object({
+  age: z.string().optional(),
+  gender: z.string().optional(),
+  bloodPressure: z.string().optional(),
+  ocupation: z.string().optional(),
+  weight: z.string().optional(),
+  height: z.string().optional(),
+  objective: z.string().optional(),
+  workoutDaysPerWeek: z.string().optional(),
+  medicalRestriction: z.string().optional(),
+  cronicalPain: z.string().optional(),
+  controledMedicine: z.string().optional(),
+  heartProblem: z.string().optional(),
+  recentSurgery: z.string().optional(),
+  timeWithoutGym: z.string().optional(),
+  observation: z.string().optional(),
+  diet: z.string().optional(),
+  sleep: z.string().optional(),
+  physicalActivity: z.string().optional(),
+  tags: z.array(
+    z.object({
+      id: z.string(),
+      label: z.string(),
+    })
+  ),
+});
+
+export type AnamneseUpdateModalSchema = z.infer<
+  typeof anamneseUpdateModalSchema
+>;

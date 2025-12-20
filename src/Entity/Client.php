@@ -3,8 +3,9 @@
 namespace App\Entity;
 
 use App\Validator as AppAssert;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
-use Exception;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Uid\Uuid;
 
@@ -79,11 +80,14 @@ class Client
     #[ORM\OneToOne(inversedBy: 'client', cascade: ['persist', 'remove'])]
     #[ORM\JoinColumn(nullable: true)]
     private ?User $user = null;
-    
+
     #[ORM\ManyToOne(inversedBy: 'clients')]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['client_all'])]
     private ?Personal $personal = null;
+
+    #[ORM\OneToMany(mappedBy: 'client', targetEntity: Training::class, cascade: ['persist', 'remove'])]
+    private Collection $trainings;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
@@ -109,10 +113,15 @@ class Client
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private ?array $tags = null;
 
+    #[ORM\OneToMany(mappedBy: 'client', targetEntity: Gallery::class, orphanRemoval: true)]
+    #[Groups(['client_all'])]
+    private Collection $galleries;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
+        $this->galleries = new ArrayCollection();
     }
 
     #[ORM\PrePersist]
@@ -238,6 +247,14 @@ class Client
         return $this;
     }
 
+    /**
+     * @return Gallery[]
+     */
+    public function getGalleries(): Collection
+    {
+        return $this->galleries;
+    }
+
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
@@ -347,6 +364,27 @@ class Client
         return $this;
     }
 
+    public function addGallery(Gallery $gallery): self
+    {
+        if (!$this->galleries->contains($gallery)) {
+            $this->galleries->add($gallery);
+            $gallery->setClient($this);
+        }
+
+        return $this;
+    }
+
+    public function removeGallery(Gallery $gallery): self
+    {
+        if ($this->galleries->removeElement($gallery)) {
+            if ($gallery->getClient() === $this) {
+                $gallery->setClient(null);
+            }
+        }
+
+        return $this;
+    }
+
     public function getDataFromArray(array $data): self
     {
         if (isset($data['name']) && !empty($data['name'])) {
@@ -357,7 +395,7 @@ class Client
             $this->lastName = $data['lastName'];
         }
 
-        if (isset($data['age']) && !empty($data['age'])) {
+        if (isset($data['age'])) {
             $this->age = (int) $data['age'];
         }
 
@@ -365,12 +403,12 @@ class Client
             $this->gender = $data['gender'];
         }
 
-        if (isset($data['weight']) && !empty($data['weight'])) {
+        if (isset($data['weight'])) {
             $data['weight'] = str_replace(',', '.', $data['weight']);
             $this->weight = (float) preg_replace('/[^0-9.,]/', '', $data['weight']);
         }
 
-        if (isset($data['height']) && !empty($data['height'])) {
+        if (isset($data['height'])) {
             $this->height = (float) preg_replace('/\D/', '', $data['height']);
         }
 
@@ -394,7 +432,7 @@ class Client
             $this->user = $data['user'];
         }
 
-        if (isset($data['observation']) && !empty($data['observation'])) {
+        if (isset($data['observation'])) {
             $this->observation = $data['observation'];
         }
 
@@ -414,7 +452,7 @@ class Client
             $this->email = $data['email'];
         }
 
-        if (is_array($data['tags'])) {
+        if (isset($data['tags']) && is_array($data['tags'])) {
             $this->tags = $data['tags'];
         }
 

@@ -79,20 +79,6 @@ export default function ClientView() {
     <div className="w-full max-w-6xl mx-auto p-6 space-y-8">
       <Loader loading={isLoading} />
       <Card className="p-6 flex flex-col sm:flex-row items-center gap-6">
-        {/* <Avatar className="h-24 w-24">
-                    {client?.src && (
-                        <AvatarImage src={client.src} alt="Foto do cliente" />
-                    )}
-                    {!client?.src && (
-                        <AvatarFallback>
-                            {`${client?.name
-                                .slice(0, 1)
-                                .toUpperCase()}${client?.lastName
-                                .slice(0, 1)
-                                .toUpperCase()}`}
-                        </AvatarFallback>
-                    )}
-                </Avatar> */}
         {!client && (
           <div className="h-24 w-24 rounded-full bg-gray-300 animate-pulse" />
         )}
@@ -121,13 +107,24 @@ export default function ClientView() {
       {/* --- Tabs principais --- */}
       <Tabs value={tab} onValueChange={setTab} className="w-full">
         <TabsList className="grid grid-cols-3 sm:grid-cols-6 mb-6">
-          {/* <TabsTrigger value="evolucao">Evolução</TabsTrigger>
-                    <TabsTrigger value="medidas">Medidas</TabsTrigger> */}
-          <TabsTrigger className="cursor-pointer" value="treinos">
+          {/* <TabsTrigger className="cursor-pointer mx-1 hover:bg-gray-200" value="evolucao">Evolução</TabsTrigger>
+                    <TabsTrigger className="cursor-pointer mx-1 hover:bg-gray-200" value="medidas">Medidas</TabsTrigger> */}
+          <TabsTrigger
+            className="cursor-pointer mx-1 hover:bg-gray-200"
+            value="treinos"
+          >
             Treinos
           </TabsTrigger>
-          {/* <TabsTrigger value="galeria">Galeria</TabsTrigger> */}
-          <TabsTrigger className="cursor-pointer" value="anamnese">
+          <TabsTrigger
+            className="cursor-pointer mx-1 hover:bg-gray-200"
+            value="galeria"
+          >
+            Galeria
+          </TabsTrigger>
+          <TabsTrigger
+            className="cursor-pointer mx-1 hover:bg-gray-200"
+            value="anamnese"
+          >
             Anamnese
           </TabsTrigger>
           {/* <TabsTrigger value="dados">Dados Pessoais</TabsTrigger> */}
@@ -162,13 +159,13 @@ export default function ClientView() {
             </Card>
           </TabsContent>
 
-          {/* <TabsContent value="galeria">
-                        <Card>
-                            <CardContent className="p-6 text-sm text-muted-foreground">
-                                <GalleryTab />
-                            </CardContent>
-                        </Card>
-                    </TabsContent> */}
+          <TabsContent value="galeria">
+            <Card>
+              <CardContent className="p-6 text-sm text-muted-foreground">
+                <GalleryTab />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="anamnese">
             <Card>

@@ -8,6 +8,7 @@ use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Event\ViewEvent;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
+use Doctrine\DBAL\Exception as DBALException;
 
 class ApiResponseSubscriber implements EventSubscriberInterface
 {
@@ -21,14 +22,24 @@ class ApiResponseSubscriber implements EventSubscriberInterface
     public function onKernelException(ExceptionEvent $event): void
     {
         $exception = $event->getThrowable();
-        $code = $exception->getCode() ?: 500;
+
+        $statusCode = 500;
+        $message = $exception->getMessage();
+
+        if ($exception instanceof HttpExceptionInterface) {
+            $statusCode = $exception->getStatusCode();
+        }
+
+        if ($exception instanceof DBALException) {
+            $statusCode = 400;
+        }
 
         $response = new JsonResponse([
             'error' => [
-                'code' => $code,
-                'message' => $exception->getMessage()
+                'code' => $statusCode,
+                'message' => $message,
             ]
-        ], $code);
+        ], $statusCode);
 
         $event->setResponse($response);
     }

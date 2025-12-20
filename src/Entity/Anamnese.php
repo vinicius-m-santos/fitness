@@ -51,15 +51,15 @@ class Anamnese
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['client_all', 'anamnese_all'])]
-    private string $diet = "";
+    private ?string $diet = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['client_all', 'anamnese_all'])]
-    private string $sleep = "";
+    private ?string $sleep = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['client_all', 'anamnese_all'])]
-    private string $physicalActivity = "";
+    private ?string $physicalActivity = null;
 
     #[ORM\OneToOne(inversedBy: "anamnese")]
     #[ORM\JoinColumn(nullable: false)]
@@ -173,7 +173,7 @@ class Anamnese
         return $this;
     }
 
-    public function getDiet(): string
+    public function getDiet(): ?string
     {
         return $this->diet;
     }
@@ -184,7 +184,7 @@ class Anamnese
         return $this;
     }
 
-    public function getSleep(): string
+    public function getSleep(): ?string
     {
         return $this->sleep;
     }
@@ -195,7 +195,7 @@ class Anamnese
         return $this;
     }
 
-    public function getPhysicalActivity(): string
+    public function getPhysicalActivity(): ?string
     {
         return $this->physicalActivity;
     }
@@ -219,47 +219,47 @@ class Anamnese
 
     public function getDataFromArray(array $data): self
     {
-        if (isset($data['medicalRestriction']) && !empty($data['medicalRestriction'])) {
+        if (isset($data['medicalRestriction'])) {
             $this->medicalRestriction = $data['medicalRestriction'];
         }
 
-        if (isset($data['cronicalPain']) && !empty($data['cronicalPain'])) {
+        if (isset($data['cronicalPain'])) {
             $this->cronicalPain = $data['cronicalPain'];
         }
 
-        if (isset($data['controledMedicine']) && !empty($data['controledMedicine'])) {
+        if (isset($data['controledMedicine'])) {
             $this->controledMedicine = $data['controledMedicine'];
         }
 
-        if (isset($data['heartProblem']) && !empty($data['heartProblem'])) {
+        if (isset($data['heartProblem'])) {
             $this->heartProblem = $data['heartProblem'];
         }
 
-        if (isset($data['recentSurgery']) && !empty($data['recentSurgery'])) {
+        if (isset($data['recentSurgery'])) {
             $this->recentSurgery = $data['recentSurgery'];
         }
 
-        if (isset($data['timeWithoutGym']) && !empty($data['timeWithoutGym'])) {
+        if (isset($data['timeWithoutGym'])) {
             $this->timeWithoutGym = $data['timeWithoutGym'];
         }
 
-        if (isset($data['ocupation']) && !empty($data['ocupation'])) {
+        if (isset($data['ocupation'])) {
             $this->ocupation = $data['ocupation'];
         }
 
-        if (isset($data['observation']) && !empty($data['observation'])) {
+        if (isset($data['observation'])) {
             $this->observation = $data['observation'];
         }
 
-        if (isset($data['diet']) && !empty($data['diet'])) {
+        if (isset($data['diet'])) {
             $this->diet = $data['diet'];
         }
 
-        if (isset($data['sleep']) && !empty($data['sleep'])) {
+        if (isset($data['sleep'])) {
             $this->sleep = $data['sleep'];
         }
 
-        if (isset($data['physicalActivity']) && !empty($data['physicalActivity'])) {
+        if (isset($data['physicalActivity'])) {
             $this->physicalActivity = $data['physicalActivity'];
         }
 
