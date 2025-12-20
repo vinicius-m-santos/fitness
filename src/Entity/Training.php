@@ -23,7 +23,7 @@ class Training
     // #[Groups(['training_client'])]
     private ?Personal $personal = null;
 
-    #[ORM\ManyToOne(inversedBy: 'trainings')]
+    #[ORM\ManyToOne(inversedBy: 'trainings', cascade: ['remove'])]
     #[ORM\JoinColumn(nullable: false)]
     // #[Groups(['training_client'])]
     private ?Client $client = null;

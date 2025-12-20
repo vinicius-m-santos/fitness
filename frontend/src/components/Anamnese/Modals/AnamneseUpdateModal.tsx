@@ -26,14 +26,17 @@ import TagsSelector from "./fields/TagsSelector";
 import { ClientAllData } from "@/types/client";
 import { Button } from "@/components/ui/button";
 import { Edit } from "lucide-react";
-import { clientAnamneseSchema, ClientAnamneseSchema } from "@/schemas/clients";
+import {
+  anamneseUpdateModalSchema,
+  AnamneseUpdateModalSchema,
+} from "@/schemas/clients";
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   client: ClientAllData;
   onAccept: (
-    data: ClientAnamneseSchema,
+    data: AnamneseUpdateModalSchema,
     setOpen: (value: boolean) => void
   ) => Promise<any>;
 };
@@ -46,8 +49,8 @@ export default function AnamneseUpdateModal({
 }: Props) {
   const [loading, setLoading] = useState(false);
 
-  const form = useForm<ClientAnamneseSchema>({
-    resolver: zodResolver(clientAnamneseSchema),
+  const form = useForm<AnamneseUpdateModalSchema>({
+    resolver: zodResolver(anamneseUpdateModalSchema),
     mode: "onChange",
     defaultValues: {
       age: "",
@@ -65,6 +68,9 @@ export default function AnamneseUpdateModal({
       recentSurgery: "",
       timeWithoutGym: "",
       observation: "",
+      diet: "",
+      sleep: "",
+      physicalActivity: "",
       tags: [],
     },
   });
@@ -90,11 +96,14 @@ export default function AnamneseUpdateModal({
       recentSurgery: client.anamnese?.recentSurgery ?? "",
       timeWithoutGym: client.anamnese?.timeWithoutGym ?? "",
       observation: client.observation ?? "",
+      diet: client.anamnese?.diet ?? "",
+      sleep: client.anamnese?.sleep ?? "",
+      physicalActivity: client.anamnese?.physicalActivity ?? "",
       tags: client.tags ?? [],
     });
   }, [client, form]);
 
-  const onSubmit = async (data: ClientAnamneseSchema) => {
+  const onSubmit = async (data: AnamneseUpdateModalSchema) => {
     try {
       setLoading(true);
       await onAccept(data, onOpenChange);

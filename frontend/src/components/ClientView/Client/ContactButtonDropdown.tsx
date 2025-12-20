@@ -58,7 +58,7 @@ export default function ContactButtonDropdown({
         >
           <WhatsAppButton
             phoneNumber={
-              client?.phone.trim().length
+              client?.phone?.trim().length
                 ? `+55${client?.phone.replace(/\D/g, "")}`
                 : null
             }

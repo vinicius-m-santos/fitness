@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dumbbell, Trash, File } from "lucide-react";
+import { Dumbbell, Trash, File, PlusIcon } from "lucide-react";
 import TrainingCreateModal from "@/components/Training/Modals/TrainingCreateModal";
 import TrainingUpdateModal from "@/components/Training/Modals/TrainingUpdateModal";
 import TrainingDeleteModal from "@/components/Training/Modals/TrainingDeleteModal";
@@ -95,7 +95,7 @@ export default function WorkoutsTab() {
           className="cursor-pointer"
           onClick={() => setOpenModal(true)}
         >
-          + Novo treino
+          <PlusIcon /> Novo treino
         </Button>
       </div>
 

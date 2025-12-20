@@ -1,4 +1,9 @@
+"use client";
+
 import { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import {
   Dialog,
   DialogTrigger,
@@ -20,110 +25,76 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+
 import { OBJECTIVES } from "@/utils/constants/Client/constants";
 import SaveButton from "@/components/ui/Buttons/components/SaveButton";
 import OutlineButton from "@/components/ui/Buttons/components/OutlineButton";
 import GenderSelect from "@/components/ui/Select/GenderSelect";
 import PhoneInput from "@/components/ui/Inputs/PhoneInput";
+
 import { useRequest } from "@/api/request";
 import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+
 import { ClientFormSchema, clientFormSchema } from "@/schemas/clients";
 
 export default function ClientCreateModal() {
   const request = useRequest();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [form, setForm] = useState<ClientFormSchema>({
-    name: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    gender: "",
-    age: "",
-    height: "",
-    weight: "",
-    objective: "",
-    observation: "",
-  });
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleChangeWithField = (field: string, value: number | string) => {
-    setForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const resetForm = () => {
-    setForm({
+  const {
+    control,
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isValid },
+  } = useForm<ClientFormSchema>({
+    resolver: zodResolver(clientFormSchema),
+    mode: "onChange",
+    defaultValues: {
       name: "",
       lastName: "",
       email: "",
-      phone: "",
+      phone: null,
       gender: "",
-      age: "",
-      height: "",
-      weight: "",
-      objective: "",
+      age: null,
+      height: null,
+      weight: null,
+      objective: null,
       observation: "",
-    });
-  };
+    },
+  });
 
-  const handleSave = async () => {
+  const onSubmit = async (data: ClientFormSchema) => {
     setLoading(true);
 
-    const validation = clientFormSchema.safeParse(form);
-    if (!validation.success) {
-      const errors = validation.error.flatten().fieldErrors;
-
-      for (const [key, value] of Object.entries(errors)) {
-        const message = value.shift()?.toString().trim();
-
-        if (!message || message.length === 0) {
-          toast.error("Preencha todos os campos");
-        } else {
-          toast.error(message);
-        }
-
-        setLoading(false);
-        return;
-      }
-
+    try {
+      await request({
+        method: "POST",
+        url: "/client/clientByPersonal",
+        data,
+        successMessage: "Aluno cadastrado",
+        showSuccess: true,
+        onAccept: () => {
+          queryClient.invalidateQueries({ queryKey: ["clients"] });
+          setOpen(false);
+          reset();
+        },
+      });
+    } catch {
+      toast.error("Erro ao cadastrar aluno");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const res = await request({
-      method: "POST",
-      url: "/client/clientByPersonal",
-      data: form,
-      successMessage: "Aluno cadastrado",
-      showSuccess: true,
-      onAccept: () => {
-        setLoading(false);
-
-        queryClient.invalidateQueries({ queryKey: ["clients"] });
-        setOpen(false);
-        resetForm();
-      },
-    });
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant="default"
-          size="sm"
-          className="flex cursor-pointer items-center gap-2"
-        >
+        <Button size="sm" className="flex items-center gap-2">
           <Plus className="h-4 w-4 mr-2" />
           Novo Aluno
         </Button>
@@ -137,174 +108,191 @@ export default function ClientCreateModal() {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
-            <Label htmlFor="name" className="sm:text-right">
-              Nome
-            </Label>
-            <Input
-              id="name"
-              name="name"
-              placeholder="Nome"
-              required
-              value={form.name}
-              onChange={handleChange}
-              className="sm:col-span-3"
-            />
-          </div>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="grid gap-4 py-4">
+            {/* Nome */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <Label className="sm:text-right">Nome</Label>
+              <div className="sm:col-span-3 space-y-1">
+                <Input {...register("name")} placeholder="Nome" />
+                {errors.name && (
+                  <p className="text-xs text-destructive">
+                    {errors.name.message}
+                  </p>
+                )}
+              </div>
+            </div>
 
-          {/** Sobrenome */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
-            <Label htmlFor="lastName" className="sm:text-right">
-              Sobrenome
-            </Label>
-            <Input
-              id="lastName"
-              name="lastName"
-              placeholder="Sobrenome"
-              value={form.lastName}
-              onChange={handleChange}
-              className="sm:col-span-3"
-            />
-          </div>
+            {/* Sobrenome */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <Label className="sm:text-right">Sobrenome</Label>
+              <div className="sm:col-span-3 space-y-1">
+                <Input {...register("lastName")} placeholder="Sobrenome" />
+                {errors.lastName && (
+                  <p className="text-xs text-destructive">
+                    {errors.lastName.message}
+                  </p>
+                )}
+              </div>
+            </div>
 
-          {/** Email */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
-            <Label htmlFor="email" className="sm:text-right">
-              Email
-            </Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="Email"
-              required
-              value={form.email}
-              onChange={handleChange}
-              className="sm:col-span-3"
-            />
-          </div>
+            {/* Email */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <Label className="sm:text-right">Email</Label>
+              <div className="sm:col-span-3 space-y-1">
+                <Input
+                  type="email"
+                  {...register("email")}
+                  placeholder="Email"
+                />
+                {errors.email && (
+                  <p className="text-xs text-destructive">
+                    {errors.email.message}
+                  </p>
+                )}
+              </div>
+            </div>
 
-          {/** WhatsApp */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
-            <Label htmlFor="phone" className="sm:text-right">
-              WhatsApp
-            </Label>
-            <div className="sm:col-span-3">
-              <PhoneInput
-                value={form.phone}
-                label="phone"
-                onChange={handleChangeWithField}
+            {/* WhatsApp */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <Label className="sm:text-right">WhatsApp</Label>
+              <div className="sm:col-span-3 space-y-1">
+                <Controller
+                  name="phone"
+                  control={control}
+                  shouldUnregister={false}
+                  render={({ field }) => (
+                    <PhoneInput
+                      value={field.value ?? ""}
+                      label="phone"
+                      required={false}
+                      onChange={(_, value) => {
+                        const normalized =
+                          value && value.trim().length > 0 ? value : null;
+
+                        field.onChange(normalized);
+                      }}
+                    />
+                  )}
+                />
+
+                {errors.phone && (
+                  <p className="text-xs text-destructive">
+                    {errors.phone.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Gênero */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
+              <Controller
+                control={control}
+                name="gender"
+                render={({ field }) => (
+                  <GenderSelect
+                    value={field.value}
+                    handleChange={(_, value) => field.onChange(value)}
+                  />
+                )}
+              />
+              {errors.gender && (
+                <p className="text-xs text-destructive">
+                  {errors.gender.message}
+                </p>
+              )}
+            </div>
+
+            {/* Idade */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <Label className="sm:text-right">Idade</Label>
+              <Input
+                type="number"
+                className="sm:col-span-3"
+                {...register("age")}
               />
             </div>
-          </div>
 
-          {/** Gênero */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
-            <GenderSelect
-              value={form.gender}
-              handleChange={handleChangeWithField}
-            />
-          </div>
+            {/* Altura */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <Label className="sm:text-right">Altura (cm)</Label>
+              <Input
+                type="number"
+                className="sm:col-span-3"
+                {...register("height")}
+              />
+            </div>
 
-          {/** Idade */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
-            <Label htmlFor="age" className="sm:text-right">
-              Idade
-            </Label>
-            <Input
-              id="age"
-              name="age"
-              type="number"
-              placeholder="Idade"
-              value={form.age}
-              onChange={handleChange}
-              className="sm:col-span-3"
-            />
-          </div>
+            {/* Peso */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <Label className="sm:text-right">Peso (kg)</Label>
+              <Input
+                type="number"
+                className="sm:col-span-3"
+                {...register("weight")}
+              />
+            </div>
 
-          {/** Altura */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
-            <Label htmlFor="height" className="sm:text-right">
-              Altura (cm)
-            </Label>
-            <Input
-              id="height"
-              name="height"
-              type="number"
-              placeholder="Altura"
-              value={form.height}
-              onChange={handleChange}
-              className="sm:col-span-3"
-            />
-          </div>
+            {/* Objetivo */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <Label className="sm:text-right">Objetivo</Label>
+              <div className="sm:col-span-3 space-y-1">
+                <Controller
+                  control={control}
+                  name="objective"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value ?? ""}
+                      onValueChange={(value) => field.onChange(value || null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(OBJECTIVES).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.objective && (
+                  <p className="text-xs text-destructive">
+                    {errors.objective.message}
+                  </p>
+                )}
+              </div>
+            </div>
 
-          {/** Peso */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
-            <Label htmlFor="weight" className="sm:text-right">
-              Peso (kg)
-            </Label>
-            <Input
-              id="weight"
-              name="weight"
-              type="number"
-              placeholder="Peso"
-              value={form.weight}
-              onChange={handleChange}
-              className="sm:col-span-3"
-            />
-          </div>
-
-          {/** Objetivo */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
-            <Label
-              htmlFor="objective"
-              className="sm:text-right text-sm font-medium"
-            >
-              Objetivo
-            </Label>
-            <div className="sm:col-span-3">
-              <Select
-                value={form.objective}
-                onValueChange={(value) =>
-                  handleChangeWithField("objective", value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(OBJECTIVES).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Observações */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <Label className="sm:text-right mt-2">Observações</Label>
+              <div className="sm:col-span-3 space-y-1">
+                <Textarea
+                  rows={3}
+                  maxLength={255}
+                  {...register("observation")}
+                />
+                {errors.observation && (
+                  <p className="text-xs text-destructive">
+                    {errors.observation.message}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-start gap-2">
-            <Label htmlFor="observation" className="sm:text-right mt-2">
-              Observações
-            </Label>
-            <Textarea
-              id="observation"
-              name="observation"
-              placeholder="Observações"
-              value={form.observation}
-              maxLength={255}
-              onChange={handleChange}
-              className="sm:col-span-3"
-              rows={3}
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+            <OutlineButton type="button" onClick={() => setOpen(false)} />
+            <SaveButton
+              type="submit"
+              loading={loading}
+              disabled={!isValid || loading}
             />
-          </div>
-        </div>
-
-        <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0 sm:justify-end">
-          <OutlineButton onClick={() => setOpen(false)} />
-          <SaveButton loading={loading} onClick={handleSave} />
-        </DialogFooter>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
