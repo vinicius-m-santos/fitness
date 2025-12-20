@@ -43,7 +43,8 @@ class TrainingRepository extends ServiceEntityRepository
             ->where('t.client = :client')
             ->andWhere('t.personal = :personal')
             ->setParameter('client', $client)
-            ->setParameter('personal', $personal);
+            ->setParameter('personal', $personal)
+            ->orderBy('t.createdAt', 'DESC');
         
         return $qb->getQuery()->getResult();
     }

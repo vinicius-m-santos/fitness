@@ -5,8 +5,6 @@ export default function getFirstErrorMessage(
 ): string | null {
   if (!errors) return null;
 
-  console.log(errors);
-
   for (const key of Object.keys(errors)) {
     const error = errors[key];
 

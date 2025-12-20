@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Form } from "@/components/ui/form";
 import {
   Dialog,
@@ -21,6 +21,7 @@ import StepReview from "./TrainingCreateModal/Steps/StepReview";
 
 import { useTrainingForm } from "@/hooks/useTrainingForm";
 import { TrainingCreateSchema } from "@/schemas/training";
+import { NormalizeTrainingData } from "@/utils/NormalizeTrainingData";
 
 type Props = {
   open: boolean;
@@ -45,11 +46,20 @@ export default function TrainingUpdateModal({
     defaultValues: initialData,
   });
 
+  const normalizedInitialData = useMemo(
+    () => NormalizeTrainingData(initialData),
+    [initialData]
+  );
+
   useEffect(() => {
     if (open) {
-      training.resetForm(initialData);
+      training.resetForm(normalizedInitialData);
     }
-  }, [open, initialData]);
+
+    setTimeout(() => {
+      training.form.trigger();
+    });
+  }, [open, normalizedInitialData]);
 
   const onSubmit = async (data: TrainingCreateSchema) => {
     try {
@@ -66,7 +76,12 @@ export default function TrainingUpdateModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!loading) onOpenChange(v);
+      }}
+    >
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl">
         <DialogHeader>
           <DialogTitle>Editar treino</DialogTitle>
@@ -109,26 +124,39 @@ export default function TrainingUpdateModal({
             )}
 
             {/* FOOTER */}
-            <div className="flex justify-between pt-4">
+            <div
+              className={
+                training.currentStep === 1
+                  ? "flex justify-end pt-4"
+                  : "flex justify-between pt-4"
+              }
+            >
               {training.currentStep > 1 && (
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
                   onClick={training.prevStep}
+                  className="cursor-pointer"
                 >
                   Voltar
                 </Button>
               )}
 
               {training.currentStep < 4 && (
-                <Button type="button" size="sm" onClick={training.nextStep}>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={training.nextStep}
+                  className="cursor-pointer"
+                >
                   Próximo
                 </Button>
               )}
 
               {training.currentStep === 4 && (
                 <SaveButton
+                  size="sm"
                   type="submit"
                   loading={loading}
                   disabled={!training.form.formState.isValid}

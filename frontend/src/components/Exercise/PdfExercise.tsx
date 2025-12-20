@@ -159,7 +159,7 @@ interface PdfExerciseProps {
         reps: string;
         rest: string;
         type?: "Força" | "Cardio" | "Alongamento";
-        notes?: string;
+        obs?: string;
       }>;
     }>;
   };
@@ -272,7 +272,7 @@ export const PdfExercise: React.FC<PdfExerciseProps> = ({
                 <Text style={styles.tableCell}>{ex.series}</Text>
                 <Text style={styles.tableCell}>{ex.reps}</Text>
                 <Text style={styles.tableCell}>{ex.rest}</Text>
-                <Text style={styles.notesCell}>{ex.notes ? ex.notes : ""}</Text>
+                <Text style={styles.notesCell}>{ex.obs ? ex.obs : ""}</Text>
               </View>
             ))}
           </View>

@@ -86,7 +86,6 @@ export default function StepPeriods({
 
   return (
     <div className="space-y-3">
-      {/* ADD PERIOD */}
       <div className="flex gap-2">
         <div className="flex-1">
           <Input
@@ -100,12 +99,16 @@ export default function StepPeriods({
           )}
         </div>
 
-        <Button size="sm" onClick={handleAdd} disabled={!canAdd}>
+        <Button
+          size="sm"
+          onClick={handleAdd}
+          disabled={!canAdd}
+          className="cursor-pointer"
+        >
           Adicionar
         </Button>
       </div>
 
-      {/* PERIOD LIST */}
       <ul className="space-y-2">
         {periods.map((p) => {
           const isEditing = editingId === p.id;
@@ -113,7 +116,6 @@ export default function StepPeriods({
 
           return (
             <li key={p.id} className="border rounded-md p-2 space-y-2">
-              {/* HEADER */}
               <div
                 className={cn(
                   "flex items-center justify-between",
@@ -144,32 +146,32 @@ export default function StepPeriods({
                   )}
                 </div>
 
-                {/* DESKTOP ACTIONS */}
                 {!isMobile && (
                   <div className="flex gap-1">
                     {!isEditing && (
                       <button onClick={() => startEdit(p.id, p.name)}>
-                        <PencilIcon className="w-4 h-4" />
+                        <PencilIcon className="w-4 h-4 mr-2 cursor-pointer" />
                       </button>
                     )}
 
                     {isEditing && (
                       <>
                         <button onClick={confirmEdit} disabled={!canSaveEdit}>
-                          <CheckIcon className="w-4 h-4 text-green-600" />
+                          <CheckIcon className="w-4 h-4 mx-2 text-green-600 cursor-pointer" />
                         </button>
                         <button onClick={cancelEdit}>
-                          <XIcon className="w-4 h-4" />
+                          <XIcon className="w-4 h-4 mr-2 cursor-pointer" />
                         </button>
                       </>
                     )}
 
                     <button
+                      type="button"
                       onClick={() =>
                         setDeleteTarget({ id: p.id, name: p.name })
                       }
                     >
-                      <TrashIcon className="w-4 h-4 text-red-500" />
+                      <TrashIcon className="w-4 h-4 text-red-500 cursor-pointer" />
                     </button>
                   </div>
                 )}

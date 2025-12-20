@@ -77,6 +77,7 @@ export function useTrainingForm({
     }
 
     if (!valid) {
+      console.log(form.formState);
       const message = getFirstErrorMessage(form.formState.errors);
       if (message) toast.error(message);
       onInvalidStep?.();
@@ -136,7 +137,9 @@ export function useTrainingForm({
               exercises: [
                 ...p.exercises,
                 {
-                  instanceId: Date.now(),
+                  instanceId: `${p.id}-${exercise.id}-${Math.random()
+                    .toString(36)
+                    .slice(2)}`,
                   id: exercise.id,
                   name: exercise.name,
                   series: "",

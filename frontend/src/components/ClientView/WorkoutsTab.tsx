@@ -27,6 +27,7 @@ import { useRequest } from "@/api/request";
 import ContainerLoader from "../ui/containerLoader";
 import { pdf } from "@react-pdf/renderer";
 import ButtonLoader from "../ui/buttonLoader";
+import { TrainingEditButton } from "../Training/TrainingEditButton";
 
 export default function WorkoutsTab() {
   const { id } = useParams();
@@ -130,9 +131,9 @@ export default function WorkoutsTab() {
                       )}
                       {pdfLoading && <ButtonLoader />}
                     </Button>
-                    <TrainingUpdateModal
-                      workout={workout}
-                      client={client?.id}
+                    <TrainingEditButton
+                      trainingId={workout.id}
+                      initialData={workout}
                     />
                     <Button
                       size="sm"
@@ -190,7 +191,7 @@ export default function WorkoutsTab() {
                               <TableCell>{ex.reps}</TableCell>
                               <TableCell>{ex.rest}</TableCell>
                               <TableCell className="text-muted-foreground">
-                                {ex.notes || "-"}
+                                {ex.obs || "-"}
                               </TableCell>
                             </TableRow>
                           ))}

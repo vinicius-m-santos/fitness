@@ -77,6 +77,7 @@ export default function StepExercises({
                 type="button"
                 size="sm"
                 onClick={() => onAddExercise(period.id)}
+                className="cursor-pointer"
               >
                 Adicionar
               </Button>
@@ -85,7 +86,11 @@ export default function StepExercises({
             {period.exercises.map((ex) => (
               <div
                 key={ex.instanceId}
-                className="flex flex-wrap gap-2 border rounded-md p-2"
+                className={
+                  isMobile
+                    ? "flex flex-wrap gap-2 border rounded-md p-2"
+                    : "flex items-center gap-2 border rounded-md p-2"
+                }
               >
                 <span className="w-40 font-medium">{ex.name}</span>
 
@@ -111,13 +116,11 @@ export default function StepExercises({
                   className={
                     isMobile
                       ? "text-red-500 font-bold px-2 cursor-pointer w-full"
-                      : "text-red-500 font-bold px-2 cursor-pointer"
+                      : "text-red-500 font-bold px-2 cursor-pointer hover:opacity-75"
                   }
-                  variant={isMobile ? "destructive" : "default"}
+                  variant="destructive"
                 >
-                  <TrashIcon
-                    className={isMobile ? "w-4 h-4 text-white" : "w-4 h-4"}
-                  />
+                  <TrashIcon className="w-4 h-4 text-white" />
                 </Button>
               </div>
             ))}

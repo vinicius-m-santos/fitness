@@ -159,7 +159,7 @@ class TrainingService
                         'series' => $pe->getSeries(),
                         'reps' => $pe->getRepeats(),
                         'rest' => $pe->getRest(),
-                        'notes' => $pe->getObservation(),
+                        'obs' => strlen(trim($pe->getObservation())) ? trim($pe->getObservation()) : "",
                     ];
                 }
 
