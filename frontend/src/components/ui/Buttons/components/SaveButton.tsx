@@ -8,6 +8,7 @@ type Props = {
   size?: string;
   disabled?: boolean;
   type?: "button" | "submit";
+  onClick?: () => void;
 };
 
 export default function SaveButton({
@@ -17,12 +18,14 @@ export default function SaveButton({
   size = "default",
   disabled = false,
   type = "button",
+  onClick,
 }: Props) {
   return (
     <BaseButton
       disabled={disabled || loading}
       size={size}
       type={type}
+      onClick={onClick}
       styling={`flex items-center gap-2 cursor-pointer font-semibold ${styling}`}
     >
       {loading ? <ButtonLoader /> : text}

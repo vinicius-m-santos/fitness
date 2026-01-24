@@ -19,7 +19,7 @@ import toast from "react-hot-toast";
 
 export default function ClientView() {
   // const [loading, setLoading] = useState<boolean>(true);
-  const [tab, setTab] = useState("treinos");
+  const [tab, setTab] = useState("medidas");
   const { id } = useParams();
   const request = useRequest();
   const queryClient = useQueryClient();
@@ -107,8 +107,13 @@ export default function ClientView() {
       {/* --- Tabs principais --- */}
       <Tabs value={tab} onValueChange={setTab} className="w-full">
         <TabsList className="grid grid-cols-3 sm:grid-cols-6 mb-6">
-          {/* <TabsTrigger className="cursor-pointer mx-1 hover:bg-gray-200" value="evolucao">Evolução</TabsTrigger>
-                    <TabsTrigger className="cursor-pointer mx-1 hover:bg-gray-200" value="medidas">Medidas</TabsTrigger> */}
+          {/* <TabsTrigger className="cursor-pointer mx-1 hover:bg-gray-200" value="evolucao">Evolução</TabsTrigger> */}
+          <TabsTrigger
+            className="cursor-pointer mx-1 hover:bg-gray-200"
+            value="medidas"
+          >
+            Medidas
+          </TabsTrigger>
           <TabsTrigger
             className="cursor-pointer mx-1 hover:bg-gray-200"
             value="treinos"
@@ -141,15 +146,15 @@ export default function ClientView() {
                                 <EvolutionTab />
                             </CardContent>
                         </Card>
-                    </TabsContent>
-
-                    <TabsContent value="medidas">
-                        <Card>
-                            <CardContent className="p-6 text-sm text-muted-foreground">
-                                <MeasurementsTab />
-                            </CardContent>
-                        </Card>
                     </TabsContent> */}
+
+          <TabsContent value="medidas">
+            <Card>
+              <CardContent className="p-6 text-sm text-muted-foreground">
+                <MeasurementsTab />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="treinos">
             <Card>

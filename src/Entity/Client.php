@@ -117,11 +117,16 @@ class Client
     #[Groups(['client_all'])]
     private Collection $galleries;
 
+    #[ORM\OneToMany(mappedBy: 'client', targetEntity: Measurement::class, orphanRemoval: true)]
+    #[Groups(['client_all'])]
+    private Collection $measurements;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
         $this->galleries = new ArrayCollection();
+        $this->measurements = new ArrayCollection();
     }
 
     #[ORM\PrePersist]
@@ -379,6 +384,35 @@ class Client
         if ($this->galleries->removeElement($gallery)) {
             if ($gallery->getClient() === $this) {
                 $gallery->setClient(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Measurement[]
+     */
+    public function getMeasurements(): Collection
+    {
+        return $this->measurements;
+    }
+
+    public function addMeasurement(Measurement $measurement): self
+    {
+        if (!$this->measurements->contains($measurement)) {
+            $this->measurements->add($measurement);
+            $measurement->setClient($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMeasurement(Measurement $measurement): self
+    {
+        if ($this->measurements->removeElement($measurement)) {
+            if ($measurement->getClient() === $this) {
+                $measurement->setClient(null);
             }
         }
 
