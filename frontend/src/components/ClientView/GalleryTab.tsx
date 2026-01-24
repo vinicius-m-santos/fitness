@@ -10,7 +10,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import GalleryUploadModal from "@/components/Gallery/Modals/GalleryUploadModal";
-import { PlusIcon } from "lucide-react";
+import { Images, PlusIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ClientAllData } from "@/types/client";
 import { useRequest } from "@/api/request";
@@ -59,7 +59,10 @@ export default function GalleryTab() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-xl font-semibold">Galeria de Progresso</h3>
+        <h3 className="text-xl font-semibold text-black flex items-center gap-2">
+          <Images className="h-5 w-5" />
+          Galeria de Progresso
+        </h3>
 
         <Button
           size="sm"
@@ -105,7 +108,7 @@ export default function GalleryTab() {
                       </div>
                     </AccordionContent>
                   </AccordionItem>
-                )
+                ),
               )}
             </Accordion>
           ))}

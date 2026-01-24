@@ -140,6 +140,7 @@ body {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -185,4 +186,9 @@ body {
 
 .w-fit.rdp-root.bg-background {
   width: 100%;
+  min-width: 15rem;
+}
+
+.root {
+  overflow: hidden;
 }
