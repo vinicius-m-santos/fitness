@@ -28,6 +28,9 @@ import {
 
 interface Measurement {
   id: number;
+  client: {
+    id: number;
+  };
   date: string;
   rightArm: number;
   leftArm: number;
@@ -35,6 +38,9 @@ interface Measurement {
   rightLeg: number;
   leftLeg: number;
   chest: number;
+  weight?: number | null;
+  fatPercentage?: number | null;
+  leanMass?: number | null;
 }
 
 interface MeasurementUpdateModalProps {
@@ -62,6 +68,9 @@ export default function MeasurementUpdateModal({
     rightLeg: initialData?.rightLeg?.toString() || "",
     leftLeg: initialData?.leftLeg?.toString() || "",
     chest: initialData?.chest?.toString() || "",
+    weight: initialData?.weight?.toString() || "",
+    fatPercentage: initialData?.fatPercentage?.toString() || "",
+    leanMass: initialData?.leanMass?.toString() || "",
   });
 
   useEffect(() => {
@@ -74,6 +83,9 @@ export default function MeasurementUpdateModal({
         rightLeg: initialData.rightLeg?.toString() || "",
         leftLeg: initialData.leftLeg?.toString() || "",
         chest: initialData.chest?.toString() || "",
+        weight: initialData.weight?.toString() || "",
+        fatPercentage: initialData.fatPercentage?.toString() || "",
+        leanMass: initialData.leanMass?.toString() || "",
       });
     }
   }, [open, initialData]);
@@ -87,6 +99,9 @@ export default function MeasurementUpdateModal({
       rightLeg: number;
       leftLeg: number;
       chest: number;
+      weight?: number | null;
+      fatPercentage?: number | null;
+      leanMass?: number | null;
     }) => {
       const res = await request({
         method: "PUT",
@@ -133,6 +148,9 @@ export default function MeasurementUpdateModal({
       rightLeg: parseFloat(form.rightLeg),
       leftLeg: parseFloat(form.leftLeg),
       chest: parseFloat(form.chest),
+      weight: form.weight ? parseFloat(form.weight) : null,
+      fatPercentage: form.fatPercentage ? parseFloat(form.fatPercentage) : null,
+      leanMass: form.leanMass ? parseFloat(form.leanMass) : null,
     });
   };
 
@@ -181,6 +199,9 @@ export default function MeasurementUpdateModal({
             { key: "rightLeg", label: "Perna Direita" },
             { key: "leftLeg", label: "Perna Esquerda" },
             { key: "chest", label: "Tórax" },
+            { key: "weight", label: "Peso" },
+            { key: "fatPercentage", label: "% Gordura" },
+            { key: "leanMass", label: "Massa Magra" },
           ].map(({ key, label }) => (
             <div key={key} className="grid grid-cols-4 items-center gap-2">
               <Label htmlFor={key}>{label}</Label>
@@ -195,7 +216,13 @@ export default function MeasurementUpdateModal({
                     [key]: e.target.value,
                   })
                 }
-                placeholder="cm"
+                placeholder={
+                  key === "weight" || key === "leanMass"
+                    ? "kg"
+                    : key === "fatPercentage"
+                      ? "%"
+                      : "cm"
+                }
               />
             </div>
           ))}

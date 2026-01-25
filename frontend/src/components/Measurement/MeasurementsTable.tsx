@@ -18,6 +18,9 @@ interface Measurement {
   rightLeg: number;
   leftLeg: number;
   chest: number;
+  weight?: number | null;
+  fatPercentage?: number | null;
+  leanMass?: number | null;
 }
 
 interface MeasurementsTableProps {
@@ -70,6 +73,9 @@ export default function MeasurementsTable({
                   <th>Perna D</th>
                   <th>Perna E</th>
                   <th>Tórax</th>
+                  <th>Peso</th>
+                  <th>% Gordura</th>
+                  <th>Massa Magra</th>
                   <th className="text-right">Ações</th>
                 </tr>
               </thead>
@@ -77,7 +83,7 @@ export default function MeasurementsTable({
                 {measurements.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={11}
                       className="py-4 text-center text-muted-foreground"
                     >
                       Nenhuma medição registrada ainda
@@ -93,6 +99,9 @@ export default function MeasurementsTable({
                       <td>{m.rightLeg}</td>
                       <td>{m.leftLeg}</td>
                       <td>{m.chest}</td>
+                      <td>{m.weight ?? "-"}</td>
+                      <td>{m.fatPercentage ?? "-"}</td>
+                      <td>{m.leanMass ?? "-"}</td>
                       <td className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -175,6 +184,18 @@ export default function MeasurementsTable({
                     <div>
                       <span className="text-muted-foreground">Perna E:</span>{" "}
                       {m.leftLeg} cm
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Peso:</span>{" "}
+                      {m.weight ?? "-"} {m.weight ? "kg" : ""}
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">% Gordura:</span>{" "}
+                      {m.fatPercentage ?? "-"} {m.fatPercentage ? "%" : ""}
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Massa Magra:</span>{" "}
+                      {m.leanMass ?? "-"} {m.leanMass ? "kg" : ""}
                     </div>
                   </div>
                 </Card>
