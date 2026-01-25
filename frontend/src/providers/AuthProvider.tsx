@@ -9,6 +9,12 @@ type User = {
   lastName: string;
   email: string;
   roles: string[];
+  phone?: string | null;
+  avatarUrl?: string | null;
+  birthDate?: string | null;
+  createdAt?: string;
+  emailNotifications?: boolean;
+  appNotifications?: boolean;
 };
 
 type AuthContextType = {
@@ -16,6 +22,7 @@ type AuthContextType = {
   accessToken: string | null;
   login: (token: string, user: User, refresh_token: string) => void;
   logout: () => void;
+  updateUser: (user: User) => void;
   isAuthenticated: boolean;
 };
 
@@ -26,6 +33,7 @@ const AUTHENTICATED_ROUTES = [
   "clients",
   "client-view",
   "exercises",
+  "profile",
 ];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -50,6 +58,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setUser(null);
     localStorage.removeItem("refresh_token");
     navigate("/login");
+  };
+
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
   };
 
   useEffect(() => {
@@ -106,6 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         user,
         login,
         logout,
+        updateUser,
         isAuthenticated: !!accessToken,
       }}
     >

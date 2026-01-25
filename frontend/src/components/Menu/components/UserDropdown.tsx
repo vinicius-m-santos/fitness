@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { UserCircleIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
-import { LogOut } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 
 export default function UserDropdown() {
     const [open, setOpen] = useState(false);
@@ -38,12 +38,13 @@ export default function UserDropdown() {
             {open && (
                 <div className="absolute z-2 right-0 mt-2 w-40 bg-white border border-gray-200 divide-y divide-gray-100 rounded-lg shadow-lg">
                     <ul className="py-1 text-sm text-gray-700">
-                        {/* <Link to="/profile">
-              <button className="default w-full text-left px-4 py-2 hover:bg-gray-100">
-                Profile
-              </button>
-            </Link>
-            <li>
+                    <li>
+                        <Link to="/profile" 
+                                className="w-full flex text-left px-4 py-2 hover:bg-gray-100">
+                                <User size={16} className="mr-2" /> Profile
+                        </Link>
+                    </li>
+            {/* <li>
               <button className="default w-full text-left px-4 py-2 hover:bg-gray-100">
                 Settings
               </button>
