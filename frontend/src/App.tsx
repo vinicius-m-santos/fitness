@@ -10,6 +10,7 @@ import UuidRoute from "./utils/Auth/UuidRoute";
 import NoAuthLayout from "./layout/NoAuthLayout";
 import Clients from "./pages/Clients";
 import Exercise from "./pages/Exercise";
+import ProfilePage from "./pages/ProfilePage";
 
 export default function App() {
     return (
@@ -66,6 +67,16 @@ export default function App() {
                     <PrivateRoute>
                         <AdminLayout>
                             <Exercise />
+                        </AdminLayout>
+                    </PrivateRoute>
+                }
+            />
+            <Route
+                path="/profile"
+                element={
+                    <PrivateRoute>
+                        <AdminLayout>
+                            <ProfilePage />
                         </AdminLayout>
                     </PrivateRoute>
                 }

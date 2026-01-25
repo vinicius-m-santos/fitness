@@ -27,7 +27,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: "string", unique: true)]
     #[Groups(['user_all', 'client_all'])]
     private string $email;
-    
+
     #[ORM\Column(type: 'json')]
     #[Groups(['user_all'])]
     private array $roles = [];
@@ -50,12 +50,39 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?Client $client = null;
 
     #[ORM\Column(type: "datetime_immutable")]
-    #[Groups(['user_all'])]
+    #[Groups(['user_all', 'client_all', 'personal_all'])]
     private \DateTimeImmutable $createdAt;
 
     #[ORM\Column(type: "datetime_immutable", nullable: true)]
     #[Groups(['user_all'])]
     private ?\DateTimeImmutable $updatedAt = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['user_all'])]
+    private ?string $avatarKey = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    #[Groups(['user_all'])]
+    private ?string $avatarUrl = null;
+
+    #[ORM\Column(length: 50, nullable: true)]
+    #[Groups(['user_all'])]
+    private ?string $phone = null;
+
+    #[ORM\Column(type: "date_immutable", nullable: true)]
+    #[Groups(['user_all', 'client_all'])]
+    private ?\DateTimeImmutable $birthDate = null;
+
+    #[ORM\Column(type: "datetime_immutable", nullable: true)]
+    private ?\DateTimeImmutable $deletedAt = null;
+
+    #[ORM\Column(type: "boolean", options: ["default" => true])]
+    #[Groups(['user_all'])]
+    private bool $emailNotifications = true;
+
+    #[ORM\Column(type: "boolean", options: ["default" => true])]
+    #[Groups(['user_all'])]
+    private bool $appNotifications = true;
 
     public function __construct()
     {
@@ -126,8 +153,100 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->personal;
     }
 
-    public function getUserIdentifier(): string { return $this->email; }
-    public function getRoles(): array { return array_unique(array_merge($this->roles, ['ROLE_USER'])); }
-    public function setRoles(array $roles): self { $this->roles = $roles; return $this; }
+    public function getUserIdentifier(): string
+    {
+        return $this->email;
+    }
+    public function getRoles(): array
+    {
+        return array_unique(array_merge($this->roles, ['ROLE_USER']));
+    }
+    public function setRoles(array $roles): self
+    {
+        $this->roles = $roles;
+        return $this;
+    }
     public function eraseCredentials(): void {}
+
+    public function setAvatarKey(?string $avatarKey): self
+    {
+        $this->avatarKey = $avatarKey;
+        return $this;
+    }
+
+    public function getAvatarKey(): string|null
+    {
+        return $this->avatarKey;
+    }
+
+    public function setAvatarUrl(?string $avatarUrl): self
+    {
+        $this->avatarUrl = $avatarUrl;
+        return $this;
+    }
+
+    public function getAvatarUrl(): string|null
+    {
+        return $this->avatarUrl;
+    }
+
+    public function setPhone(?string $phone): self
+    {
+        $this->phone = $phone;
+        return $this;
+    }
+
+    public function getPhone(): string|null
+    {
+        return $this->phone;
+    }
+
+    public function setBirthDate(?\DateTimeImmutable $birthDate): self
+    {
+        $this->birthDate = $birthDate;
+        return $this;
+    }
+
+    public function getBirthDate(): ?\DateTimeImmutable
+    {
+        return $this->birthDate;
+    }
+
+    public function getCreatedAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function getDeletedAt(): ?\DateTimeImmutable
+    {
+        return $this->deletedAt;
+    }
+
+    public function setDeletedAt(?\DateTimeImmutable $deletedAt): self
+    {
+        $this->deletedAt = $deletedAt;
+        return $this;
+    }
+
+    public function isEmailNotifications(): bool
+    {
+        return $this->emailNotifications;
+    }
+
+    public function setEmailNotifications(bool $emailNotifications): self
+    {
+        $this->emailNotifications = $emailNotifications;
+        return $this;
+    }
+
+    public function isAppNotifications(): bool
+    {
+        return $this->appNotifications;
+    }
+
+    public function setAppNotifications(bool $appNotifications): self
+    {
+        $this->appNotifications = $appNotifications;
+        return $this;
+    }
 }

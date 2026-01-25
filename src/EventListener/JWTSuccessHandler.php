@@ -29,7 +29,12 @@ class JWTSuccessHandler
             'lastName' => $user->getLastName(),
             'email' => $user->getUserIdentifier(),
             'roles' => $user->getRoles(),
-            'uuid' => $user->getUuid()
+            'uuid' => $user->getUuid(),
+            'createdAt' => $user->getCreatedAt()->format('Y-m-d H:i:s'),
+            'phone' => $user->getPhone(),
+            'emailNotifications' => $user->isEmailNotifications(),
+            'appNotifications' => $user->isAppNotifications(),
+            'birthDate' => $user->getBirthDate() ? $user->getBirthDate()->format('Y-m-d') : null,
         ];
 
         $event->setData($data);
