@@ -23,9 +23,7 @@ final class Version20260125182533 extends AbstractMigration
         $this->addSql('ALTER TABLE users ADD deleted_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL');
         $this->addSql('ALTER TABLE users ADD email_notifications BOOLEAN DEFAULT true NOT NULL');
         $this->addSql('ALTER TABLE users ADD app_notifications BOOLEAN DEFAULT true NOT NULL');
-        $this->addSql('ALTER TABLE users ALTER birth_date TYPE DATE');
-        $this->addSql('COMMENT ON COLUMN users.deleted_at IS \'(DC2Type:datetime_immutable)\'');
-        $this->addSql('COMMENT ON COLUMN users.birth_date IS \'(DC2Type:date_immutable)\'');
+        $this->addSql('ALTER TABLE users ADD birth_date DATE DEFAULT NULL');
     }
 
     public function down(Schema $schema): void
@@ -35,7 +33,6 @@ final class Version20260125182533 extends AbstractMigration
         $this->addSql('ALTER TABLE users DROP deleted_at');
         $this->addSql('ALTER TABLE users DROP email_notifications');
         $this->addSql('ALTER TABLE users DROP app_notifications');
-        $this->addSql('ALTER TABLE users ALTER birth_date TYPE DATE');
-        $this->addSql('COMMENT ON COLUMN users.birth_date IS NULL');
+        $this->addSql('ALTER TABLE users DROP birth_date');
     }
 }
