@@ -18,7 +18,7 @@ class Client
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: "integer")]
-    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
+    #[Groups(['client_all', 'anamnese_all', 'client_list', 'measurement_all'])]
     private int $id;
 
     #[ORM\Column(type: "uuid", unique: true, nullable: true)]
@@ -65,7 +65,7 @@ class Client
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private bool $active = true;
 
-    #[ORM\OneToOne(mappedBy:"client", cascade: ['persist', 'remove'])]
+    #[ORM\OneToOne(mappedBy: "client", cascade: ['persist', 'remove'])]
     #[Groups(['client_all'])]
     private ?Anamnese $anamnese = null;
 

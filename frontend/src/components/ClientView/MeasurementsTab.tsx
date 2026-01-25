@@ -32,7 +32,7 @@ export default function MeasurementsTab() {
   const [open, setOpen] = useState(false);
 
   const { data: measurements, isFetching } = useQuery<Measurement[]>({
-    queryKey: ["measurements", id],
+    queryKey: ["measurements"],
     queryFn: async () => {
       const res = await request({
         method: "GET",

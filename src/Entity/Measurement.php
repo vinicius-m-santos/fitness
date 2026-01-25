@@ -50,6 +50,18 @@ class Measurement
     #[Groups(['measurement_all', 'client_all'])]
     private float $chest;
 
+    #[ORM\Column(type: "float", nullable: true)]
+    #[Groups(['measurement_all', 'client_all'])]
+    private ?float $weight = null;
+
+    #[ORM\Column(type: "float", nullable: true)]
+    #[Groups(['measurement_all', 'client_all'])]
+    private ?float $fatPercentage = null;
+
+    #[ORM\Column(type: "float", nullable: true)]
+    #[Groups(['measurement_all', 'client_all'])]
+    private ?float $leanMass = null;
+
     #[ORM\Column(type: "datetime_immutable")]
     #[Groups(['measurement_all', 'client_all'])]
     private \DateTimeImmutable $createdAt;
@@ -164,6 +176,39 @@ class Measurement
         return $this;
     }
 
+    public function getWeight(): ?float
+    {
+        return $this->weight;
+    }
+
+    public function setWeight(?float $weight): self
+    {
+        $this->weight = $weight;
+        return $this;
+    }
+
+    public function getFatPercentage(): ?float
+    {
+        return $this->fatPercentage;
+    }
+
+    public function setFatPercentage(?float $fatPercentage): self
+    {
+        $this->fatPercentage = $fatPercentage;
+        return $this;
+    }
+
+    public function getLeanMass(): ?float
+    {
+        return $this->leanMass;
+    }
+
+    public function setLeanMass(?float $leanMass): self
+    {
+        $this->leanMass = $leanMass;
+        return $this;
+    }
+
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
@@ -212,6 +257,18 @@ class Measurement
 
         if (isset($data['chest'])) {
             $this->chest = (float) $data['chest'];
+        }
+
+        if (isset($data['weight'])) {
+            $this->weight = $data['weight'] !== null && $data['weight'] !== '' ? (float) $data['weight'] : null;
+        }
+
+        if (isset($data['fatPercentage'])) {
+            $this->fatPercentage = $data['fatPercentage'] !== null && $data['fatPercentage'] !== '' ? (float) $data['fatPercentage'] : null;
+        }
+
+        if (isset($data['leanMass'])) {
+            $this->leanMass = $data['leanMass'] !== null && $data['leanMass'] !== '' ? (float) $data['leanMass'] : null;
         }
 
         return $this;

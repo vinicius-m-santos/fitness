@@ -104,10 +104,14 @@ export default function ClientView() {
         </div>
       </Card>
 
-      {/* --- Tabs principais --- */}
       <Tabs value={tab} onValueChange={setTab} className="w-full">
         <TabsList className="grid grid-cols-3 sm:grid-cols-6 mb-6">
-          {/* <TabsTrigger className="cursor-pointer mx-1 hover:bg-gray-200" value="evolucao">Evolução</TabsTrigger> */}
+          <TabsTrigger
+            className="cursor-pointer mx-1 hover:bg-gray-200"
+            value="evolucao"
+          >
+            Evolução
+          </TabsTrigger>
           <TabsTrigger
             className="cursor-pointer mx-1 hover:bg-gray-200"
             value="medidas"
@@ -140,13 +144,13 @@ export default function ClientView() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
         >
-          {/* <TabsContent value="evolucao">
-                        <Card>
-                            <CardContent className="p-6 text-sm text-muted-foreground">
-                                <EvolutionTab />
-                            </CardContent>
-                        </Card>
-                    </TabsContent> */}
+          <TabsContent value="evolucao">
+            <Card>
+              <CardContent className="p-6 text-sm text-muted-foreground">
+                <EvolutionTab />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="medidas">
             <Card>
