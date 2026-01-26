@@ -84,6 +84,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user_all'])]
     private bool $appNotifications = true;
 
+    #[ORM\Column(type: "boolean", options: ["default" => false])]
+    #[Groups(['user_all'])]
+    private bool $isVerified = false;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $verificationToken = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $resetToken = null;
+
+    #[ORM\Column(type: "datetime_immutable", nullable: true)]
+    private ?\DateTimeImmutable $resetTokenExpiresAt = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -247,6 +260,50 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setAppNotifications(bool $appNotifications): self
     {
         $this->appNotifications = $appNotifications;
+        return $this;
+    }
+
+    public function isVerified(): bool
+    {
+        return $this->isVerified;
+    }
+
+    public function setIsVerified(bool $isVerified): self
+    {
+        $this->isVerified = $isVerified;
+        return $this;
+    }
+
+    public function getVerificationToken(): ?string
+    {
+        return $this->verificationToken;
+    }
+
+    public function setVerificationToken(?string $verificationToken): self
+    {
+        $this->verificationToken = $verificationToken;
+        return $this;
+    }
+
+    public function getResetToken(): ?string
+    {
+        return $this->resetToken;
+    }
+
+    public function setResetToken(?string $resetToken): self
+    {
+        $this->resetToken = $resetToken;
+        return $this;
+    }
+
+    public function getResetTokenExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->resetTokenExpiresAt;
+    }
+
+    public function setResetTokenExpiresAt(?\DateTimeImmutable $resetTokenExpiresAt): self
+    {
+        $this->resetTokenExpiresAt = $resetTokenExpiresAt;
         return $this;
     }
 }

@@ -3,7 +3,9 @@
 namespace App\EventListener;
 
 use App\Entity\User;
+use App\Exception\EmailNotVerifiedException;
 use Lexik\Bundle\JWTAuthenticationBundle\Event\AuthenticationSuccessEvent;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 class JWTSuccessHandler
@@ -23,6 +25,25 @@ class JWTSuccessHandler
             return;
         }
 
+        if ($user->getDeletedAt() !== null) {
+            $event->setData([
+                'success' => false,
+                'error' => 'Conta excluída',
+                'message' => 'Esta conta foi excluída e não pode mais fazer login.'
+            ]);
+            return;
+        }
+
+        if (!$user->isVerified()) {
+            $event->setData([
+                'success' => false,
+                'requiresVerification' => true,
+                'error' => 'Conta não verificada',
+                'message' => 'Por favor, verifique seu email antes de fazer login.'
+            ]);
+            return;
+        }
+
         $data['user'] = [
             'id' => $user->getId(),
             'firstName' => $user->getFirstName(),
@@ -35,7 +56,10 @@ class JWTSuccessHandler
             'emailNotifications' => $user->isEmailNotifications(),
             'appNotifications' => $user->isAppNotifications(),
             'birthDate' => $user->getBirthDate() ? $user->getBirthDate()->format('Y-m-d') : null,
+            'isVerified' => $user->isVerified(),
         ];
+
+        $data['success'] = true;
 
         $event->setData($data);
     }
