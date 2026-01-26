@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/providers/AuthProvider";
 import { useApi } from "@/api/Api";
 import toast from "react-hot-toast";
-import { ArrowLeft } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ButtonLoader from "@/components/ui/buttonLoader";
@@ -11,6 +11,7 @@ const Login = () => {
     const { login } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const api = useApi();
     const navigate = useNavigate();
@@ -25,16 +26,31 @@ const Login = () => {
                 password: password,
             });
 
+            if (res.data.requiresVerification) {
+                navigate("/email-not-verified");
+                return;
+            }
+
+            if (!res.data.success) {
+                toast.error(res.data.message);
+                return;
+            }
+
             login(res.data.token, res.data.user, res.data.refresh_token);
-        } catch (e) {
-            const data = e.response.data;
+        } catch (e: unknown) {
+            const data = (e as { response?: { data?: { success?: boolean; requiresVerification?: boolean; error?: string; message?: string } } })?.response?.data;
 
             if (!data?.success) {
-                if (data.error) {
+                if (data?.requiresVerification) {
+                    navigate("/email-not-verified");
+                    return;
+                }
+
+                if (data?.error) {
                     toast.error(data.error);
                 }
 
-                if (data.message) {
+                if (data?.message) {
                     toast.error(data.message);
                 }
             }
@@ -79,15 +95,30 @@ const Login = () => {
                         >
                             Senha
                         </label>
-                        <input
-                            type="password"
-                            id="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full text-black border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="••••••••"
-                            required
-                        />
+                        <div className="relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                id="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full text-black border border-gray-300 rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="••••••••"
+                                required
+                            />
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                                onClick={() => setShowPassword(!showPassword)}
+                            >
+                                {showPassword ? (
+                                    <EyeOff className="h-4 w-4 text-gray-500" />
+                                ) : (
+                                    <Eye className="h-4 w-4 text-gray-500" />
+                                )}
+                            </Button>
+                        </div>
                     </div>
 
                     <Button
@@ -100,15 +131,23 @@ const Login = () => {
                     </Button>
                 </form>
 
-                {/* Esqueci minha senha */}
-                {/* <div className="text-center mt-4">
+                <div className="text-center mt-4">
+                    <button
+                        onClick={() => navigate("/register")}
+                        className="text-sm text-blue-600 hover:underline cursor-pointer"
+                    >
+                        Não tem uma conta? Cadastre-se
+                    </button>
+                </div>
+
+                <div className="text-center mt-4">
                     <button
                         onClick={() => navigate("/forgot-password")}
-                        className="text-sm text-blue-600 hover:underline"
+                        className="text-sm text-blue-600 hover:underline cursor-pointer"
                     >
                         Esqueci minha senha
                     </button>
-                </div> */}
+                </div>
             </div>
         </div>
     );
