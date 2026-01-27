@@ -209,7 +209,7 @@ export default function ClientUpdateModal({
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
               <Label className="sm:text-right">Altura (cm)</Label>
               <Input
-                type="number"
+                type="text"
                 className="sm:col-span-3"
                 {...register("height")}
               />
@@ -218,7 +218,7 @@ export default function ClientUpdateModal({
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
               <Label className="sm:text-right">Peso (kg)</Label>
               <Input
-                type="number"
+                type="text"
                 className="sm:col-span-3"
                 {...register("weight")}
               />

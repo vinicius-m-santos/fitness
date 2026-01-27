@@ -14,7 +14,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Loader } from "lucide-react";
+import { Edit, Loader } from "lucide-react";
 import { Input } from "../../ui/input";
 import { useApi } from "../../../api/Api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -43,6 +43,10 @@ const ExerciseUpdateModal = ({
   const [categories, setCategories] = useState<{ id: number; name: string }[]>(
     []
   );
+  const [muscleGroup, setMuscleGroup] = useState("");
+  const [muscleGroups, setMuscleGroups] = useState<{ id: number; name: string }[]>(
+    []
+  );
   const [open, setOpen] = useState(openProp);
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
@@ -52,6 +56,7 @@ const ExerciseUpdateModal = ({
       .min(3, "O nome precisa ter pelo menos 3 caracteres")
       .max(50),
     category: z.number().min(1, "A categoria é obrigatória"),
+    muscleGroup: z.number().min(1, "O grupo muscular é obrigatório"),
   });
 
   const fetchExercise = async (exerciseId: number) => {
@@ -62,6 +67,7 @@ const ExerciseUpdateModal = ({
   type ExerciseData = {
     name: string;
     category: number;
+    muscleGroup: number;
   };
 
   const saveExercise = async (data: ExerciseData) => {
@@ -96,6 +102,7 @@ const ExerciseUpdateModal = ({
       const data = exerciseSchema.parse({
         name,
         category: Number(category),
+        muscleGroup: Number(muscleGroup),
       });
       await mutation.mutateAsync(data);
     } catch (err) {
@@ -119,13 +126,26 @@ const ExerciseUpdateModal = ({
       }
     };
 
-    if (open) fetchCategories();
+    const fetchMuscleGroups = async () => {
+      try {
+        const res = await api.get("/muscle-group/all");
+        setMuscleGroups(res.data.muscleGroups);
+      } catch (err) {
+        console.error("Erro ao carregar grupos musculares", err);
+      }
+    };
+
+    if (open) {
+      fetchCategories();
+      fetchMuscleGroups();
+    }
   }, [open]);
 
   useEffect(() => {
     if (data) {
       setName(data.name || "");
       setCategory(data.exerciseCategory?.id?.toString() || "");
+      setMuscleGroup(data.muscleGroup?.id?.toString() || "");
     }
   }, [data]);
 
@@ -133,24 +153,26 @@ const ExerciseUpdateModal = ({
     <Dialog open={open} onOpenChange={setOpen}>
       {!isMobile && (
         <DialogTrigger asChild>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0"
             onClick={() => setOpen(true)}
-            className="cursor-pointer p-1 text-blue-500 hover:text-blue-700 transition"
           >
-            <Pencil1Icon className="w-5 h-5" />
-          </button>
+            <Edit className="h-4 w-4" />
+          </Button>
         </DialogTrigger>
       )}
 
       {isMobile && (
         <DialogTrigger asChild>
           <Button
-            onClick={() => setOpen(true)}
-            variant="default"
+            variant="outline"
             size="sm"
-            className="w-full bg-blue-500 text-white hover:text-white transition"
+            className="w-full text-black p-0"
+            onClick={() => setOpen(true)}
           >
-            <Pencil1Icon className="w-5 h-5" />
+            <Edit className="h-4 w-4" />
             <span>Editar</span>
           </Button>
         </DialogTrigger>
@@ -163,7 +185,7 @@ const ExerciseUpdateModal = ({
           </DialogTitle>
         </DialogHeader>
 
-        {(isLoading || categories.length === 0 || !category) && (
+        {(isLoading || categories.length === 0 || !category || muscleGroups.length === 0 || !muscleGroup) && (
           <div className="flex justify-center items-center py-8">
             <Loader className="animate-spin w-6 h-6 text-gray-400" />
           </div>
@@ -173,7 +195,7 @@ const ExerciseUpdateModal = ({
           <p className="text-red-500 text-sm">Erro ao carregar dados</p>
         )}
 
-        {!isLoading && categories.length > 0 && category && (
+        {!isLoading && categories.length > 0 && category && muscleGroups.length > 0 && muscleGroup && (
           <div className="mt-4 space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-bold mb-1">
@@ -204,6 +226,27 @@ const ExerciseUpdateModal = ({
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id.toString()}>
                       {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="muscleGroup"
+                className="block text-sm font-bold mb-1"
+              >
+                Grupo Muscular
+              </label>
+              <Select value={muscleGroup} onValueChange={setMuscleGroup}>
+                <SelectTrigger className="w-full px-3 py-2 text-sm rounded-md bg-gray-100 border border-gray-300 focus:ring-1 outline-none">
+                  <SelectValue placeholder="Selecione o grupo muscular" />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  {muscleGroups.map((mg) => (
+                    <SelectItem key={mg.id} value={mg.id.toString()}>
+                      {mg.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

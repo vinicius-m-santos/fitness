@@ -19,11 +19,15 @@ export default function DeleteExerciseModal({ onConfirm, isMobile = false }) {
   return (
     <AlertDialog>
       {!isMobile && (
-        <DefaultTooltip tooltipText="Excluir aluno" delay={0}>
+        <DefaultTooltip tooltipText="Excluir exercício" delay={0}>
           <AlertDialogTrigger asChild>
-            <button className="cursor-pointer p-1 text-red-500 hover:text-red-700 transition">
-              <Trash className="w-5 h-5" />
-            </button>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="h-8 w-8 p-0 text-white flex items-center gap-1 cursor-pointer"
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
           </AlertDialogTrigger>
         </DefaultTooltip>
       )}
@@ -34,7 +38,7 @@ export default function DeleteExerciseModal({ onConfirm, isMobile = false }) {
             size="sm"
             className="w-full bg-red-500 text-white hover:text-white focus:text-white transition"
           >
-            <Trash className="w-5 h-5" />
+            <Trash className="h-4 w-4" />
             <span>Excluir</span>
           </Button>
         </AlertDialogTrigger>

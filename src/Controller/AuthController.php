@@ -2,11 +2,11 @@
 
 namespace App\Controller;
 
+use App\Entity\Personal;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Service\EmailVerificationService;
 use App\Service\PasswordResetService;
-use App\Service\UserService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -37,23 +37,20 @@ class AuthController extends AbstractController
             throw new UnprocessableEntityHttpException('Dados inválidos');
         }
 
-        // Validar campos obrigatórios
         if (!isset($data['email']) || !isset($data['password']) || !isset($data['firstName']) || !isset($data['lastName'])) {
             throw new UnprocessableEntityHttpException('Campos obrigatórios: email, senha, nome e sobrenome');
         }
 
-        // Verificar se o email já existe
         $existingUser = $this->userRepository->findOneBy(['email' => $data['email']]);
         if ($existingUser) {
             throw new UnprocessableEntityHttpException('Este email já está cadastrado');
         }
 
-        // Criar novo usuário
         $user = new User();
         $user->setEmail($data['email']);
         $user->setFirstName($data['firstName']);
         $user->setLastName($data['lastName']);
-        
+
         if (isset($data['phone'])) {
             $user->setPhone($data['phone']);
         }
@@ -65,14 +62,11 @@ class AuthController extends AbstractController
             }
         }
 
-        // Hash da senha
         $hashedPassword = $this->passwordHasher->hashPassword($user, $data['password']);
         $user->setPassword($hashedPassword);
 
-        // Definir role padrão (ROLE_PERSONAL para personal trainers)
-        $user->setRoles(['ROLE_PERSONAL']);
+        $user->setRoles(['ROLE_USER', 'ROLE_PERSONAL']);
 
-        // Validar entidade
         $errors = $this->validator->validate($user);
         if (count($errors) > 0) {
             $errorMessage = null;
@@ -83,15 +77,21 @@ class AuthController extends AbstractController
             throw new UnprocessableEntityHttpException($errorMessage ?: 'Dados inválidos');
         }
 
-        // Salvar usuário
         $this->em->persist($user);
+
+        $personal = new Personal();
+        $personal->setUser($user);
+
+        if (isset($data['cref'])) {
+            $personal->setCref($data['cref']);
+        }
+
+        $this->em->persist($personal);
         $this->em->flush();
 
-        // Enviar email de verificação
         try {
             $this->emailVerificationService->sendVerificationEmail($user);
         } catch (\Exception $e) {
-            // Log do erro mas não falha o registro
             error_log('Erro ao enviar email de verificação: ' . $e->getMessage());
         }
 
@@ -139,7 +139,6 @@ class AuthController extends AbstractController
         $user = $this->userRepository->findOneBy(['email' => $data['email']]);
 
         if (!$user) {
-            // Por segurança, não revelar se o email existe ou não
             return new JsonResponse([
                 'success' => true,
                 'message' => 'Se o email estiver cadastrado, um link de verificação será enviado.'
@@ -177,7 +176,6 @@ class AuthController extends AbstractController
         $user = $this->userRepository->findOneBy(['email' => $data['email']]);
 
         if (!$user) {
-            // Por segurança, não revelar se o email existe ou não
             return new JsonResponse([
                 'success' => true,
                 'message' => 'Se o email estiver cadastrado, um link de recuperação será enviado.'
@@ -215,12 +213,10 @@ class AuthController extends AbstractController
             throw new UnprocessableEntityHttpException('Token de recuperação inválido');
         }
 
-        // Verificar se o token expirou
         if ($user->getResetTokenExpiresAt() && $user->getResetTokenExpiresAt() < new \DateTimeImmutable()) {
             throw new UnprocessableEntityHttpException('Token de recuperação expirado');
         }
 
-        // Validar senha (mesmas regras do registro)
         if (strlen($data['password']) < 8) {
             throw new UnprocessableEntityHttpException('A senha deve ter pelo menos 8 caracteres');
         }
@@ -237,14 +233,12 @@ class AuthController extends AbstractController
             throw new UnprocessableEntityHttpException('A senha deve conter números');
         }
 
-        // Hash da nova senha
         $hashedPassword = $this->passwordHasher->hashPassword($user, $data['password']);
         $user->setPassword($hashedPassword);
-        
-        // Limpar token de reset
+
         $user->setResetToken(null);
         $user->setResetTokenExpiresAt(null);
-        
+
         $this->em->flush();
 
         return new JsonResponse([

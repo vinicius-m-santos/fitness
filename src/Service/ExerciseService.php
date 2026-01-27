@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Entity\Exercise;
 use App\Repository\ExerciseRepository;
 use App\Repository\ExerciseCategoryRepository;
+use App\Repository\MuscleGroupRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Personal;
 use App\Entity\User;
@@ -19,6 +20,7 @@ class ExerciseService
         private ExerciseRepository $exerciseRepository,
         private PersonalRepository $personalRepository,
         private ExerciseCategoryRepository $exerciseCategoryRepository,
+        private MuscleGroupRepository $muscleGroupRepository,
         private EntityManagerInterface $em,
         private PeriodExerciseRepository $periodExerciseRepository,
     ) {}
@@ -49,6 +51,16 @@ class ExerciseService
             throw new UnprocessableEntityHttpException('Categoria não encontrada.');
         }
 
+        $muscleGroupId = $data['muscleGroupId'] ?? null;
+        if (!$muscleGroupId) {
+            throw new UnprocessableEntityHttpException("Necessário preencher o grupo muscular do exercício");
+        }
+
+        $muscleGroup = $this->muscleGroupRepository->find($muscleGroupId);
+        if (!$muscleGroup) {
+            throw new UnprocessableEntityHttpException('Grupo muscular não encontrado.');
+        }
+
         $existing = $this->exerciseRepository->findOneBy([
             'name' => $exerciseName,
             'personal' => $personal
@@ -60,6 +72,7 @@ class ExerciseService
         $exercise = new Exercise();
         $exercise->setName($exerciseName);
         $exercise->setExerciseCategory($category);
+        $exercise->setMuscleGroup($muscleGroup);
         $exercise->setPersonal($personal);
 
         $this->exerciseRepository->add($exercise, true);
@@ -81,13 +94,13 @@ class ExerciseService
         ]);
 
         if (!$exercise) {
-            throw new \Exception('Exercício não encontrado.');
+            throw new UnprocessableEntityHttpException('Exercício não encontrado.');
         }
 
         $hasRelations = $this->periodExerciseRepository->findOneBy(['exercise' => $exercise]);
 
         if ($hasRelations) {
-            throw new \Exception('O exercício está cadastrado a um treino.');
+            throw new UnprocessableEntityHttpException('O exercício está cadastrado a um treino.');
         }
 
         $this->em->remove($exercise);
@@ -151,6 +164,15 @@ class ExerciseService
             throw new UnprocessableEntityHttpException('Categoria não encontrada.');
         }
 
+        if (empty($data['muscleGroup'])) {
+            throw new UnprocessableEntityHttpException('Necessário preencher o grupo muscular do exercício.');
+        }
+
+        $muscleGroup = $this->muscleGroupRepository->find($data['muscleGroup']);
+        if (!$muscleGroup) {
+            throw new UnprocessableEntityHttpException('Grupo muscular não encontrado.');
+        }
+
         $existing = $this->exerciseRepository->findOneBy([
             'name' => $exerciseName,
             'personal' => $personal
@@ -166,6 +188,7 @@ class ExerciseService
 
         $exercise->setName($exerciseName);
         $exercise->setExerciseCategory($category);
+        $exercise->setMuscleGroup($muscleGroup);
 
         $this->exerciseRepository->add($exercise, true);
 

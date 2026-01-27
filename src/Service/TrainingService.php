@@ -184,7 +184,7 @@ class TrainingService
     public function updateTraining(User $user, array $data, int $id): void
     {
         $training = $this->trainingRepository->find($id);
-        if (!$training || $training->getPersonal()->getId() !== $user->getId()) {
+        if (!$training || $training->getPersonal()->getUser()->getId() !== $user->getId()) {
             throw new UnprocessableEntityHttpException('Treino não encontrado');
         }
 
@@ -223,17 +223,13 @@ class TrainingService
 
     public function deleteTraining(int $trainingId, User $user): void
     {
-        $personal = $this->personalRepository->findOneBy(['user' => $user]);
+        $personal = $user->getPersonal();
         if (!$personal) {
             throw new \Exception('Personal não encontrado.');
         }
 
-        $training = $this->trainingRepository->findOneBy([
-            'id' => $trainingId,
-            'personal' => $personal
-        ]);
-
-        if (!$training) {
+        $training = $this->trainingRepository->find($trainingId);
+        if (!$training || $training->getPersonal()->getUser()->getId() !== $user->getId()) {
             throw new \Exception('Treino não encontrado.');
         }
 

@@ -159,7 +159,7 @@ export function useTrainingForm({
 
   const updateExercise = (
     periodId: number,
-    instanceId: number,
+    instanceId: string | undefined,
     field: string,
     value: string
   ) => {
@@ -179,7 +179,7 @@ export function useTrainingForm({
     );
   };
 
-  const removeExercise = (periodId: number, instanceId: number) => {
+  const removeExercise = (periodId: number, instanceId: string | undefined) => {
     form.setValue(
       "periods",
       periods.map((p) =>

@@ -42,6 +42,7 @@ final class ExerciseController extends AbstractController
                 'name' => $exercise->getName(),
                 'personal' => $exercise->getPersonal() ? $exercise->getPersonal()->getId() : null,
                 'exerciseCategory' => $exercise->getExerciseCategory()->getName(),
+                'muscleGroup' => $exercise->getMuscleGroup()->getName(),
                 'createdAt' => $exercise->getCreatedAt()->format('Y-m-d H:i:s'),
             ];
         }

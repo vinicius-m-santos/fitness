@@ -117,11 +117,11 @@ export default function WorkoutsTab() {
               </AccordionTrigger>
               <AccordionContent className="space-y-3">
                 <div className="flex justify-end">
-                  <div className="flex gap-x-2 text-black">
+                  <div className="flex flex-wrap w-full md:w-auto md:flex-nowrap gap-2 text-black">
                     <Button
                       size="sm"
                       disabled={pdfLoading}
-                      className="flex bg-blue-500 hover:bg-blue-400 items-center gap-1 cursor-pointer"
+                      className="w-full flex bg-blue-500 hover:bg-blue-400 items-center gap-1 cursor-pointer"
                       onClick={() => handleGeneratePdf(client, workout)}
                     >
                       {!pdfLoading && (
@@ -137,7 +137,7 @@ export default function WorkoutsTab() {
                     />
                     <Button
                       size="sm"
-                      className="text-white flex items-center gap-1 cursor-pointer"
+                      className="w-full text-white flex items-center gap-1 cursor-pointer"
                       variant="destructive"
                       onClick={() => {
                         setTrainingToDelete(workout);
@@ -187,9 +187,9 @@ export default function WorkoutsTab() {
                               <TableCell className="font-medium">
                                 {ex.name}
                               </TableCell>
-                              <TableCell>{ex.series}</TableCell>
-                              <TableCell>{ex.reps}</TableCell>
-                              <TableCell>{ex.rest}</TableCell>
+                              <TableCell>{ex.series || "-"}</TableCell>
+                              <TableCell>{ex.reps || "-"}</TableCell>
+                              <TableCell>{ex.rest || "-"}</TableCell>
                               <TableCell className="text-muted-foreground">
                                 {ex.obs || "-"}
                               </TableCell>

@@ -115,7 +115,7 @@ export default function MeasurementsTable({
                           <Button
                             size="sm"
                             variant="destructive"
-                            className="h-8 w-8 p-0"
+                            className="h-8 w-8 p-0 text-white flex items-center gap-1 cursor-pointer"
                             onClick={() => handleDelete(m)}
                           >
                             <Trash className="h-4 w-4" />
