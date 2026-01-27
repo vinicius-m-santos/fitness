@@ -73,24 +73,34 @@ const CategoryBadge = (params: any) => {
   return <div className="flex mt-2.5 items-center gap-2">{badges}</div>;
 };
 
+const MuscleGroupBadge = (params: any) => {
+  const { muscleGroup } = params.data;
+
+  if (!muscleGroup) {
+    return <span className="text-gray-400 text-xs">-</span>;
+  }
+
+  return (
+    <span className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300 text-xs font-medium px-2.5 py-0.5 rounded-sm">
+      {muscleGroup}
+    </span>
+  );
+};
+
 const ActionButtons = (params: any) => {
   const { id, personal } = params.data;
   const queryClient = useQueryClient();
   const request = useRequest();
 
   const handleDelete = async () => {
-    try {
-      await request({
-        method: "DELETE",
-        url: `/exercise/${id}`,
-        showSuccess: true,
-        successMessage: "Exercício excluído!",
-        onAccept: () =>
-          queryClient.invalidateQueries({ queryKey: ["exercises"] }),
-      });
-    } catch (error: any) {
-      toast.error("Erro ao excluir exercício!");
-    }
+    await request({
+      method: "DELETE",
+      url: `/exercise/${id}`,
+      showSuccess: true,
+      successMessage: "Exercício excluído!",
+      onAccept: () =>
+        queryClient.invalidateQueries({ queryKey: ["exercises"] }),
+    });
   };
 
   const isDefault = personal === 0;
@@ -121,6 +131,7 @@ interface Exercise {
   id: number;
   name: string;
   exerciseCategory: string;
+  muscleGroup: string;
   personal: number;
   createdAt: string;
   active: boolean;
@@ -147,6 +158,14 @@ const ExerciseTable = ({ exerciseTableData, loading }: ExerciseTableProps) => {
       sortable: true,
       filter: true,
       cellRenderer: CategoryBadge,
+    },
+    {
+      headerName: "Grupo Muscular",
+      field: "muscleGroup",
+      flex: 2,
+      sortable: true,
+      filter: true,
+      cellRenderer: MuscleGroupBadge,
     },
     {
       headerName: "Ação",

@@ -88,7 +88,6 @@ export default function TrainingCreateModal({
 
             {training.currentStep === 3 && (
               <StepExercises
-                form={training.form}
                 periods={training.periods}
                 exercises={training.exercises}
                 isMobile={isMobile}
@@ -101,7 +100,7 @@ export default function TrainingCreateModal({
             )}
 
             {training.currentStep === 4 && (
-              <StepReview form={training.form} periods={training.periods} />
+              <StepReview periods={training.periods} />
             )}
 
             {/* FOOTER */}

@@ -28,6 +28,7 @@ export function useRequest() {
             return payload;
         } catch (error) {
             const err = normalizeError(error);
+            console.log(err);
 
             if (showError) {
                 toast.error(err.message || "Erro inesperado");
@@ -47,7 +48,7 @@ function normalizeError(error) {
         const { status, data } = error.response;
         return {
             status,
-            message: data?.error?.message || `Requisição falhou (${status})`,
+            message: data?.error?.message || data?.message || data?.error || `Requisição falhou (${status})`,
             code: data?.error?.code || null,
         };
     }

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Cross2Icon } from "@radix-ui/react-icons";
 import {
   Dialog,
   DialogContent,
@@ -18,14 +17,16 @@ import { useApi } from "../../../api/Api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { Button } from "../../ui/button";
-import { LogOut, Plus, PlusIcon } from "lucide-react";
-import { z, ZodError, treeifyError } from "zod";
-import { zstdCompress } from "zlib";
+import { Plus } from "lucide-react";
+import { z, ZodError } from "zod";
 import SaveButton from "@/components/ui/Buttons/components/SaveButton";
 
-type ExerciseCreateModalProps = {};
+type ExerciseCreateModalProps = {
+  openProp: boolean;
+  onOpenChange: (open: boolean) => void;
+};
 
-const ExerciseCreateModal = ({}: ExerciseCreateModalProps) => {
+const ExerciseCreateModal = ({ openProp, onOpenChange }: ExerciseCreateModalProps) => {
   const api = useApi();
   const queryExercise = useQueryClient();
 
@@ -35,8 +36,11 @@ const ExerciseCreateModal = ({}: ExerciseCreateModalProps) => {
   const [categories, setCategories] = useState<{ id: number; name: string }[]>(
     []
   );
+  const [muscleGroupId, setMuscleGroupId] = useState<string>("");
+  const [muscleGroups, setMuscleGroups] = useState<{ id: number; name: string }[]>(
+    []
+  );
   const [open, setOpen] = useState<boolean>(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const exerciseSchema = z.object({
     name: z
@@ -44,6 +48,7 @@ const ExerciseCreateModal = ({}: ExerciseCreateModalProps) => {
       .min(3, "O nome precisa ter pelo menos 3 caracteres")
       .max(50, "O nome pode ter no máximo 50 caracteres"),
     exerciseCategoryId: z.string().min(1, "A categoria é obrigatória"),
+    muscleGroupId: z.string().min(1, "O grupo muscular é obrigatório"),
   });
 
   useEffect(() => {
@@ -59,13 +64,25 @@ const ExerciseCreateModal = ({}: ExerciseCreateModalProps) => {
       }
     };
 
+    const loadMuscleGroups = async () => {
+      try {
+        const res = await api.get("/muscle-group/all");
+        console.log("Grupos Musculares:", res.data.muscleGroups);
+        setMuscleGroups(res.data.muscleGroups);
+      } catch (err) {
+        console.error("Erro ao carregar grupos musculares", err);
+      }
+    };
+
     loadCategories();
+    loadMuscleGroups();
   }, [open]);
 
   const saveExercise = async (data: any) => {
     const res = await api.post("/exercise/create", data);
     setName("");
     setCategoryId("");
+    setMuscleGroupId("");
     return res.data;
   };
 
@@ -90,6 +107,7 @@ const ExerciseCreateModal = ({}: ExerciseCreateModalProps) => {
       const data = exerciseSchema.parse({
         name,
         exerciseCategoryId: categoryId,
+        muscleGroupId: muscleGroupId,
       });
 
       await mutation.mutateAsync(data);
@@ -110,6 +128,7 @@ const ExerciseCreateModal = ({}: ExerciseCreateModalProps) => {
   const resetForm = () => {
     setName("");
     setCategoryId("");
+    setMuscleGroupId("");
   };
 
   const handleOpenChange = (value: boolean) => {
@@ -181,6 +200,29 @@ const ExerciseCreateModal = ({}: ExerciseCreateModalProps) => {
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={String(cat.id)}>
                       {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label
+                htmlFor="muscleGroup"
+                className="block text-sm font-bold mb-1"
+              >
+                Grupo Muscular
+              </label>
+              <Select
+                value={muscleGroupId}
+                onValueChange={(val) => setMuscleGroupId(val)}
+              >
+                <SelectTrigger className="w-full px-3 py-2 text-sm rounded-md bg-gray-100 border border-gray-300 focus:ring-1 outline-none">
+                  <SelectValue placeholder="Selecione o grupo muscular" />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  {muscleGroups.map((mg) => (
+                    <SelectItem key={mg.id} value={String(mg.id)}>
+                      {mg.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

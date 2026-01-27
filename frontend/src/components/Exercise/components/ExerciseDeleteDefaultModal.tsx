@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Trash } from "lucide-react";
 
 type ExerciseDeleteDefaultModalProps = {
   openProp: boolean;
@@ -55,12 +56,14 @@ const ExerciseDeleteDefaultModal = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {/* Botão para abrir o modal */}
-      <button
+      <Button
+        size="sm"
+        variant="destructive"
+        className="h-8 w-8 p-0 text-white flex items-center gap-1 cursor-pointer"
         onClick={() => setOpen(true)}
-        className="default ml-2 border border-red-500 hover:border-red-400 outline-none hover:text-red-400 text-red-500 rounded p-2"
       >
-        <TrashIcon className="w-4 h-4" />
-      </button>
+        <Trash className="h-4 w-4" />
+      </Button>
 
       {/* Conteúdo do modal */}
       <DialogContent className="rounded-md w-[90vw] max-w-[400px] sm:max-w-[500px] md:max-w-[600px] max-h-[85vh] overflow-y-auto">

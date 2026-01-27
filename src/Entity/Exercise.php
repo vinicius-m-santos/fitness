@@ -26,6 +26,11 @@ class Exercise
     #[Groups(['exercise_all', 'training_client'])]
     private ExerciseCategory $exerciseCategory;
 
+    #[ORM\ManyToOne(targetEntity: MuscleGroup::class)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    #[Groups(['exercise_all', 'training_client'])]
+    private MuscleGroup $muscleGroup;
+
     #[ORM\ManyToOne(targetEntity: Personal::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
     #[Groups(['exercise_all', 'training_client'])]
@@ -82,6 +87,17 @@ class Exercise
     public function setExerciseCategory(ExerciseCategory $exerciseCategory): self
     {
         $this->exerciseCategory = $exerciseCategory;
+        return $this;
+    }
+
+    public function getMuscleGroup(): MuscleGroup
+    {
+        return $this->muscleGroup;
+    }
+
+    public function setMuscleGroup(MuscleGroup $muscleGroup): self
+    {
+        $this->muscleGroup = $muscleGroup;
         return $this;
     }
 
