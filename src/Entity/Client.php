@@ -79,6 +79,7 @@ class Client
 
     #[ORM\OneToOne(inversedBy: 'client', cascade: ['persist', 'remove'])]
     #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private ?User $user = null;
 
     #[ORM\ManyToOne(inversedBy: 'clients')]
@@ -93,25 +94,13 @@ class Client
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private ?string $observation = '';
 
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
-    private ?string $avatarKey = null;
-
-    #[ORM\Column(type: 'text', nullable: true)]
-    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
-    private ?string $avatarUrl = null;
-
-    #[ORM\Column(length: 50, nullable: true)]
-    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
-    private ?string $phone = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
-    private ?string $email = null;
-
     #[ORM\Column(type: 'json', nullable: true)]
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private ?array $tags = null;
+
+    #[ORM\Column(type: "boolean", options: ['default' => false])]
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
+    private bool $hasRegistered = false;
 
     #[ORM\OneToMany(mappedBy: 'client', targetEntity: Gallery::class, orphanRemoval: true)]
     #[Groups(['client_all'])]
@@ -265,7 +254,7 @@ class Client
         return $this->createdAt;
     }
 
-    public function getUser(): User
+    public function getUser(): ?User
     {
         return $this->user;
     }
@@ -309,50 +298,6 @@ class Client
         return $this->observation;
     }
 
-    public function setAvatarKey(?string $avatarKey): self
-    {
-        $this->avatarKey = $avatarKey;
-        return $this;
-    }
-
-    public function getAvatarKey(): string|null
-    {
-        return $this->avatarKey;
-    }
-
-    public function setAvatarUrl(?string $avatarUrl): self
-    {
-        $this->avatarUrl = $avatarUrl;
-        return $this;
-    }
-
-    public function getAvatarUrl(): string|null
-    {
-        return $this->avatarUrl;
-    }
-
-    public function setPhone(?string $phone): self
-    {
-        $this->phone = $phone;
-        return $this;
-    }
-
-    public function getPhone(): string|null
-    {
-        return $this->phone;
-    }
-
-    public function setEmail(?string $email): self
-    {
-        $this->email = $email;
-        return $this;
-    }
-
-    public function getEmail(): string|null
-    {
-        return $this->email;
-    }
-
     public function getUuid(): string
     {
         return $this->uuid;
@@ -366,6 +311,17 @@ class Client
     public function setTags(array $tags): self
     {
         $this->tags = $tags;
+        return $this;
+    }
+
+    public function getHasRegistered(): bool
+    {
+        return $this->hasRegistered;
+    }
+
+    public function setHasRegistered(bool $hasRegistered): self
+    {
+        $this->hasRegistered = $hasRegistered;
         return $this;
     }
 
@@ -468,22 +424,6 @@ class Client
 
         if (isset($data['observation'])) {
             $this->observation = $data['observation'];
-        }
-
-        if (isset($data['avatarKey']) && !empty($data['avatarKey'])) {
-            $this->avatarKey = $data['avatarKey'];
-        }
-
-        if (isset($data['avatarUrl']) && !empty($data['avatarUrl'])) {
-            $this->avatarUrl = $data['avatarUrl'];
-        }
-
-        if (isset($data['phone'])) {
-            $this->phone = $data['phone'];
-        }
-
-        if (isset($data['email']) && !empty($data['email'])) {
-            $this->email = $data['email'];
         }
 
         if (isset($data['tags']) && is_array($data['tags'])) {

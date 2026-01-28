@@ -8,9 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 
 const fields = [
   ["medicalRestriction", "Restrições médicas"],
+  ["previousInjuries", "Lesões anteriores"],
   ["cronicalPain", "Dor crônica"],
   ["controledMedicine", "Remédios controlados"],
-  ["heartProblem", "Histórico cardíaco"],
+  ["heartProblem", "Doenças pré-existentes"],
   ["recentSurgery", "Cirurgia recente"],
 ];
 
@@ -30,25 +31,25 @@ export default function HealthSection({ form }) {
             <FormItem>
               <FormLabel>{label}</FormLabel>
               <FormControl>
-                <Textarea maxLength={255} {...field} />
+                <Textarea placeholder={label} maxLength={255} {...field} />
               </FormControl>
             </FormItem>
           )}
         />
       ))}
 
-      <FormField
+      {/* <FormField
         control={form.control}
         name="timeWithoutGym"
         render={({ field }) => (
           <FormItem>
             <FormLabel>Tempo sem treinar</FormLabel>
             <FormControl>
-              <Textarea maxLength={255} {...field} />
+              <Textarea placeholder="Tempo sem treinar" maxLength={255} {...field} />
             </FormControl>
           </FormItem>
         )}
-      />
+      /> */}
     </section>
   );
 }

@@ -49,12 +49,18 @@ export default function EditableAvatar({ clientData }) {
     onSuccess: (newUrl) => {
       queryClient.setQueryData(["client", client?.id], (old) => ({
         ...old,
-        avatarUrl: newUrl,
+        user: {
+          ...old?.user,
+          avatarUrl: newUrl,
+        },
       }));
 
       setClient((prev) => ({
         ...prev,
-        avatarUrl: newUrl,
+        user: {
+          ...prev?.user,
+          avatarUrl: newUrl,
+        },
       }));
     },
   });
@@ -69,18 +75,23 @@ export default function EditableAvatar({ clientData }) {
     onSuccess: () => {
       queryClient.setQueryData(["client", client?.id], (old) => ({
         ...old,
-        avatarUrl: null,
+        user: {
+          ...old?.user,
+          avatarUrl: null,
+        },
       }));
 
       setClient((prev) => ({
         ...prev,
-        avatarUrl: null,
+        user: {
+          ...prev?.user,
+          avatarUrl: null,
+        },
       }));
     },
   });
 
   const handleFileSelect = (e) => {
-    console.log(e);
     const file = e.target.files[0];
     if (file) {
       uploadMutation.mutate(file);
@@ -96,7 +107,7 @@ export default function EditableAvatar({ clientData }) {
   return (
     <div className="relative group">
       <Avatar
-        key={client?.avatarUrl || "no-avatar"}
+        key={client?.user?.avatarUrl || "no-avatar"}
         className="h-24 w-24 cursor-pointer"
         onClick={() => {
           if (isLoading) {
@@ -106,10 +117,10 @@ export default function EditableAvatar({ clientData }) {
           fileInputRef.current?.click();
         }}
       >
-        {client?.avatarUrl ? (
+        {client?.user?.avatarUrl ? (
           <AvatarImage
-            key={client?.avatarUrl}
-            src={client.avatarUrl}
+            key={client?.user?.avatarUrl}
+            src={client.user.avatarUrl}
             alt="Foto do cliente"
             className="object-cover object-center"
           />
@@ -129,7 +140,7 @@ export default function EditableAvatar({ clientData }) {
         {isLoading && <AvatarLoader />}
       </Avatar>
 
-      {!isLoading && client?.avatarUrl && (
+      {!isLoading && client?.user?.avatarUrl && (
         <DeleteAvatarModal onConfirm={handleDelete} />
       )}
 

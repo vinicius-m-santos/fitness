@@ -25,7 +25,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?Uuid $uuid = null;
 
     #[ORM\Column(type: "string", unique: true)]
-    #[Groups(['user_all', 'client_all'])]
+    #[Groups(['user_all', 'client_all', 'anamnese_all', 'client_list'])]
     private string $email;
 
     #[ORM\Column(type: 'json')]
@@ -58,15 +58,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['user_all'])]
+    #[Groups(['user_all', 'client_all', 'anamnese_all', 'client_list'])]
     private ?string $avatarKey = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
-    #[Groups(['user_all'])]
+    #[Groups(['user_all', 'client_all', 'anamnese_all', 'client_list'])]
     private ?string $avatarUrl = null;
 
     #[ORM\Column(length: 50, nullable: true)]
-    #[Groups(['user_all'])]
+    #[Groups(['user_all', 'client_all', 'anamnese_all', 'client_list'])]
     private ?string $phone = null;
 
     #[ORM\Column(type: "date_immutable", nullable: true)]
@@ -304,6 +304,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setResetTokenExpiresAt(?\DateTimeImmutable $resetTokenExpiresAt): self
     {
         $this->resetTokenExpiresAt = $resetTokenExpiresAt;
+        return $this;
+    }
+
+    public function getClient(): ?Client
+    {
+        return $this->client;
+    }
+
+    public function setClient(?Client $client): self
+    {
+        $this->client = $client;
         return $this;
     }
 }

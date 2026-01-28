@@ -28,6 +28,7 @@ import ContainerLoader from "../ui/containerLoader";
 import { pdf } from "@react-pdf/renderer";
 import ButtonLoader from "../ui/buttonLoader";
 import { TrainingEditButton } from "../Training/TrainingEditButton";
+import { useAuth } from "@/providers/AuthProvider";
 
 export default function WorkoutsTab() {
   const { id } = useParams();
@@ -37,6 +38,7 @@ export default function WorkoutsTab() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const request = useRequest();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: client } = useQuery({
     queryKey: ["client", id],
@@ -84,24 +86,28 @@ export default function WorkoutsTab() {
           Treinos do Aluno
         </h3>
 
-        <TrainingCreateModal
-          open={openModal}
-          onOpenChange={(open) => setOpenModal(open)}
-          client={client?.id}
-        />
+        {user?.roles.includes("ROLE_PERSONAL") && (
+          <>
+            <TrainingCreateModal
+              open={openModal}
+              onOpenChange={(open) => setOpenModal(open)}
+              client={client?.id}
+            />
 
-        <Button
-          size="sm"
-          className="cursor-pointer"
-          onClick={() => setOpenModal(true)}
-        >
-          <PlusIcon /> Novo treino
-        </Button>
+            <Button
+              size="sm"
+              className="cursor-pointer"
+              onClick={() => setOpenModal(true)}
+            >
+              <PlusIcon /> Novo treino
+            </Button>
+          </>
+        )}
       </div>
 
       {workouts.length === 0 ? (
         <p className="text-muted-foreground text-sm">
-          Nenhum treino cadastrado.
+          {user?.roles.includes("ROLE_PERSONAL") ? "Nenhum treino cadastrado para este aluno." : "Nenhum treino cadastrado para você. Peça ao personal que cadastre um novo treino."}
         </p>
       ) : (
         <Accordion type="single" collapsible className="space-y-3">

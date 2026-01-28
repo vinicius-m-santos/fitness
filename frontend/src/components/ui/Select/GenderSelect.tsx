@@ -14,7 +14,7 @@ export default function GenderSelect({ value, handleChange }) {
                 htmlFor="gender"
                 className="sm:text-right text-sm font-medium"
             >
-                Sexo
+                Gênero
             </Label>
             <div className="col-span-3">
                 <Select
@@ -27,6 +27,7 @@ export default function GenderSelect({ value, handleChange }) {
                     <SelectContent>
                         <SelectItem value="M">Masculino</SelectItem>
                         <SelectItem value="F">Feminino</SelectItem>
+                        <SelectItem value="O">Outro</SelectItem>
                     </SelectContent>
                 </Select>
             </div>

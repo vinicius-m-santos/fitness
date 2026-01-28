@@ -24,9 +24,6 @@ class ValidClientValidator extends ConstraintValidator
             'lastName' => empty($client->getLastName())
                 ? $constraint->lastName
                 : null,
-            'email' => empty($client->getEmail())
-                ? $constraint->email
-                : null,
             // 'phone' => empty($client->getPhone())
             //     ? $constraint->phone
             //     : null,

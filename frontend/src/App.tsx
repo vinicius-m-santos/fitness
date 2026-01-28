@@ -1,5 +1,4 @@
 import { Routes, Route } from "react-router-dom";
-import Anamnese from "./pages/Anamnese";
 import ClientView from "./pages/ClientView";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -7,7 +6,6 @@ import Logout from "./pages/Logout";
 import PrivateRoute from "./utils/Auth/PrivateRoute";
 import AdminLayout from "./layout/AdminLayout";
 import Home from "./pages/Home";
-import UuidRoute from "./utils/Auth/UuidRoute";
 import NoAuthLayout from "./layout/NoAuthLayout";
 import Clients from "./pages/Clients";
 import Exercise from "./pages/Exercise";
@@ -16,6 +14,7 @@ import EmailVerification from "./pages/EmailVerification";
 import RegisterSuccess from "./pages/RegisterSuccess";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import ClientRegister from "./pages/ClientRegister";
 
 export default function App() {
     return (
@@ -46,16 +45,6 @@ export default function App() {
                     <NoAuthLayout>
                         <Home />
                     </NoAuthLayout>
-                }
-            />
-            <Route
-                path="/anamnese"
-                element={
-                    <UuidRoute>
-                        <NoAuthLayout>
-                            <Anamnese />
-                        </NoAuthLayout>
-                    </UuidRoute>
                 }
             />
             <Route
@@ -111,6 +100,14 @@ export default function App() {
                 element={
                     <NoAuthLayout>
                         <ResetPassword />
+                    </NoAuthLayout>
+                }
+            />
+            <Route
+                path="/client-register/:token/:clientUuid"
+                element={
+                    <NoAuthLayout>
+                        <ClientRegister />
                     </NoAuthLayout>
                 }
             />

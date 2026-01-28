@@ -22,6 +22,7 @@ export const clientFormSchema = z.object({
   weight: z.string().nullable().optional(),
   objective: z.string().nullable().optional(),
   observation: z.string(),
+  sendAccessEmail: z.boolean().optional(),
 });
 
 export type ClientFormSchema = z.infer<typeof clientFormSchema>;
@@ -92,6 +93,7 @@ export const anamneseUpdateModalSchema = z.object({
       label: z.string(),
     })
   ),
+  previousInjuries: z.string().optional(),
 });
 
 export type AnamneseUpdateModalSchema = z.infer<

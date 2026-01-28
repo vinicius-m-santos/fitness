@@ -125,21 +125,17 @@ export default function AnamneseTab() {
         <CardContent className="space-y-3 text-sm">
           <p>
             <span className="text-muted-foreground">
-              Doença cardíaca pré-existente:
+              Doenças pré-existentes:
             </span>{" "}
             {client?.anamnese?.heartProblem
               ? client?.anamnese.heartProblem
               : "-"}
           </p>
           <p>
-            <span className="text-muted-foreground">
-              Doenças pré-existentes:
-            </span>{" "}
-            Nenhuma relatada.
-          </p>
-          <p>
             <span className="text-muted-foreground">Lesões anteriores:</span>{" "}
-            Lesão leve no ombro direito em 2023, atualmente recuperado.
+            {client?.anamnese?.previousInjuries
+              ? client?.anamnese.previousInjuries
+              : "-"}
           </p>
           <p>
             <span className="text-muted-foreground">Uso de medicamentos:</span>{" "}
@@ -198,10 +194,10 @@ export default function AnamneseTab() {
             <span className="text-muted-foreground">Ocupação:</span>{" "}
             {client?.anamnese?.ocupation
               ? client?.anamnese.ocupation
-                  .toString()
-                  .slice(0, 1)
-                  .toUpperCase() +
-                client?.anamnese.ocupation.toString().slice(1)
+                .toString()
+                .slice(0, 1)
+                .toUpperCase() +
+              client?.anamnese.ocupation.toString().slice(1)
               : "-"}
           </p>
         </CardContent>

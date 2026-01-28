@@ -59,8 +59,8 @@ export default function ClientCard({ client }: ClientCardProps) {
     <Card className="bg-gray-100 text-gray-100 rounded-2xl shadow-md">
       <CardHeader className="flex flex-row items-center gap-3">
         <Avatar className="h-10 w-10">
-          {client.avatarUrl ? (
-            <AvatarImage src={client.avatarUrl} alt="Foto do cliente" />
+          {client?.user?.avatarUrl ? (
+            <AvatarImage src={client.user.avatarUrl} alt="Foto do cliente" />
           ) : (
             <AvatarFallback className="bg-gray-200 text-gray-800">
               {client?.name?.[0]?.toUpperCase()}

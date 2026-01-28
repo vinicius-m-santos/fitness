@@ -30,6 +30,7 @@ import {
   anamneseUpdateModalSchema,
   AnamneseUpdateModalSchema,
 } from "@/schemas/clients";
+import { useAuth } from "@/providers/AuthProvider";
 
 type Props = {
   open: boolean;
@@ -48,6 +49,7 @@ export default function AnamneseUpdateModal({
   onAccept,
 }: Props) {
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
   const form = useForm<AnamneseUpdateModalSchema>({
     resolver: zodResolver(anamneseUpdateModalSchema),
@@ -72,6 +74,7 @@ export default function AnamneseUpdateModal({
       sleep: "",
       physicalActivity: "",
       tags: [],
+      previousInjuries: "",
     },
   });
 
@@ -100,6 +103,7 @@ export default function AnamneseUpdateModal({
       sleep: client.anamnese?.sleep ?? "",
       physicalActivity: client.anamnese?.physicalActivity ?? "",
       tags: client.tags ?? [],
+      previousInjuries: client.anamnese?.previousInjuries ?? "",
     });
   }, [client, form]);
 
@@ -149,7 +153,9 @@ export default function AnamneseUpdateModal({
             <MeasuresSection form={form} />
             <HealthSection form={form} />
             <ExtrasSection form={form} />
-            <TagsSelector form={form} />
+            {user?.roles.includes("ROLE_PERSONAL") && (
+              <TagsSelector form={form} />
+            )}
 
             <div className="flex justify-end pt-4">
               <SaveButton

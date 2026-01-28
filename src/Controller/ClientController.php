@@ -11,6 +11,7 @@ use App\Repository\PersonalRepository;
 use App\Repository\UserRepository;
 use App\Service\AnamneseService;
 use App\Service\S3Service;
+use App\Service\ClientRegistrationService;
 use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,6 +20,7 @@ use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[Route('/api/client')]
@@ -34,9 +36,39 @@ class ClientController extends AbstractController
         private readonly AnamneseService $anamneseService,
         private readonly AnamneseRepository $anamneseRepository,
         private readonly PersonalRepository $personalRepository,
-        private readonly S3Service $s3Service
-    )
+        private readonly S3Service $s3Service,
+        private readonly ClientRegistrationService $clientRegistrationService,
+        private readonly UserPasswordHasherInterface $passwordHasher
+    ) {}
+
+    #[Route('/send-registration-link/{clientId}', name: 'client_send_registration_link', methods: ['POST'])]
+    public function sendRegistrationLink(int $clientId): JsonResponse
     {
+        $user = $this->getUser();
+        if (!$user) {
+            throw new UnprocessableEntityHttpException('Usuário não encontrado');
+        }
+
+        $client = $this->clientRepository->find($clientId);
+        if (!$client) {
+            throw new UnprocessableEntityHttpException('Cliente não encontrado');
+        }
+
+        if ($client->getHasRegistered()) {
+            throw new UnprocessableEntityHttpException('Aluno já se cadastrou');
+        }
+
+        $personal = $this->personalRepository->findOneBy(['user' => $user]);
+        if (!$personal) {
+            throw new UnprocessableEntityHttpException('Personal trainer não encontrado');
+        }
+
+        try {
+            $this->clientRegistrationService->sendRegistrationEmail($client, $personal);
+            return new JsonResponse(['success' => true, 'message' => 'Email enviado com sucesso'], 200);
+        } catch (Exception $e) {
+            throw new UnprocessableEntityHttpException('Erro ao enviar email: ' . $e->getMessage());
+        }
     }
 
     #[Route('/clientByPersonal', name: 'client_create_by_personal', methods: ['POST'])]
@@ -48,7 +80,7 @@ class ClientController extends AbstractController
         }
 
         $data = json_decode($request->getContent(), true);
-        
+
         $client = new Client();
         $client->getDataFromArray($data);
 
@@ -64,8 +96,24 @@ class ClientController extends AbstractController
         }
 
         try {
+            $email = $data['email'] ?? null;
+            if ($email) {
+                $userExists = $this->userRepository->findOneBy(['email' => $email]);
+                if ($userExists) {
+                    throw new UnprocessableEntityHttpException('Email já cadastrado');
+                }
+            }
+
             $personal = $this->personalRepository->findOneBy(['user' => $user]);
-            $client = $this->clientService->createClient($personal, $client);
+            $client = $this->clientService->createClient($personal, $client, $data);
+
+            if (isset($data['sendAccessEmail']) && $data['sendAccessEmail'] === true) {
+                try {
+                    $this->clientRegistrationService->sendRegistrationEmail($client, $personal);
+                } catch (Exception $e) {
+                    error_log('Erro ao enviar email de cadastro: ' . $e->getMessage());
+                }
+            }
         } catch (Exception $e) {
             throw new Exception($e->getMessage());
         }
@@ -98,22 +146,29 @@ class ClientController extends AbstractController
         $this->clientRepository->delete($client);
         return new JsonResponse(null);
     }
-    
+
     #[Route('/avatar/{id}', name: 'client_delete_avatar', methods: ['DELETE'])]
     public function deleteAvatar(Client $client): JsonResponse
     {
-        $key = $client->getAvatarKey();
+        $user = $client->getUser();
+        if (!$user) {
+            throw new UnprocessableEntityHttpException('Cliente não possui usuário associado');
+        }
+
+        $key = $user->getAvatarKey();
         if (empty($key)) {
-            $client->setAvatarKey(null);
-            $client->setAvatarUrl(null);
+            $user->setAvatarKey(null);
+            $user->setAvatarUrl(null);
+            $this->userRepository->add($user, false);
             $this->clientService->add($client);
 
             return new JsonResponse(['data' => 'Sucesso']);
         }
 
         $this->s3Service->deleteObject($key);
-        $client->setAvatarKey(null);
-        $client->setAvatarUrl(null);
+        $user->setAvatarKey(null);
+        $user->setAvatarUrl(null);
+        $this->userRepository->add($user, false);
         $this->clientService->add($client);
 
         return new JsonResponse(['data' => 'Sucesso']);
@@ -129,7 +184,7 @@ class ClientController extends AbstractController
         }
 
         $data = json_decode($request->getContent(), true);
-        
+
         $client = $this->clientService->findOneBy(['uuid' => $client]);
         if ($client === null) {
             throw new UnprocessableEntityHttpException('Link de Personal inválido');
@@ -201,9 +256,18 @@ class ClientController extends AbstractController
         $anamnese->setClient($client);
         $this->anamneseService->add($anamnese);
 
-        $avatarKey = $client->getAvatarKey();
-        if (isset($avatarKey)) {
-            $client->setAvatarUrl($this->s3Service->generateFileUrl($avatarKey));
+        $user = $client->getUser();
+        if ($user) {
+            $avatarKey = $user->getAvatarKey();
+            if (isset($avatarKey)) {
+                $user->setAvatarUrl($this->s3Service->generateFileUrl($avatarKey));
+                $this->userRepository->add($user, false);
+            }
+
+            if (isset($data['phone'])) {
+                $user->setPhone($data['phone']);
+                $this->userRepository->add($user, false);
+            }
         }
         $this->clientService->add($client);
 
@@ -214,7 +278,7 @@ class ClientController extends AbstractController
     #[Route('/all', name: 'get_all_clients', methods: ['GET'])]
     public function getAll(): JsonResponse
     {
-         /** @var \App\Entity\User $user */
+        /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$user) {
@@ -223,9 +287,13 @@ class ClientController extends AbstractController
 
         $clients = $this->clientRepository->findAllClientsByUserId($user->getId());
         foreach ($clients as $client) {
-            $avatarKey = $client->getAvatarKey();
-            if (isset($avatarKey)) {
-                $client->setAvatarUrl($this->s3Service->generateFileUrl($avatarKey));
+            $clientUser = $client->getUser();
+            if ($clientUser) {
+                $avatarKey = $clientUser->getAvatarKey();
+                if (isset($avatarKey)) {
+                    $clientUser->setAvatarUrl($this->s3Service->generateFileUrl($avatarKey));
+                    $this->userRepository->add($clientUser, false);
+                }
             }
         }
         $normalizedData = $this->normalizer->normalize($clients, 'json', ['groups' => ['client_list']]);
@@ -236,7 +304,7 @@ class ClientController extends AbstractController
     #[Route('/{clientId}', name: 'get_client', methods: ['GET'])]
     public function get(int $clientId): JsonResponse
     {
-         /** @var \App\Entity\User $user */
+        /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
         if (!$user) {
@@ -245,12 +313,71 @@ class ClientController extends AbstractController
 
         $client = $this->clientRepository->findWithAnamnese($clientId);
 
-        $avatarKey = $client->getAvatarKey();
-        if (isset($avatarKey)) {
-            $client->setAvatarUrl($this->s3Service->generateFileUrl($avatarKey));
+        $clientUser = $client->getUser();
+        if ($clientUser) {
+            $avatarKey = $clientUser->getAvatarKey();
+            if (isset($avatarKey)) {
+                $clientUser->setAvatarUrl($this->s3Service->generateFileUrl($avatarKey));
+                $this->userRepository->add($clientUser, false);
+            }
         }
 
         $normalizedData = $this->normalizer->normalize($client, 'json', ['groups' => ['client_all']]);
         return new JsonResponse(['data' => $normalizedData]);
+    }
+
+    #[Route('/register/{token}/{clientUuid}', name: 'client_register_password', methods: ['POST'])]
+    public function registerPassword(Request $request, string $token, string $clientUuid): JsonResponse
+    {
+        $token = trim($token);
+        $clientUuid = trim($clientUuid);
+
+        if (strlen($token) === 0 || strlen($clientUuid) === 0) {
+            throw new UnprocessableEntityHttpException('Link inválido');
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        if (!isset($data['password']) || !isset($data['confirmPassword'])) {
+            throw new UnprocessableEntityHttpException('Senha e confirmação de senha são obrigatórias');
+        }
+
+        if ($data['password'] !== $data['confirmPassword']) {
+            throw new UnprocessableEntityHttpException('As senhas não coincidem');
+        }
+
+        $client = $this->clientService->findOneBy(['uuid' => $clientUuid]);
+        if ($client === null) {
+            throw new UnprocessableEntityHttpException('Cliente não encontrado');
+        }
+
+        $personal = $this->personalRepository->findOneByUserUuid($token);
+        if ($personal === null) {
+            throw new UnprocessableEntityHttpException('Personal trainer não encontrado');
+        }
+
+        if ($client->getPersonal() !== $personal) {
+            throw new UnprocessableEntityHttpException('Link inválido');
+        }
+
+        if ($client->getHasRegistered()) {
+            throw new UnprocessableEntityHttpException('Aluno já se cadastrou');
+        }
+
+        $user = $client->getUser();
+        if (!$user) {
+            throw new UnprocessableEntityHttpException('Usuário do cliente não encontrado');
+        }
+
+        $hashedPassword = $this->passwordHasher->hashPassword($user, $data['password']);
+        $user->setPassword($hashedPassword);
+        $user->setIsVerified(true);
+        $this->userRepository->add($user, false);
+
+        $client->setHasRegistered(true);
+        $this->clientService->add($client);
+
+        $normalizedData = $this->normalizer->normalize($client, 'json', ['groups' => ['client_all']]);
+        return $this->json(['success' => true, 'data' => $normalizedData], 200);
     }
 }

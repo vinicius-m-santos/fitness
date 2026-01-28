@@ -12,12 +12,18 @@ type ClientTag = {
 
 type ClientTags = ClientTag[];
 
+type ClientUser = {
+  email: string;
+  phone: string | null;
+  avatarKey: string | null;
+  avatarUrl: string | null;
+};
+
 export type Client = {
   id: number;
   name: string;
   lastName: string;
-  email: string;
-  phone: string;
+  user?: ClientUser;
   gender: string;
   age: number;
   weight: number;
@@ -27,14 +33,14 @@ export type Client = {
   workoutDaysPerWeek: number;
   observation: string;
   createdAt: string;
+  hasRegistered?: boolean;
 };
 
 export type ClientAllData = {
   id: number;
   name: string;
   lastName: string;
-  email: string;
-  phone: string;
+  user?: ClientUser;
   gender: string;
   age: number;
   weight: number;
@@ -47,4 +53,5 @@ export type ClientAllData = {
   personal?: Personal;
   anamnese?: AnamneseClientAll;
   tags: ClientTags;
+  hasRegistered?: boolean;
 };

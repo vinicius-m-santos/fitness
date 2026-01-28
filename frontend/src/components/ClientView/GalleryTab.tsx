@@ -18,6 +18,7 @@ import { useParams } from "react-router-dom";
 import { GalleryData } from "@/schemas/gallery";
 import ContainerLoader from "../ui/containerLoader";
 import GalleryUpdateModal from "../Gallery/Modals/GalleryUpdateModal";
+import { useAuth } from "@/providers/AuthProvider";
 
 export default function GalleryTab() {
   const { id } = useParams();
@@ -25,6 +26,7 @@ export default function GalleryTab() {
   const [open, setOpen] = useState(false);
   const [updateOpen, setUpdateOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<any | null>(null);
+  const { user } = useAuth();
 
   const { data: client } = useQuery<ClientAllData>({
     queryKey: ["client", id],
@@ -64,13 +66,15 @@ export default function GalleryTab() {
           Galeria de Progresso
         </h3>
 
-        <Button
-          size="sm"
-          className="cursor-pointer"
-          onClick={() => setOpen(true)}
-        >
-          <PlusIcon /> Adicionar foto
-        </Button>
+        {!user?.roles.includes("ROLE_PERSONAL") && (
+          <Button
+            size="sm"
+            className="cursor-pointer"
+            onClick={() => setOpen(true)}
+          >
+            <PlusIcon /> Adicionar foto
+          </Button>
+        )}
       </div>
 
       <div className="space-y-6">
@@ -113,22 +117,23 @@ export default function GalleryTab() {
             </Accordion>
           ))}
       </div>
-      {selectedImage && (
-        <GalleryUpdateModal
-          open={updateOpen}
-          onOpenChange={(open) => {
-            setUpdateOpen(open);
-            if (!open) setSelectedImage(null);
-          }}
-          image={selectedImage}
-        />
+      {!user?.roles.includes("ROLE_PERSONAL") && selectedImage && (
+        <>
+          <GalleryUpdateModal
+            open={updateOpen}
+            onOpenChange={(open) => {
+              setUpdateOpen(open);
+              if (!open) setSelectedImage(null);
+            }}
+            image={selectedImage}
+          />
+          <GalleryUploadModal
+            open={open}
+            onOpenChange={setOpen}
+            clientId={client?.id}
+          />
+        </>
       )}
-
-      <GalleryUploadModal
-        open={open}
-        onOpenChange={setOpen}
-        clientId={client?.id}
-      />
     </div>
   );
 }

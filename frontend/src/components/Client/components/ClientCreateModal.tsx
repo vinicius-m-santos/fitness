@@ -65,30 +65,29 @@ export default function ClientCreateModal() {
       weight: null,
       objective: null,
       observation: "",
+      sendAccessEmail: false,
     },
   });
 
   const onSubmit = async (data: ClientFormSchema) => {
     setLoading(true);
 
-    try {
-      await request({
-        method: "POST",
-        url: "/client/clientByPersonal",
-        data,
-        successMessage: "Aluno cadastrado",
-        showSuccess: true,
-        onAccept: () => {
-          queryClient.invalidateQueries({ queryKey: ["clients"] });
-          setOpen(false);
-          reset();
-        },
-      });
-    } catch {
-      toast.error("Erro ao cadastrar aluno");
-    } finally {
-      setLoading(false);
-    }
+    await request({
+      method: "POST",
+      url: "/client/clientByPersonal",
+      data,
+      successMessage: "Aluno cadastrado",
+      showSuccess: true,
+      onAccept: () => {
+        queryClient.invalidateQueries({ queryKey: ["clients"] });
+        setOpen(false);
+        reset();
+        setLoading(false);
+      },
+      onReject: (error) => {
+        setLoading(false);
+      },
+    });
   };
 
   return (
@@ -280,6 +279,20 @@ export default function ClientCreateModal() {
                     {errors.observation.message}
                   </p>
                 )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <div className="sm:col-span-4 flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="sendAccessEmail"
+                  {...register("sendAccessEmail")}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <Label htmlFor="sendAccessEmail" className="text-sm font-normal cursor-pointer">
+                  Enviar acesso para o aluno
+                </Label>
               </div>
             </div>
           </div>

@@ -21,6 +21,10 @@ class Anamnese
     #[Groups(['client_all', 'anamnese_all'])]
     private string $medicalRestriction = "";
 
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['client_all', 'anamnese_all'])]
+    private string $previousInjuries = "";
+
     #[ORM\Column(length: 255)]
     #[Groups(['client_all', 'anamnese_all'])]
     private string $cronicalPain = "";
@@ -93,6 +97,17 @@ class Anamnese
     public function setMedicalRestriction(string $medicalRestriction): self
     {
         $this->medicalRestriction = $medicalRestriction;
+        return $this;
+    }
+
+    public function getPreviousInjuries(): string
+    {
+        return $this->previousInjuries;
+    }
+
+    public function setPreviousInjuries(string $previousInjuries): self
+    {
+        $this->previousInjuries = $previousInjuries;
         return $this;
     }
 
@@ -221,6 +236,10 @@ class Anamnese
     {
         if (isset($data['medicalRestriction'])) {
             $this->medicalRestriction = $data['medicalRestriction'];
+        }
+
+        if (isset($data['previousInjuries'])) {
+            $this->previousInjuries = $data['previousInjuries'];
         }
 
         if (isset($data['cronicalPain'])) {
