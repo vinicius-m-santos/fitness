@@ -15,6 +15,10 @@ type User = {
   createdAt?: string;
   emailNotifications?: boolean;
   appNotifications?: boolean;
+  client?: {
+    id: number;
+    name: string;
+  };
 };
 
 type AuthContextType = {
@@ -50,7 +54,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setUser(user);
 
     localStorage.setItem("refresh_token", refresh_token);
-    navigate("/clients");
+    if (user.roles.includes("ROLE_CLIENT")) {
+      navigate(`/client-view/${user.client?.id}`);
+    } else {
+      navigate("/clients");
+    }
   };
 
   const logout = () => {

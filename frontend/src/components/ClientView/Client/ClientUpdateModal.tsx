@@ -36,6 +36,7 @@ import GenderSelect from "@/components/ui/Select/GenderSelect";
 import PhoneInput from "@/components/ui/Inputs/PhoneInput";
 
 import { clientFormSchema, ClientFormSchema } from "@/schemas/clients";
+import { useAuth } from "@/providers/AuthProvider";
 
 type ClientUpdateModalProps = {
   clientData: Client;
@@ -49,7 +50,7 @@ export default function ClientUpdateModal({
   isLoading,
 }: ClientUpdateModalProps) {
   const [open, setOpen] = useState(false);
-
+  const { user } = useAuth();
   const {
     control,
     register,
@@ -80,13 +81,13 @@ export default function ClientUpdateModal({
     reset({
       name: clientData.name ?? "",
       lastName: clientData.lastName ?? "",
-      email: clientData.email ?? "",
-      phone: clientData.phone ?? null,
+      email: clientData.user?.email ?? "",
+      phone: clientData.user?.phone ?? null,
       gender: clientData.gender ?? "",
       age: clientData.age ? String(clientData.age) : null,
       height: clientData.height ? String(clientData.height) : null,
       weight: clientData.weight ? String(clientData.weight) : null,
-      objective: clientData.objective ?? null,
+      objective: clientData.objective ? String(clientData.objective) : null,
       observation: clientData.observation ?? "",
     });
   }, [clientData, reset]);
@@ -201,6 +202,7 @@ export default function ClientUpdateModal({
               <Label className="sm:text-right">Idade</Label>
               <Input
                 type="number"
+                placeholder="Idade"
                 className="sm:col-span-3"
                 {...register("age")}
               />
@@ -210,6 +212,7 @@ export default function ClientUpdateModal({
               <Label className="sm:text-right">Altura (cm)</Label>
               <Input
                 type="text"
+                placeholder="Altura (cm)"
                 className="sm:col-span-3"
                 {...register("height")}
               />
@@ -219,6 +222,7 @@ export default function ClientUpdateModal({
               <Label className="sm:text-right">Peso (kg)</Label>
               <Input
                 type="text"
+                placeholder="Peso (kg)"
                 className="sm:col-span-3"
                 {...register("weight")}
               />
@@ -256,21 +260,23 @@ export default function ClientUpdateModal({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-              <Label className="sm:text-right mt-2">Observações</Label>
-              <div className="sm:col-span-3 space-y-1">
-                <Textarea
-                  rows={3}
-                  maxLength={255}
-                  {...register("observation")}
-                />
-                {errors.observation && (
-                  <p className="text-xs text-destructive">
-                    {errors.observation.message}
-                  </p>
-                )}
+            {user?.roles.includes("ROLE_PERSONAL") && (
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                <Label className="sm:text-right mt-2">Observações</Label>
+                <div className="sm:col-span-3 space-y-1">
+                  <Textarea
+                    rows={3}
+                    maxLength={255}
+                    {...register("observation")}
+                  />
+                  {errors.observation && (
+                    <p className="text-xs text-destructive">
+                      {errors.observation.message}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-end">

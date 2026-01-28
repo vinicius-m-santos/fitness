@@ -29,7 +29,7 @@ export default function MeasuresSection({ form }) {
             <FormItem>
               <FormLabel>Peso (kg)</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <Input placeholder="Peso (kg)" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -43,7 +43,7 @@ export default function MeasuresSection({ form }) {
             <FormItem>
               <FormLabel>Altura (cm)</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <Input placeholder="Altura (cm)" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

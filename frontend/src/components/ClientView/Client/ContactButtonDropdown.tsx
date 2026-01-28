@@ -18,7 +18,7 @@ export default function ContactButtonDropdown({
   client,
 }: ContactButtonDropdownProps) {
   const handleWhatsApp = () => {
-    if (String(client?.phone).trim().length === 0) {
+    if (String(client?.user?.phone).trim().length === 0) {
       return;
     }
 
@@ -26,11 +26,11 @@ export default function ContactButtonDropdown({
   };
 
   const handleSendEmail = () => {
-    if (String(client?.email).trim().length === 0) {
+    if (String(client?.user?.email).trim().length === 0) {
       return;
     }
 
-    window.open(`mailto:${client?.email}`, "_blank");
+    window.open(`mailto:${client?.user?.email}`, "_blank");
   };
 
   return (
@@ -45,21 +45,21 @@ export default function ContactButtonDropdown({
         <DropdownMenuLabel>Contatar aluno</DropdownMenuLabel>
         <DropdownMenuItem
           className="cursor-pointer"
-          disabled={String(client?.email).trim().length === 0}
+          disabled={String(client?.user?.email).trim().length === 0}
           onClick={handleSendEmail}
         >
           <Mail className="h-4 w-4 mr-2" /> Email
         </DropdownMenuItem>
         <DropdownMenuItem
           className="cursor-pointer"
-          disabled={String(client?.phone).trim().length === 0}
+          disabled={String(client?.user?.phone).trim().length === 0}
           onClick={handleWhatsApp}
           asChild
         >
           <WhatsAppButton
             phoneNumber={
-              client?.phone?.trim().length
-                ? `+55${client?.phone.replace(/\D/g, "")}`
+              client?.user?.phone?.trim().length
+                ? `+55${client?.user?.phone.replace(/\D/g, "")}`
                 : null
             }
             message={`Olá ${client?.name}! Tudo bem? Aqui é o ${client?.personal?.user?.firstName}, seu personal.`}

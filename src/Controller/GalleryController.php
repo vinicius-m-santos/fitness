@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Client;
 use App\Entity\Gallery;
+use App\Enum\GalleryVisibilityEnum;
 use App\Service\ClientService;
 use App\Repository\ClientRepository;
 use App\Repository\UserRepository;
@@ -29,9 +30,7 @@ class GalleryController extends AbstractController
         private readonly ClientRepository $clientRepository,
         private readonly UserRepository $userRepository,
         private readonly S3Service $s3Service
-    )
-    {
-    }
+    ) {}
 
     #[Route('/client/{id}', name: 'gallery_get_by_client', methods: ['GET'])]
     public function galleryGetByClient(Client $client): JsonResponse
@@ -41,10 +40,24 @@ class GalleryController extends AbstractController
             throw new UnprocessableEntityHttpException('Usuário não encontrado');
         }
 
-        $galleries = $this->galleryService->findBy(
-            ['client' => $client],
-            ['date' => 'DESC']
-        );
+        if (
+            $client->getUser()->getId() !== $user->getId() &&
+            $client->getPersonal()->getUser()->getId() !== $user->getId()
+        ) {
+            throw new AccessDeniedHttpException('Acesso negado');
+        }
+
+        if ($user->getId() === $client->getPersonal()->getUser()->getId()) {
+            $galleries = $this->galleryService->findBy(
+                ['client' => $client, 'visibility' => GalleryVisibilityEnum::PUBLIC],
+                ['date' => 'DESC']
+            );
+        } else {
+            $galleries = $this->galleryService->findBy(
+                ['client' => $client],
+                ['date' => 'DESC']
+            );
+        }
 
         $groups = [];
         foreach ($galleries as $gallery) {
@@ -145,7 +158,7 @@ class GalleryController extends AbstractController
             'success' => true,
         ]);
     }
-    
+
     #[Route('/{id}', name: 'gallery_delete', methods: ['DELETE'])]
     public function galleryDelete(
         Gallery $gallery
@@ -156,8 +169,9 @@ class GalleryController extends AbstractController
         }
 
         if (
-            $gallery->getClient()->getUser()->getId() !== $user->getId() && 
-            $gallery->getClient()->getPersonal()->getUser()->getId() !== $user->getId()) {
+            $gallery->getClient()->getUser()->getId() !== $user->getId() &&
+            $gallery->getClient()->getPersonal()->getUser()->getId() !== $user->getId()
+        ) {
             throw new AccessDeniedHttpException('Acesso negado');
         }
 

@@ -1,5 +1,6 @@
 export type AnamneseClientAll = {
   heartProblem: string;
+  previousInjuries: string;
   controledMedicine: string;
   cronicalPain: string;
   recentSurgery: string;

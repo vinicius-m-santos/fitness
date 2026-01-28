@@ -14,6 +14,7 @@ import { parseISO, format } from "date-fns";
 
 export default function PersonalDataSection() {
   const { user } = useAuth();
+  console.log(user);
 
   const getUserType = () => {
     if (!user?.roles) return "";

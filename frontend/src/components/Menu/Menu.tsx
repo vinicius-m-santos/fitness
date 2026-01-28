@@ -3,16 +3,18 @@ import UserDropdown from "@/components/Menu/components/UserDropdown";
 import logo from "@/assets/fitrise_logo.png";
 import { useState } from "react";
 import {
-    ChartNoAxesColumnIncreasing,
     LogOut,
     MenuIcon,
     User,
     X,
     Dumbbell,
+    Home,
 } from "lucide-react";
+import { useAuth } from "@/providers/AuthProvider";
 
 const Menu = () => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const { user } = useAuth();
 
     return (
         <nav className="bg-gray-100 text-gray-800 shadow-lg">
@@ -29,7 +31,7 @@ const Menu = () => {
                     </div>
 
                     {/* Desktop Menu */}
-                    <div className="hidden md:flex space-x-2 items-center">
+                    <div className="hidden md:w-full md:flex md:justify-between space-x-2 items-center">
                         {/* <Link
                             to="/dashboard"
                             className="flex items-center px-4 py-2 text-sm font-bold hover:text-gray-600 rounded-lg transition duration-500"
@@ -40,20 +42,35 @@ const Menu = () => {
                             />
                             Dashboard
                         </Link> */}
-                        <Link
-                            to="/clients"
-                            className="flex items-center px-4 py-2 text-sm font-bold hover:text-gray-600 rounded-lg transition duration-500"
-                        >
-                            <User size={16} className="mr-2" />
-                            Alunos
-                        </Link>
-                        <Link
-                            to="/exercises"
-                            className="flex items-center px-4 py-2 text-sm font-bold hover:text-gray-600 rounded-lg transition duration-500"
-                        >
-                            <Dumbbell size={16} className="mr-2" />
-                            Exercícios
-                        </Link>
+                        <div className="flex">
+                            {user?.roles.includes("ROLE_CLIENT") && (
+                                <Link
+                                    to={`/client-view/${user?.client?.id}`}
+                                    className="flex items-center px-4 py-2 text-sm font-bold hover:text-gray-600 rounded-lg transition duration-500"
+                                >
+                                    <Home size={16} className="mr-2" />
+                                    Início
+                                </Link>
+                            )}
+                            {user?.roles.includes("ROLE_PERSONAL") && (
+                                <Link
+                                    to="/clients"
+                                    className="flex items-center px-4 py-2 text-sm font-bold hover:text-gray-600 rounded-lg transition duration-500"
+                                >
+                                    <User size={16} className="mr-2" />
+                                    Alunos
+                                </Link>
+                            )}
+                            {user?.roles.includes("ROLE_PERSONAL") && (
+                                <Link
+                                    to="/exercises"
+                                    className="flex items-center px-4 py-2 text-sm font-bold hover:text-gray-600 rounded-lg transition duration-500"
+                                >
+                                    <Dumbbell size={16} className="mr-2" />
+                                    Exercícios
+                                </Link>
+                            )}
+                        </div>
                         <UserDropdown />
                     </div>
 

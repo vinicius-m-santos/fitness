@@ -29,7 +29,7 @@ export default function PersonalInfoSection({ form }) {
             <FormItem>
               <FormLabel>Idade</FormLabel>
               <FormControl>
-                <Input type="number" {...field} />
+                <Input type="number" placeholder="Idade" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

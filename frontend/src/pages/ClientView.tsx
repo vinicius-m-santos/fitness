@@ -16,13 +16,15 @@ import EditableAvatar from "@/components/ClientView/Client/EditableAvatar";
 import ContactButtonDropdown from "@/components/ClientView/Client/ContactButtonDropdown";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { useAuth } from "@/providers/AuthProvider";
 
 export default function ClientView() {
   // const [loading, setLoading] = useState<boolean>(true);
-  const [tab, setTab] = useState("medidas");
+  const [tab, setTab] = useState("evolucao");
   const { id } = useParams();
   const request = useRequest();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const getClientNameFormatted = (name: string, lastName: string): string => {
     if (name) {
@@ -100,7 +102,9 @@ export default function ClientView() {
             onSubmit={handleClientUpdate}
             isLoading={updateClientMutation.isPending}
           />
-          <ContactButtonDropdown client={client} />
+          {user?.roles.includes("ROLE_PERSONAL") && (
+            <ContactButtonDropdown client={client} />
+          )}
         </div>
       </Card>
 

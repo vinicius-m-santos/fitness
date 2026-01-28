@@ -77,6 +77,12 @@ final class TrainingController extends AbstractController
 
         $personal = $this->personalRepository->findOneByUserUuid($user->getUuid());
 
+        if (!$personal && $user->getId() !== $client->getUser()->getId()) {
+            return new JsonResponse(['error' => 'Personal não encontrado'], 404);
+        }
+
+        $personal = $client->getPersonal();
+
         if (!$personal) {
             return new JsonResponse(['error' => 'Personal não encontrado'], 404);
         }
@@ -92,10 +98,10 @@ final class TrainingController extends AbstractController
         //         ->getQuery()
         //         ->getArrayResult();
 
-            // return new JsonResponse([
-            //     'count' => count($trainings),
-            //     'data' => $trainings,
-            // ]);
+        // return new JsonResponse([
+        //     'count' => count($trainings),
+        //     'data' => $trainings,
+        // ]);
         return $this->json(['trainings' => $normalized]);
     }
 

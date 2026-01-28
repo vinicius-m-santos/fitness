@@ -59,6 +59,13 @@ class JWTSuccessHandler
             'isVerified' => $user->isVerified(),
         ];
 
+        if ($user->getClient()) {
+            $data['user']['client'] = [
+                'id' => $user->getClient()->getId(),
+                'name' => $user->getClient()->getName(),
+            ];
+        }
+
         $data['success'] = true;
 
         $event->setData($data);

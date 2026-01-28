@@ -9,6 +9,7 @@ export type ObjectiveKey = keyof typeof OBJECTIVES;
 export const GENDERS = {
   M: "Masculino",
   F: "Feminino",
+  O: "Outro",
 };
 
 export const UPLOAD_PROFILE_PHOTO_MAX_FILE_SIZE = 5 * Math.pow(10, 6);

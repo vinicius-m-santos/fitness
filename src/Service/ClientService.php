@@ -22,9 +22,7 @@ class ClientService
         private UserPasswordHasherInterface $passwordHasher,
         private readonly UserRepository $userRepository,
         private readonly S3Service $s3Service
-    )
-    {
-    }
+    ) {}
 
     public function add(Client $client, bool $flush = true): Client
     {
@@ -44,32 +42,63 @@ class ClientService
 
         $this->s3Service->saveFile($file, $filePath);
 
-        $key = $client->getAvatarKey();
+        $clientUser = $client->getUser();
+        if (!$clientUser) {
+            throw new UnprocessableEntityHttpException('Cliente não possui usuário associado');
+        }
+
+        $key = $clientUser->getAvatarKey();
         if (!empty($key)) {
             $this->s3Service->deleteObject($key);
         }
 
-        $client->setAvatarKey($filePath);
+        $clientUser->setAvatarKey($filePath);
         $url = $this->s3Service->generateFileUrl($filePath) ?? '';
 
         if (empty($url)) {
             throw new UnprocessableEntityHttpException('Erro ao salvar imagem');
         }
 
-        $client->setAvatarUrl($url);
+        $clientUser->setAvatarUrl($url);
+        $this->userRepository->add($clientUser, false);
         $this->add($client);
 
         return $url;
     }
 
-    public function createClient(Personal $personal, Client $client): Client
+    public function createClient(Personal $personal, Client $client, ?array $data = null): Client
     {
         $user = new User();
-        $user->setEmail($client->getEmail());
+
+        $email = null;
+        if ($data && isset($data['email']) && !empty($data['email'])) {
+            $email = $data['email'];
+        } else {
+            $email = $client->getUser()?->getEmail();
+        }
+
+        if (empty($email)) {
+            throw new UnprocessableEntityHttpException('Email é obrigatório para criar cliente');
+        }
+
+        $user->setEmail($email);
         $user->setFirstName($client->getName());
         $user->setLastName($client->getLastName());
         $user->setRoles(['ROLE_CLIENT']);
-        $user->setPassword($this->passwordHasher->hashPassword($user, $client->getEmail()));
+        $user->setPassword($this->passwordHasher->hashPassword($user, $email));
+
+        // Se os dados foram fornecidos, setar phone, avatarKey e avatarUrl do array
+        if ($data) {
+            if (isset($data['phone']) && !empty($data['phone'])) {
+                $user->setPhone($data['phone']);
+            }
+            if (isset($data['avatarKey']) && !empty($data['avatarKey'])) {
+                $user->setAvatarKey($data['avatarKey']);
+            }
+            if (isset($data['avatarUrl']) && !empty($data['avatarUrl'])) {
+                $user->setAvatarUrl($data['avatarUrl']);
+            }
+        }
 
         $this->userRepository->add($user, false);
 
@@ -83,7 +112,7 @@ class ClientService
     }
 
     public function find(int $clientId): ?Client
-    {   
+    {
         return $this->clientRepository->find($clientId);
     }
 

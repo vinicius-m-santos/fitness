@@ -7,7 +7,7 @@ import { AgGridReact } from "ag-grid-react";
 import { useState } from "react";
 import DateConverterComponent from "@/utils/DateConverter";
 import { localeText } from "@/utils/traduction/traduction";
-import { Copy, Eye, X } from "lucide-react";
+import { Mail, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { GENDERS } from "@/utils/constants/Client/constants";
@@ -28,18 +28,23 @@ const ActionButtons = (params: any) => {
 
   const handleView = () => navigate(`/client-view/${params.data.id}`);
 
-  const handleAnamneseLinkCopy = () => {
-    if (!user.uuid || !params.data?.uuid) {
-      toast.error("Erro ao copiar link!");
+  const handleSendRegistrationLink = async () => {
+    if (!params.data?.id) {
+      toast.error("Erro ao enviar link!");
       return;
     }
 
-    navigator.clipboard.writeText(
-      `${import.meta.env.VITE_FRONTEND_URL}/anamnese?token=${
-        user.uuid
-      }&client=${params.data?.uuid}`
-    );
-    toast.success("Link copiado!");
+    try {
+      await request({
+        method: "POST",
+        url: `/client/send-registration-link/${params.data.id}`,
+        showSuccess: true,
+        successMessage: "Link de cadastro enviado com sucesso!",
+        onAccept: () => queryClient.invalidateQueries({ queryKey: ["clients"] }),
+      });
+    } catch {
+      toast.error("Erro ao enviar link de cadastro");
+    }
   };
 
   const handleClientDelete = async () => {
@@ -62,14 +67,16 @@ const ActionButtons = (params: any) => {
           <Eye className="w-5 h-5" />
         </button>
       </DefaultTooltip>
-      <DefaultTooltip tooltipText="Copiar link anamnese" delay={0}>
-        <button
-          onClick={handleAnamneseLinkCopy}
-          className="cursor-pointer p-1 text-green-500 hover:text-green-700 transition"
-        >
-          <Copy className="w-5 h-5" />
-        </button>
-      </DefaultTooltip>
+      {!params.data?.hasRegistered && (
+        <DefaultTooltip tooltipText="Enviar link de cadastro" delay={0}>
+          <button
+            onClick={handleSendRegistrationLink}
+            className="cursor-pointer p-1 text-green-500 hover:text-green-700 transition"
+          >
+            <Mail className="w-5 h-5" />
+          </button>
+        </DefaultTooltip>
+      )}
       <ClientDeleteModal onConfirm={handleClientDelete} />
     </div>
   );
@@ -81,9 +88,9 @@ const showAvatar = (params: any) => {
   return (
     <div className="flex items-center justify-center h-full">
       <Avatar className="h-8 w-8 cursor-pointer">
-        {client?.avatarUrl ? (
+        {client?.user?.avatarUrl ? (
           <AvatarImage
-            src={client.avatarUrl}
+            src={client.user.avatarUrl}
             alt="Foto do cliente"
             className="object-cover object-center"
           />
