@@ -1,5 +1,8 @@
 import { Routes, Route } from "react-router-dom";
 import ClientView from "./pages/ClientView";
+import StudentHome from "./pages/StudentHome";
+import StudentWorkouts from "./pages/StudentWorkouts";
+import StudentExerciseSession from "./pages/StudentExerciseSession";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Logout from "./pages/Logout";
@@ -15,6 +18,7 @@ import RegisterSuccess from "./pages/RegisterSuccess";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ClientRegister from "./pages/ClientRegister";
+import StandardTrainings from "./pages/StandardTrainings";
 
 export default function App() {
     return (
@@ -35,6 +39,36 @@ export default function App() {
                     <PrivateRoute>
                         <AdminLayout>
                             <ClientView />
+                        </AdminLayout>
+                    </PrivateRoute>
+                }
+            />
+            <Route
+                path="/student"
+                element={
+                    <PrivateRoute>
+                        <AdminLayout>
+                            <StudentHome />
+                        </AdminLayout>
+                    </PrivateRoute>
+                }
+            />
+            <Route
+                path="/student/workouts"
+                element={
+                    <PrivateRoute>
+                        <AdminLayout>
+                            <StudentWorkouts />
+                        </AdminLayout>
+                    </PrivateRoute>
+                }
+            />
+            <Route
+                path="/student/training/:trainingId/period/:periodId/execute"
+                element={
+                    <PrivateRoute>
+                        <AdminLayout>
+                            <StudentExerciseSession />
                         </AdminLayout>
                     </PrivateRoute>
                 }
@@ -117,6 +151,16 @@ export default function App() {
                     <PrivateRoute>
                         <AdminLayout>
                             <Exercise />
+                        </AdminLayout>
+                    </PrivateRoute>
+                }
+            />
+            <Route
+                path="/standard-trainings"
+                element={
+                    <PrivateRoute>
+                        <AdminLayout>
+                            <StandardTrainings />
                         </AdminLayout>
                     </PrivateRoute>
                 }

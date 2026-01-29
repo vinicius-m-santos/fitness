@@ -38,6 +38,9 @@ class Training
     #[ORM\Column]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $isStandard = false;
+
     /**
      * @var Collection<int, TrainingPeriod>
      */
@@ -109,6 +112,17 @@ class Training
     public function getUpdatedAt(): ?\DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function isStandard(): bool
+    {
+        return $this->isStandard;
+    }
+
+    public function setIsStandard(bool $isStandard): self
+    {
+        $this->isStandard = $isStandard;
+        return $this;
     }
 
     /**

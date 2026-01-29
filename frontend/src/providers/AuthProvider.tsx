@@ -36,8 +36,10 @@ const AUTHENTICATED_ROUTES = [
   "dashboard",
   "clients",
   "client-view",
+  "student",
   "exercises",
   "profile",
+  "standard-trainings",
 ];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -55,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     localStorage.setItem("refresh_token", refresh_token);
     if (user.roles.includes("ROLE_CLIENT")) {
-      navigate(`/client-view/${user.client?.id}`);
+      navigate("/student");
     } else {
       navigate("/clients");
     }

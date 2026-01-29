@@ -24,6 +24,32 @@ final class TrainingController extends AbstractController
         private readonly TrainingRepository $trainingRepository,
     ) {}
 
+    #[Route('/apply', name: 'training_apply', methods: ['POST'])]
+    public function apply(Request $request): JsonResponse
+    {
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        if (!$data || !isset($data['trainingId'], $data['clientIds']) || !is_array($data['clientIds'])) {
+            return $this->json(['error' => 'Dados inválidos. Envie trainingId e clientIds.'], 400);
+        }
+
+        $trainingId = (int) $data['trainingId'];
+        $clientIds = array_map('intval', array_values($data['clientIds']));
+
+        try {
+            $this->trainingService->copyToClients($user, $trainingId, $clientIds);
+            return $this->json(['message' => 'Treino aplicado com sucesso']);
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
+        }
+    }
+
     #[Route('/create', name: 'create_training', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
@@ -63,6 +89,49 @@ final class TrainingController extends AbstractController
         } catch (\Exception $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
+    }
+
+    #[Route('/student-context', name: 'get_student_context', methods: ['GET'])]
+    public function getStudentContext(): JsonResponse
+    {
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+        if (!$user) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
+        }
+        $client = $user->getClient();
+        if (!$client) {
+            return new JsonResponse(['error' => 'Cliente não encontrado'], 403);
+        }
+        $personal = $this->personalRepository->findById($client->getPersonal()->getId());
+        if (!$personal) {
+            return new JsonResponse(['error' => 'Personal não encontrado'], 404);
+        }
+        $context = $this->trainingService->getStudentContext($client, $personal);
+        return $this->json($context);
+    }
+
+    #[Route('/detail/{id}', name: 'get_training_detail', methods: ['GET'])]
+    public function getTrainingDetail(int $id): JsonResponse
+    {
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+        if (!$user) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
+        }
+        $client = $user->getClient();
+        if (!$client) {
+            return new JsonResponse(['error' => 'Cliente não encontrado'], 403);
+        }
+        $personal = $this->personalRepository->findById($client->getPersonal()->getId());
+        if (!$personal) {
+            return new JsonResponse(['error' => 'Personal não encontrado'], 404);
+        }
+        $training = $this->trainingService->getTrainingByIdForClient($client, $personal, $id);
+        if (!$training) {
+            return new JsonResponse(['error' => 'Treino não encontrado'], 404);
+        }
+        return $this->json($training);
     }
 
     #[Route('/all/{client}', name: 'get_all_trainings', methods: ['GET'])]

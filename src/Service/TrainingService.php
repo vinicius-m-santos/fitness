@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Entity\Client;
 use App\Entity\Exercise;
 use App\Entity\PeriodExercise;
+use App\Repository\TrainingExecutionRepository;
 use App\Repository\TrainingRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Personal;
@@ -28,6 +29,7 @@ class TrainingService
         private PeriodExerciseService $periodExerciseService,
         private EntityManagerInterface $em,
         private ClientService $clientService,
+        private TrainingExecutionRepository $trainingExecutionRepository,
     ) {}
 
     public function createTraining(User $user, array $data): Training
@@ -155,6 +157,7 @@ class TrainingService
                 foreach ($period->getPeriodExercises() as $pe) {
                     $exercises[] = [
                         'id' => $pe->getExercise()->getId(),
+                        'periodExerciseId' => $pe->getId(),
                         'name' => $pe->getExercise()->getName(),
                         'series' => $pe->getSeries(),
                         'reps' => $pe->getRepeats(),
@@ -170,15 +173,209 @@ class TrainingService
                 ];
             }
 
+            $lastFinishedAt = $this->trainingExecutionRepository->findLastFinishedAtByTraining($training);
             $result[] = [
                 'id' => $training->getId(),
                 'name' => $training->getName(),
                 'createdAt' => $training->getCreatedAt()->format('d/m/Y'),
+                'isStandard' => $training->isStandard(),
                 'periods' => $periods,
+                'lastFinishedAt' => $lastFinishedAt?->format(\DateTimeInterface::ATOM),
             ];
         }
 
         return $result;
+    }
+
+    public function getTrainingByIdForClient(Client $client, Personal $personal, int $trainingId): ?array
+    {
+        $training = $this->trainingRepository->findOneWithRelations($trainingId, $personal);
+        if (!$training || $training->getClient()->getId() !== $client->getId()) {
+            return null;
+        }
+        $periods = [];
+        foreach ($training->getPeriods() as $period) {
+            $exercises = [];
+            foreach ($period->getPeriodExercises() as $pe) {
+                $exercises[] = [
+                    'id' => $pe->getExercise()->getId(),
+                    'periodExerciseId' => $pe->getId(),
+                    'name' => $pe->getExercise()->getName(),
+                    'series' => $pe->getSeries(),
+                    'reps' => $pe->getRepeats(),
+                    'rest' => $pe->getRest(),
+                    'obs' => strlen(trim($pe->getObservation() ?? '')) ? trim($pe->getObservation()) : '',
+                ];
+            }
+            $periods[] = [
+                'id' => $period->getId(),
+                'name' => $period->getName(),
+                'exercises' => $exercises,
+            ];
+        }
+        return [
+            'id' => $training->getId(),
+            'name' => $training->getName(),
+            'createdAt' => $training->getCreatedAt()->format('d/m/Y'),
+            'isStandard' => $training->isStandard(),
+            'periods' => $periods,
+        ];
+    }
+
+    public function getStudentContext(Client $client, Personal $personal): array
+    {
+        $trainings = $this->trainingRepository->findWithRelations($client, $personal);
+        if (empty($trainings)) {
+            return ['lastTraining' => null, 'nextPeriod' => null];
+        }
+        $training = $trainings[0];
+        $periodsOrdered = $training->getPeriods()->toArray();
+        usort($periodsOrdered, static fn (TrainingPeriod $a, TrainingPeriod $b) => $a->getId() <=> $b->getId());
+
+        $lastTraining = $this->buildTrainingArray($training);
+        $lastExecution = $this->trainingExecutionRepository->findLastByClientAndTraining($client, $training);
+
+        $lastExecutedPeriodId = null;
+        if ($lastExecution) {
+            $maxOrder = -1;
+            foreach ($lastExecution->getExerciseExecutions() as $ee) {
+                if ($ee->getExecutionOrder() > $maxOrder) {
+                    $maxOrder = $ee->getExecutionOrder();
+                    $lastExecutedPeriodId = $ee->getPeriodExercise()->getTrainingPeriod()->getId();
+                }
+            }
+        }
+
+        $nextPeriodIndex = 0;
+        if ($lastExecutedPeriodId !== null) {
+            foreach ($periodsOrdered as $i => $p) {
+                if ($p->getId() === $lastExecutedPeriodId) {
+                    $nextPeriodIndex = $i + 1;
+                    if ($nextPeriodIndex >= count($periodsOrdered)) {
+                        $nextPeriodIndex = 0;
+                    }
+                    break;
+                }
+            }
+        }
+
+        $nextPeriodEntity = $periodsOrdered[$nextPeriodIndex] ?? null;
+        $nextPeriod = $nextPeriodEntity ? $this->buildPeriodArray($nextPeriodEntity) : null;
+
+        return ['lastTraining' => $lastTraining, 'nextPeriod' => $nextPeriod];
+    }
+
+    private function buildTrainingArray(Training $training): array
+    {
+        $periods = [];
+        foreach ($training->getPeriods() as $period) {
+            $periods[] = $this->buildPeriodArray($period);
+        }
+        usort($periods, static fn (array $a, array $b) => $a['id'] <=> $b['id']);
+        $lastFinishedAt = $this->trainingExecutionRepository->findLastFinishedAtByTraining($training);
+        return [
+            'id' => $training->getId(),
+            'name' => $training->getName(),
+            'createdAt' => $training->getCreatedAt()->format('d/m/Y'),
+            'isStandard' => $training->isStandard(),
+            'periods' => $periods,
+            'lastFinishedAt' => $lastFinishedAt?->format(\DateTimeInterface::ATOM),
+        ];
+    }
+
+    private function buildPeriodArray(TrainingPeriod $period): array
+    {
+        $exercises = [];
+        foreach ($period->getPeriodExercises() as $pe) {
+            $exercises[] = [
+                'id' => $pe->getExercise()->getId(),
+                'periodExerciseId' => $pe->getId(),
+                'name' => $pe->getExercise()->getName(),
+                'series' => $pe->getSeries(),
+                'reps' => $pe->getRepeats(),
+                'rest' => $pe->getRest(),
+                'obs' => strlen(trim($pe->getObservation() ?? '')) ? trim($pe->getObservation()) : '',
+            ];
+        }
+        return [
+            'id' => $period->getId(),
+            'name' => $period->getName(),
+            'exercises' => $exercises,
+        ];
+    }
+
+    /**
+     * Copia o treino do aluno para os clientes indicados. O dono do treino é excluído da lista.
+     *
+     * @param int[] $clientIds
+     */
+    public function copyToClients(User $user, int $trainingId, array $clientIds): void
+    {
+        $personal = $user->getPersonal();
+        if (!$personal) {
+            throw new UnprocessableEntityHttpException('Personal não encontrado');
+        }
+
+        $training = $this->trainingRepository->findOneWithRelations($trainingId, $personal);
+        if (!$training) {
+            throw new UnprocessableEntityHttpException('Treino não encontrado');
+        }
+
+        $ownerClientId = $training->getClient()->getId();
+        $clientIds = array_values(array_filter(
+            array_map('intval', $clientIds),
+            static fn (int $id) => $id !== $ownerClientId
+        ));
+
+        if (empty($clientIds)) {
+            throw new UnprocessableEntityHttpException('Selecione pelo menos um aluno (exceto o dono do treino).');
+        }
+
+        foreach ($clientIds as $clientId) {
+            $client = $this->clientService->find($clientId);
+            if (!$client) {
+                throw new UnprocessableEntityHttpException('Cliente não encontrado.');
+            }
+            $clientPersonal = $client->getPersonal();
+            if (!$clientPersonal || $clientPersonal->getId() !== $personal->getId()) {
+                throw new UnprocessableEntityHttpException('Cliente não pertence ao seu cadastro.');
+            }
+
+            $this->copyTrainingToClient($training, $personal, $client);
+        }
+    }
+
+    private function copyTrainingToClient(Training $source, Personal $personal, Client $client): void
+    {
+        $training = new Training();
+        $training->setName($source->getName() ?? '');
+        $training->setPersonal($personal);
+        $training->setClient($client);
+        $this->trainingRepository->add($training, true);
+
+        foreach ($source->getPeriods() as $period) {
+            $newPeriod = new TrainingPeriod();
+            $newPeriod->setName($period->getName());
+            $newPeriod->setTraining($training);
+            $this->trainingPeriodRepository->add($newPeriod, true);
+
+            foreach ($period->getPeriodExercises() as $pe) {
+                $exercise = $pe->getExercise();
+                if (!$exercise) {
+                    continue;
+                }
+                $newPe = new PeriodExercise();
+                $newPe->setExercise($exercise);
+                $newPe->setTrainingPeriod($newPeriod);
+                $newPe->getDataFromArray([
+                    'series' => $pe->getSeries(),
+                    'reps' => $pe->getRepeats(),
+                    'rest' => $pe->getRest(),
+                    'obs' => $pe->getObservation(),
+                ]);
+                $this->periodExerciseService->add($newPe, true);
+            }
+        }
     }
 
     public function updateTraining(User $user, array $data, int $id): void
