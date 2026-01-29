@@ -38,6 +38,7 @@ const AUTHENTICATED_ROUTES = [
   "client-view",
   "exercises",
   "profile",
+  "standard-trainings",
 ];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({

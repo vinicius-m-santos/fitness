@@ -31,6 +31,10 @@ class Personal
     #[ORM\OneToMany(mappedBy: 'personal', targetEntity: Client::class, cascade: ['persist', 'remove'])]
     private Collection $clients;
 
+    /** @var Collection<int, TrainingStandard> */
+    #[ORM\OneToMany(mappedBy: 'personal', targetEntity: TrainingStandard::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $trainingsStandard;
+
     #[ORM\Column(type: "json", nullable: true)]
     #[Groups(['personal_all'])]
     private ?array $deleted_default_exercises = [];
@@ -47,6 +51,7 @@ class Personal
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->clients = new ArrayCollection();
+        $this->trainingsStandard = new ArrayCollection();
     }
 
     public function getId(): int

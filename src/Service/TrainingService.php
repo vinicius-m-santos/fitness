@@ -174,11 +174,86 @@ class TrainingService
                 'id' => $training->getId(),
                 'name' => $training->getName(),
                 'createdAt' => $training->getCreatedAt()->format('d/m/Y'),
+                'isStandard' => $training->isStandard(),
                 'periods' => $periods,
             ];
         }
 
         return $result;
+    }
+
+    /**
+     * Copia o treino do aluno para os clientes indicados. O dono do treino é excluído da lista.
+     *
+     * @param int[] $clientIds
+     */
+    public function copyToClients(User $user, int $trainingId, array $clientIds): void
+    {
+        $personal = $user->getPersonal();
+        if (!$personal) {
+            throw new UnprocessableEntityHttpException('Personal não encontrado');
+        }
+
+        $training = $this->trainingRepository->findOneWithRelations($trainingId, $personal);
+        if (!$training) {
+            throw new UnprocessableEntityHttpException('Treino não encontrado');
+        }
+
+        $ownerClientId = $training->getClient()->getId();
+        $clientIds = array_values(array_filter(
+            array_map('intval', $clientIds),
+            static fn (int $id) => $id !== $ownerClientId
+        ));
+
+        if (empty($clientIds)) {
+            throw new UnprocessableEntityHttpException('Selecione pelo menos um aluno (exceto o dono do treino).');
+        }
+
+        foreach ($clientIds as $clientId) {
+            $client = $this->clientService->find($clientId);
+            if (!$client) {
+                throw new UnprocessableEntityHttpException('Cliente não encontrado.');
+            }
+            $clientPersonal = $client->getPersonal();
+            if (!$clientPersonal || $clientPersonal->getId() !== $personal->getId()) {
+                throw new UnprocessableEntityHttpException('Cliente não pertence ao seu cadastro.');
+            }
+
+            $this->copyTrainingToClient($training, $personal, $client);
+        }
+    }
+
+    private function copyTrainingToClient(Training $source, Personal $personal, Client $client): void
+    {
+        $training = new Training();
+        $training->setName($source->getName() ?? '');
+        $training->setPersonal($personal);
+        $training->setClient($client);
+        $this->trainingRepository->add($training, true);
+
+        foreach ($source->getPeriods() as $period) {
+            $newPeriod = new TrainingPeriod();
+            $newPeriod->setName($period->getName());
+            $newPeriod->setTraining($training);
+            $this->trainingPeriodRepository->add($newPeriod, true);
+
+            foreach ($period->getPeriodExercises() as $pe) {
+                $exercise = $pe->getExercise();
+                if (!$exercise) {
+                    continue;
+                }
+                $newPe = new PeriodExercise();
+                $newPe->setExercise($exercise);
+                $newPe->setTrainingPeriod($newPeriod);
+                $newPe->getDataFromArray([
+                    'series' => $pe->getSeries(),
+                    'reps' => $pe->getRepeats(),
+                    'rest' => $pe->getRest(),
+                    'obs' => $pe->getObservation(),
+                ]);
+                $this->periodExerciseService->add($newPe, true);
+            }
+        }
     }
 
     public function updateTraining(User $user, array $data, int $id): void

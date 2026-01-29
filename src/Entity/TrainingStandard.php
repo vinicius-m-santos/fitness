@@ -2,50 +2,40 @@
 
 namespace App\Entity;
 
-use App\Repository\TrainingRepository;
+use App\Repository\TrainingStandardRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Serializer\Annotation\Groups;
 
-#[ORM\Entity(repositoryClass: TrainingRepository::class)]
+#[ORM\Entity(repositoryClass: TrainingStandardRepository::class)]
+#[ORM\Table(name: 'training_standards')]
 #[ORM\HasLifecycleCallbacks]
-class Training
+class TrainingStandard
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['training_client'])]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(inversedBy: 'trainings')]
+    #[ORM\ManyToOne(inversedBy: 'trainingsStandard')]
     #[ORM\JoinColumn(nullable: false)]
-    // #[Groups(['training_client'])]
     private ?Personal $personal = null;
 
-    #[ORM\ManyToOne(inversedBy: 'trainings')]
-    #[ORM\JoinColumn(nullable: false)]
-    // #[Groups(['training_client'])]
-    private ?Client $client = null;
+    #[ORM\ManyToOne(targetEntity: Training::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?Training $training = null;
 
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
     #[ORM\Column]
-    #[Groups(['training_client'])]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column]
     private ?\DateTimeImmutable $updatedAt = null;
 
-    #[ORM\Column(type: 'boolean', options: ['default' => false])]
-    private bool $isStandard = false;
-
-    /**
-     * @var Collection<int, TrainingPeriod>
-     */
-    #[ORM\OneToMany(mappedBy: 'training', targetEntity: TrainingPeriod::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
-    #[Groups(['training_client'])]
+    /** @var Collection<int, TrainingPeriodStandard> */
+    #[ORM\OneToMany(mappedBy: 'trainingStandard', targetEntity: TrainingPeriodStandard::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $periods;
 
     public function __construct()
@@ -82,14 +72,14 @@ class Training
         return $this;
     }
 
-    public function getClient(): ?Client
+    public function getTraining(): ?Training
     {
-        return $this->client;
+        return $this->training;
     }
 
-    public function setClient(?Client $client): self
+    public function setTraining(?Training $training): self
     {
-        $this->client = $client;
+        $this->training = $training;
         return $this;
     }
 
@@ -114,39 +104,26 @@ class Training
         return $this->updatedAt;
     }
 
-    public function isStandard(): bool
-    {
-        return $this->isStandard;
-    }
-
-    public function setIsStandard(bool $isStandard): self
-    {
-        $this->isStandard = $isStandard;
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, TrainingPeriod>
-     */
+    /** @return Collection<int, TrainingPeriodStandard> */
     public function getPeriods(): Collection
     {
         return $this->periods;
     }
 
-    public function addPeriod(TrainingPeriod $period): self
+    public function addPeriod(TrainingPeriodStandard $period): self
     {
         if (!$this->periods->contains($period)) {
             $this->periods->add($period);
-            $period->setTraining($this);
+            $period->setTrainingStandard($this);
         }
         return $this;
     }
 
-    public function removePeriod(TrainingPeriod $period): self
+    public function removePeriod(TrainingPeriodStandard $period): self
     {
         if ($this->periods->removeElement($period)) {
-            if ($period->getTraining() === $this) {
-                $period->setTraining(null);
+            if ($period->getTrainingStandard() === $this) {
+                $period->setTrainingStandard(null);
             }
         }
         return $this;

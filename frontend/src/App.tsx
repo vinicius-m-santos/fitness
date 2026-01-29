@@ -15,6 +15,7 @@ import RegisterSuccess from "./pages/RegisterSuccess";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ClientRegister from "./pages/ClientRegister";
+import StandardTrainings from "./pages/StandardTrainings";
 
 export default function App() {
     return (
@@ -117,6 +118,16 @@ export default function App() {
                     <PrivateRoute>
                         <AdminLayout>
                             <Exercise />
+                        </AdminLayout>
+                    </PrivateRoute>
+                }
+            />
+            <Route
+                path="/standard-trainings"
+                element={
+                    <PrivateRoute>
+                        <AdminLayout>
+                            <StandardTrainings />
                         </AdminLayout>
                     </PrivateRoute>
                 }
