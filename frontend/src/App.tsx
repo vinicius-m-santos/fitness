@@ -1,5 +1,8 @@
 import { Routes, Route } from "react-router-dom";
 import ClientView from "./pages/ClientView";
+import StudentHome from "./pages/StudentHome";
+import StudentWorkouts from "./pages/StudentWorkouts";
+import StudentExerciseSession from "./pages/StudentExerciseSession";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Logout from "./pages/Logout";
@@ -36,6 +39,36 @@ export default function App() {
                     <PrivateRoute>
                         <AdminLayout>
                             <ClientView />
+                        </AdminLayout>
+                    </PrivateRoute>
+                }
+            />
+            <Route
+                path="/student"
+                element={
+                    <PrivateRoute>
+                        <AdminLayout>
+                            <StudentHome />
+                        </AdminLayout>
+                    </PrivateRoute>
+                }
+            />
+            <Route
+                path="/student/workouts"
+                element={
+                    <PrivateRoute>
+                        <AdminLayout>
+                            <StudentWorkouts />
+                        </AdminLayout>
+                    </PrivateRoute>
+                }
+            />
+            <Route
+                path="/student/training/:trainingId/period/:periodId/execute"
+                element={
+                    <PrivateRoute>
+                        <AdminLayout>
+                            <StudentExerciseSession />
                         </AdminLayout>
                     </PrivateRoute>
                 }
