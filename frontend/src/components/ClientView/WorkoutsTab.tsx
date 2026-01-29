@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import {
   Accordion,
   AccordionItem,
@@ -16,10 +16,10 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dumbbell, Trash, File, PlusIcon } from "lucide-react";
+import { Dumbbell, Trash, File, PlusIcon, Send, Star } from "lucide-react";
 import TrainingCreateModal from "@/components/Training/Modals/TrainingCreateModal";
-import TrainingUpdateModal from "@/components/Training/Modals/TrainingUpdateModal";
 import TrainingDeleteModal from "@/components/Training/Modals/TrainingDeleteModal";
+import TrainingApplyModal from "@/components/Training/Modals/TrainingApplyModal";
 import { useParams } from "react-router-dom";
 import { PdfExercise } from "../Exercise/PdfExercise";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -29,16 +29,59 @@ import { pdf } from "@react-pdf/renderer";
 import ButtonLoader from "../ui/buttonLoader";
 import { TrainingEditButton } from "../Training/TrainingEditButton";
 import { useAuth } from "@/providers/AuthProvider";
+import type { ClientAllData } from "@/types/client";
 
-export default function WorkoutsTab() {
+type WorkoutsTabProps = {
+  isActive?: boolean;
+};
+
+export default function WorkoutsTab({ isActive = true }: WorkoutsTabProps) {
   const { id } = useParams();
   const [openModal, setOpenModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
-  const [trainingToDelete, setTrainingToDelete] = useState<any | null>(null);
+  const [openApplyModal, setOpenApplyModal] = useState(false);
+  const [trainingToDelete, setTrainingToDelete] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
+  const [trainingToApply, setTrainingToApply] = useState<{ id: number; name: string } | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [standardLoadingId, setStandardLoadingId] = useState<number | null>(null);
   const request = useRequest();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  const handleStandardToggle = async (workout: {
+    id: number;
+    isStandard?: boolean;
+  }) => {
+    if (standardLoadingId != null) return;
+    setStandardLoadingId(workout.id);
+    try {
+      if (workout.isStandard) {
+        await request({
+          method: "DELETE",
+          url: `/training-standard/by-training/${workout.id}`,
+          showSuccess: true,
+          successMessage: "Treino padrão excluído com sucesso.",
+        });
+      } else {
+        await request({
+          method: "POST",
+          url: "/training-standard/from-training",
+          data: { trainingId: workout.id },
+          showSuccess: true,
+          successMessage: "Treino padrão criado com sucesso.",
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ["trainings", id] });
+      queryClient.invalidateQueries({ queryKey: ["training-standards"] });
+    } catch {
+      /* useRequest shows error toast */
+    } finally {
+      setStandardLoadingId(null);
+    }
+  };
 
   const { data: client } = useQuery({
     queryKey: ["client", id],
@@ -48,10 +91,32 @@ export default function WorkoutsTab() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const handleGeneratePdf = async (client, workout) => {
+  const handleGeneratePdf = async (
+    client: ClientAllData | undefined,
+    workout: { name?: string; periods: unknown[] }
+  ) => {
+    if (!client) return;
     setPdfLoading(true);
 
-    const doc = <PdfExercise client={client} workout={workout} />;
+    const periods = workout.periods as Array<{ name: string; exercises: Array<{ name: string; series?: string; reps?: string; rest?: string; obs?: string }> }>;
+    const doc = (
+      <PdfExercise
+        client={client}
+        workout={{
+          name: workout.name ?? "treino",
+          periods: periods.map((p) => ({
+            name: p.name,
+            exercises: p.exercises.map((e) => ({
+              name: e.name,
+              series: e.series ?? "",
+              reps: e.reps ?? "",
+              rest: e.rest ?? "",
+              obs: e.obs,
+            })),
+          })),
+        }}
+      />
+    );
     const asPdf = pdf(doc);
     const blob = await asPdf.toBlob();
     const url = window.URL.createObjectURL(blob);
@@ -63,7 +128,7 @@ export default function WorkoutsTab() {
     setPdfLoading(false);
   };
 
-  const { data: workouts, isFetching } = useQuery({
+  const { data: workouts, isFetching, refetch: refetchWorkouts } = useQuery({
     queryKey: ["trainings", id],
     queryFn: async () => {
       const res = await request({ method: "GET", url: `/training/all/${id}` });
@@ -73,6 +138,12 @@ export default function WorkoutsTab() {
     refetchOnMount: true,
     staleTime: 5 * 60 * 1000,
   });
+
+  useEffect(() => {
+    if (isActive && !!id) {
+      refetchWorkouts();
+    }
+  }, [isActive, id, refetchWorkouts]);
 
   if (isFetching) {
     return <ContainerLoader />;
@@ -111,8 +182,8 @@ export default function WorkoutsTab() {
         </p>
       ) : (
         <Accordion type="single" collapsible className="space-y-3">
-          {workouts.map((workout, wi) => (
-            <AccordionItem key={wi} value={workout.id}>
+          {workouts.map((workout: { id: number; name: string; createdAt: string; isStandard?: boolean; periods: unknown[] }) => (
+            <AccordionItem key={workout.id} value={String(workout.id)}>
               <AccordionTrigger className="cursor-pointer text-lg text-black font-medium">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full text-left">
                   <span>{workout.name}</span>
@@ -137,6 +208,38 @@ export default function WorkoutsTab() {
                       )}
                       {pdfLoading && <ButtonLoader />}
                     </Button>
+                    {user?.roles.includes("ROLE_PERSONAL") && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="w-full flex items-center gap-1 cursor-pointer"
+                          onClick={() => {
+                            setTrainingToApply({ id: workout.id, name: workout.name });
+                            setOpenApplyModal(true);
+                          }}
+                        >
+                          <Send className="h-4 w-4 mr-1" /> Aplicar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full flex items-center gap-1 cursor-pointer"
+                          onClick={() => handleStandardToggle(workout)}
+                          disabled={standardLoadingId === workout.id}
+                          title={workout.isStandard ? "Remover treino padrão" : "Criar treino padrão"}
+                        >
+                          {standardLoadingId === workout.id ? (
+                            <ButtonLoader />
+                          ) : (
+                            <Star
+                              className={`h-4 w-4 mr-1 ${workout.isStandard ? "fill-amber-400 text-amber-500" : ""}`}
+                            />
+                          )}
+                          Padrão
+                        </Button>
+                      </>
+                    )}
                     <TrainingEditButton
                       trainingId={workout.id}
                       initialData={workout}
@@ -169,7 +272,7 @@ export default function WorkoutsTab() {
                     )}
                   </div>
                 </div>
-                {workout.periods.map((period, pi) => (
+                {(workout.periods as { name: string; exercises: unknown[] }[]).map((period, pi) => (
                   <Card key={pi}>
                     <CardHeader>
                       <CardTitle className="text-base font-semibold">
@@ -188,7 +291,7 @@ export default function WorkoutsTab() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {period.exercises.map((ex, ei) => (
+                          {(period.exercises as { name: string; series?: string; reps?: string; rest?: string; obs?: string }[]).map((ex, ei) => (
                             <TableRow key={ei}>
                               <TableCell className="font-medium">
                                 {ex.name}
@@ -211,6 +314,16 @@ export default function WorkoutsTab() {
           ))}
         </Accordion>
       )}
+
+      <TrainingApplyModal
+        open={openApplyModal}
+        onOpenChange={(open) => {
+          setOpenApplyModal(open);
+          if (!open) setTrainingToApply(null);
+        }}
+        training={trainingToApply}
+        excludeClientId={client?.id ?? null}
+      />
     </div>
   );
 }

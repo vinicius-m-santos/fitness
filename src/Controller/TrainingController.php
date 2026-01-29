@@ -24,6 +24,32 @@ final class TrainingController extends AbstractController
         private readonly TrainingRepository $trainingRepository,
     ) {}
 
+    #[Route('/apply', name: 'training_apply', methods: ['POST'])]
+    public function apply(Request $request): JsonResponse
+    {
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        if (!$data || !isset($data['trainingId'], $data['clientIds']) || !is_array($data['clientIds'])) {
+            return $this->json(['error' => 'Dados inválidos. Envie trainingId e clientIds.'], 400);
+        }
+
+        $trainingId = (int) $data['trainingId'];
+        $clientIds = array_map('intval', array_values($data['clientIds']));
+
+        try {
+            $this->trainingService->copyToClients($user, $trainingId, $clientIds);
+            return $this->json(['message' => 'Treino aplicado com sucesso']);
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
+        }
+    }
+
     #[Route('/create', name: 'create_training', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {

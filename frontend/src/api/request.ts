@@ -7,13 +7,23 @@ export function useRequest() {
     const request = async ({
         method = "get",
         url,
-        data = null,
+        data = null as object | null,
         params = null,
         onAccept = null,
         onReject = null,
         showSuccess = false,
         successMessage = "Operação realizada com sucesso",
         showError = true,
+    }: {
+        method?: string;
+        url: string;
+        data?: object | null;
+        params?: unknown;
+        onAccept?: ((payload: unknown, response: unknown) => void) | null;
+        onReject?: ((err: { message?: string }) => void) | null;
+        showSuccess?: boolean;
+        successMessage?: string;
+        showError?: boolean;
     }) => {
         try {
             const response = await api.request({ method, url, data, params });

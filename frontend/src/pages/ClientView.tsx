@@ -167,7 +167,7 @@ export default function ClientView() {
           <TabsContent value="treinos">
             <Card>
               <CardContent className="p-6 text-sm text-muted-foreground">
-                <WorkoutsTab />
+                <WorkoutsTab isActive={tab === "treinos"} />
               </CardContent>
             </Card>
           </TabsContent>
