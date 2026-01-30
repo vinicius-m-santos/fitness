@@ -27,6 +27,7 @@ export function useTrainingForm({
     mode: "onChange",
     defaultValues: defaultValues ?? {
       name: "",
+      dueDate: "",
       periods: [],
     },
   });
@@ -179,7 +180,7 @@ export function useTrainingForm({
    * ===================== */
 
   const resetForm = (values?: TrainingCreateSchema) => {
-    form.reset(values ?? { name: "", periods: [] });
+    form.reset(values ?? { name: "", dueDate: "", periods: [] });
     setCurrentStep(1);
     setSelectedExerciseByPeriod({});
   };

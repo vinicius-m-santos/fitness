@@ -6,6 +6,8 @@ export const trainingCreateSchema = z.object({
     .min(3, "O nome do treino precisa ter pelo menos 3 caracteres")
     .max(50),
 
+  dueDate: z.string().optional(),
+
   periods: z
     .array(
       z.object({

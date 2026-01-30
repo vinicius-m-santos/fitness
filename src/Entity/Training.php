@@ -41,6 +41,10 @@ class Training
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
     private bool $isStandard = false;
 
+    #[ORM\Column(type: 'date_immutable', nullable: true)]
+    #[Groups(['training_client'])]
+    private ?\DateTimeImmutable $dueDate = null;
+
     /**
      * @var Collection<int, TrainingPeriod>
      */
@@ -122,6 +126,17 @@ class Training
     public function setIsStandard(bool $isStandard): self
     {
         $this->isStandard = $isStandard;
+        return $this;
+    }
+
+    public function getDueDate(): ?\DateTimeImmutable
+    {
+        return $this->dueDate;
+    }
+
+    public function setDueDate(?\DateTimeImmutable $dueDate): self
+    {
+        $this->dueDate = $dueDate;
         return $this;
     }
 

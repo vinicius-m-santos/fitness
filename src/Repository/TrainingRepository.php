@@ -63,6 +63,28 @@ class TrainingRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    /**
+     * Trainings (non-standard) with dueDate between from and to (inclusive), for personal's clients.
+     *
+     * @return Training[]
+     */
+    public function findExpiringBetween(Personal $personal, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        return $this->createQueryBuilder('t')
+            ->leftJoin('t.client', 'c')->addSelect('c')
+            ->where('t.personal = :personal')
+            ->andWhere('t.isStandard = false')
+            ->andWhere('t.dueDate IS NOT NULL')
+            ->andWhere('t.dueDate >= :from')
+            ->andWhere('t.dueDate <= :to')
+            ->setParameter('personal', $personal)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->orderBy('t.dueDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     // public function findWithRelations(Client $client, Personal $personal): mixed
     // {
     //      return $this->createQueryBuilder('t')

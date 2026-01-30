@@ -19,10 +19,21 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ClientRegister from "./pages/ClientRegister";
 import StandardTrainings from "./pages/StandardTrainings";
+import WeekSummary from "./pages/WeekSummary";
 
 export default function App() {
     return (
         <Routes>
+            <Route
+                path="/week-summary"
+                element={
+                    <PrivateRoute>
+                        <AdminLayout>
+                            <WeekSummary />
+                        </AdminLayout>
+                    </PrivateRoute>
+                }
+            />
             <Route
                 path="/clients"
                 element={

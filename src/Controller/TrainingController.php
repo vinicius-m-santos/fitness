@@ -41,9 +41,11 @@ final class TrainingController extends AbstractController
 
         $trainingId = (int) $data['trainingId'];
         $clientIds = array_map('intval', array_values($data['clientIds']));
+        $dueDate = isset($data['dueDate']) && $data['dueDate'] !== ''
+            ? new \DateTimeImmutable($data['dueDate']) : null;
 
         try {
-            $this->trainingService->copyToClients($user, $trainingId, $clientIds);
+            $this->trainingService->copyToClients($user, $trainingId, $clientIds, $dueDate);
             return $this->json(['message' => 'Treino aplicado com sucesso']);
         } catch (\Exception $e) {
             return $this->json(['error' => $e->getMessage()], 400);

@@ -50,7 +50,9 @@ export default function TrainingCreateModal({
   const onSubmit = async (data: TrainingCreateSchema) => {
     try {
       setLoading(true);
-      await api.post("/training/create", { ...data, client });
+      const payload: Record<string, unknown> = { ...data, client };
+      if (data.dueDate) payload.dueDate = data.dueDate;
+      await api.post("/training/create", payload);
       toast.success("Treino criado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["trainings"] });
       onOpenChange(false);
@@ -99,7 +101,7 @@ export default function TrainingCreateModal({
             )}
 
             {training.currentStep === 4 && (
-              <StepReview periods={training.periods} />
+              <StepReview periods={training.periods} form={training.form} />
             )}
 
             {/* FOOTER */}

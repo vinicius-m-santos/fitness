@@ -266,7 +266,7 @@ class TrainingStandardService
      *
      * @param int[] $clientIds
      */
-    public function applyToClients(User $user, int $trainingStandardId, array $clientIds): void
+    public function applyToClients(User $user, int $trainingStandardId, array $clientIds, ?\DateTimeImmutable $dueDate = null): void
     {
         $personal = $this->personalRepo->findOneByUserUuid($user->getUuid());
         if (!$personal) {
@@ -292,16 +292,19 @@ class TrainingStandardService
                 throw new UnprocessableEntityHttpException('Cliente não pertence ao seu cadastro.');
             }
 
-            $this->copyStandardToTraining($standard, $personal, $client);
+            $this->copyStandardToTraining($standard, $personal, $client, $dueDate);
         }
     }
 
-    private function copyStandardToTraining(TrainingStandard $standard, Personal $personal, Client $client): void
+    private function copyStandardToTraining(TrainingStandard $standard, Personal $personal, Client $client, ?\DateTimeImmutable $dueDate = null): void
     {
         $training = new Training();
         $training->setName($standard->getName() ?? '');
         $training->setPersonal($personal);
         $training->setClient($client);
+        if ($dueDate !== null) {
+            $training->setDueDate($dueDate);
+        }
         $this->trainingRepo->add($training, true);
 
         foreach ($standard->getPeriods() as $periodStandard) {
