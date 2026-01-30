@@ -9,7 +9,7 @@ const CleanNoAuthMenu = () => {
   return (
     <nav className="bg-gray-100 text-gray-800 shadow-lg">
       <div className="container mx-auto px-4">
-        <div className="flex items-center py-4">
+        <div className="flex items-center justify-between py-4">
           {/* Logo */}
           <div className="flex items-center space-x-2">
             <Link to="/">
