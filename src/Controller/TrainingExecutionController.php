@@ -58,11 +58,21 @@ final class TrainingExecutionController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/finish', name: 'training_execution_finish', methods: ['PATCH'])]
-    public function finish(int $id): JsonResponse
+    #[Route('/{id}', name: 'training_execution_get', methods: ['GET'])]
+    public function getExecution(int $id): JsonResponse
     {
         $client = $this->getClientOrFail();
-        $execution = $this->trainingExecutionService->finish($client, $id);
+        $data = $this->trainingExecutionService->getExecutionForClient($client, $id);
+        return $this->json($data);
+    }
+
+    #[Route('/{id}/finish', name: 'training_execution_finish', methods: ['PATCH'])]
+    public function finish(int $id, Request $request): JsonResponse
+    {
+        $client = $this->getClientOrFail();
+        $data = json_decode($request->getContent(), true) ?: [];
+        $rating = isset($data['rating']) && \is_string($data['rating']) ? $data['rating'] : null;
+        $execution = $this->trainingExecutionService->finish($client, $id, $rating);
         return $this->json([
             'id' => $execution->getId(),
             'finishedAt' => $execution->getFinishedAt()?->format(\DateTimeInterface::ATOM),

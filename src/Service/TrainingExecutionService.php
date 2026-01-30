@@ -6,6 +6,7 @@ use App\Entity\Client;
 use App\Entity\ExerciseExecution;
 use App\Entity\SetExecution;
 use App\Entity\TrainingExecution;
+use App\Enum\WorkoutRatingEnum;
 use App\Repository\ExerciseExecutionRepository;
 use App\Repository\PeriodExerciseRepository;
 use App\Repository\SetExecutionRepository;
@@ -39,7 +40,37 @@ class TrainingExecutionService
         return $this->trainingExecutionRepo->add($execution);
     }
 
-    public function finish(Client $client, int $executionId): TrainingExecution
+    /**
+     * @return array{id: int, finishedAt: string|null, trainingId: int, exerciseExecutions: list<array{id: int, periodExerciseId: int, executionOrder: int, durationSeconds: int|null}>}
+     */
+    public function getExecutionForClient(Client $client, int $executionId): array
+    {
+        $execution = $this->trainingExecutionRepo->find($executionId);
+        if (!$execution || $execution->getClient()->getId() !== $client->getId()) {
+            throw new NotFoundHttpException('Execução não encontrada');
+        }
+        $exerciseExecutions = [];
+        foreach ($execution->getExerciseExecutions() as $ee) {
+            $exerciseExecutions[] = [
+                'id' => $ee->getId(),
+                'periodExerciseId' => $ee->getPeriodExercise()->getId(),
+                'executionOrder' => $ee->getExecutionOrder(),
+                'durationSeconds' => $ee->getDurationSeconds(),
+            ];
+        }
+        usort($exerciseExecutions, fn ($a, $b) => $a['executionOrder'] <=> $b['executionOrder']);
+        return [
+            'id' => $execution->getId(),
+            'finishedAt' => $execution->getFinishedAt()?->format(\DateTimeInterface::ATOM),
+            'trainingId' => $execution->getTraining()->getId(),
+            'exerciseExecutions' => $exerciseExecutions,
+        ];
+    }
+
+    /**
+     * @param string|null $rating One of WorkoutRatingEnum values (bad, neutral, good)
+     */
+    public function finish(Client $client, int $executionId, ?string $rating = null): TrainingExecution
     {
         $execution = $this->trainingExecutionRepo->find($executionId);
         if (!$execution || $execution->getClient()->getId() !== $client->getId()) {
@@ -49,6 +80,12 @@ class TrainingExecutionService
             throw new UnprocessableEntityHttpException('Treino já finalizado');
         }
         $execution->setFinishedAt(new \DateTimeImmutable());
+        if ($rating !== null && $rating !== '') {
+            $enum = WorkoutRatingEnum::tryFrom($rating);
+            if ($enum !== null) {
+                $execution->setRating($enum);
+            }
+        }
         $this->em->flush();
         return $execution;
     }

@@ -1,0 +1,8 @@
+---
+description: Convenções de frontend React do projeto
+globs: frontend/**/*.tsx, frontend/**/*.ts
+---
+
+# Frontend – convenções
+
+- **Componentes:** Prefira criar novos componentes em vez de amontoar toda a lógica em uma tela só. Isso facilita manutenção, testes e reuso (ex.: telas de “continuar treino”, modais, cards reutilizáveis).
