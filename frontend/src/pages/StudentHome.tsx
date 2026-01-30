@@ -1,13 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dumbbell, Play, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useRequest } from "@/api/request";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Loader from "@/components/ui/loader";
+import ContinueWorkoutPrompt from "@/components/Student/ContinueWorkoutPrompt";
+import { useActiveWorkoutCheck } from "@/hooks/useActiveWorkoutCheck";
+import { clearActiveSession } from "@/lib/activeSessionDb";
 
 function formatEstimatedDuration(exercises: unknown[]): string {
   const count = exercises?.length ?? 0;
@@ -17,6 +21,29 @@ function formatEstimatedDuration(exercises: unknown[]): string {
 
 export default function StudentHome() {
   const request = useRequest();
+  const navigate = useNavigate();
+  const [isFinishing, setIsFinishing] = useState(false);
+
+  const activeCheck = useActiveWorkoutCheck({
+    request,
+    onFinished: () => {},
+  });
+
+  const handleFinishWorkout = async () => {
+    const session = activeCheck.session;
+    if (!session) return;
+    setIsFinishing(true);
+    try {
+      await request({
+        method: "PATCH",
+        url: `/training-execution/${session.executionId}/finish`,
+      });
+      clearActiveSession();
+      activeCheck.clearSession();
+    } finally {
+      setIsFinishing(false);
+    }
+  };
 
   const { data: context, isFetching } = useQuery({
     queryKey: ["student-context"],
@@ -30,6 +57,26 @@ export default function StudentHome() {
 
   const lastTraining = context?.lastTraining ?? null;
   const nextPeriod = context?.nextPeriod ?? null;
+
+  if (!activeCheck.checkDone) {
+    return <Loader loading={true} />;
+  }
+
+  if (activeCheck.showPrompt && activeCheck.session) {
+    return (
+      <ContinueWorkoutPrompt
+        periodName={activeCheck.periodName}
+        onContinue={() =>
+          navigate(
+            `/student/training/${activeCheck.session!.trainingId}/period/${activeCheck.session!.periodId}/execute`,
+            { state: { fromContinue: true } }
+          )
+        }
+        onFinish={handleFinishWorkout}
+        isFinishing={isFinishing}
+      />
+    );
+  }
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4 space-y-6">

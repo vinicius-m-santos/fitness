@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Check, Timer } from "lucide-react";
 import CircularSlider from "@fseehawer/react-circular-slider";
 
 const MAX_REST_SECONDS = 300;
@@ -39,6 +40,8 @@ type RestModalProps = {
   onRestStart: () => void;
   onRestPause: () => void;
   onRestSave?: (seconds: number) => void;
+  /** Exibe ícone de conclusão em verde por 1s antes de fechar (após o timer chegar a 0). */
+  restJustCompleted?: boolean;
   disabled?: boolean;
 };
 
@@ -52,6 +55,7 @@ export default function RestModal({
   onRestStart,
   onRestPause,
   onRestSave,
+  restJustCompleted = false,
   disabled,
 }: RestModalProps) {
   const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -100,33 +104,50 @@ export default function RestModal({
           <DialogTitle className="text-center">Tempo de descanso</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col items-center gap-4 w-full">
-          <div className="relative flex justify-center items-center">
-            <CircularSlider
-              width={240}
-              min={0}
-              max={REST_DATA.length - 1}
-              data={REST_DATA}
-              dataIndex={sliderDataIndex}
-              onChange={(value) => handleSliderChange(Number(value))}
-              knobDraggable={!restTimerRunning}
-              trackDraggable={!restTimerRunning}
-              hideLabelValue
-              renderLabelValue={
-                <div className="absolute top-0 h-full w-full flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-4xl md:text-5xl font-mono font-semibold tabular-nums">
-                    {formatSeconds(displaySeconds)}
-                  </span>
-                </div>
-              }
-            />
-          </div>
-          <Button
-            className="w-full"
-            onClick={handleStartPause}
-            disabled={disabled || (restTimerRunning && restRemainingSeconds <= 0)}
-          >
-            {restTimerRunning ? "Pausar" : "Iniciar descanso"}
-          </Button>
+          {restJustCompleted ? (
+            <div className="flex flex-col items-center gap-4 py-4">
+              <div className="rounded-full bg-green-500/15 p-4 flex items-center justify-center">
+                <Check className="w-14 h-14 text-green-600 dark:text-green-400" strokeWidth={2.5} />
+              </div>
+              <p className="text-base font-medium text-muted-foreground">Descanso concluído</p>
+            </div>
+          ) : (
+            <>
+              <div className="relative flex justify-center items-center">
+                <CircularSlider
+                  width={240}
+                  min={0}
+                  knobSize={44}
+                  progressColorFrom="#1E88E5"
+                  progressColorTo="#1E88E5"
+                  knobColor="#1E88E5"
+                  max={REST_DATA.length - 1}
+                  data={REST_DATA}
+                  dataIndex={sliderDataIndex}
+                  onChange={(value) => handleSliderChange(Number(value))}
+                  knobDraggable={!restTimerRunning}
+                  trackDraggable={!restTimerRunning}
+                  hideLabelValue
+                  renderLabelValue={
+                    <div className="absolute top-0 h-full w-full flex flex-col items-center justify-center pointer-events-none">
+                      <span className="text-4xl md:text-5xl font-mono font-semibold tabular-nums">
+                        {formatSeconds(displaySeconds)}
+                      </span>
+                    </div>
+                  }
+                >
+                  <Timer x="10" y="10" className="w-4 h-4 text-white text-muted-foreground" strokeWidth={2} />
+                </CircularSlider>
+              </div>
+              <Button
+                className="w-full"
+                onClick={handleStartPause}
+                disabled={disabled || (restTimerRunning && restRemainingSeconds <= 0)}
+              >
+                {restTimerRunning ? "Pausar" : "Iniciar descanso"}
+              </Button>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>

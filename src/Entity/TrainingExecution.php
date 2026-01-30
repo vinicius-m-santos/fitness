@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Enum\WorkoutRatingEnum;
 use App\Repository\TrainingExecutionRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -29,6 +30,9 @@ class TrainingExecution
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $finishedAt = null;
+
+    #[ORM\Column(length: 20, nullable: true, enumType: WorkoutRatingEnum::class)]
+    private ?WorkoutRatingEnum $rating = null;
 
     /**
      * @var Collection<int, ExerciseExecution>
@@ -87,6 +91,17 @@ class TrainingExecution
     public function setFinishedAt(?\DateTimeImmutable $finishedAt): self
     {
         $this->finishedAt = $finishedAt;
+        return $this;
+    }
+
+    public function getRating(): ?WorkoutRatingEnum
+    {
+        return $this->rating;
+    }
+
+    public function setRating(?WorkoutRatingEnum $rating): self
+    {
+        $this->rating = $rating;
         return $this;
     }
 
