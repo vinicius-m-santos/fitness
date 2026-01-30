@@ -53,10 +53,16 @@ class TrainingService
             throw new UnprocessableEntityHttpException("Nome do treino não informado");
         }
 
+        $dueDate = isset($data['dueDate']) && $data['dueDate'] !== ''
+            ? new \DateTimeImmutable($data['dueDate']) : null;
+
         $training = new Training();
         $training->setName($data['name']);
         $training->setClient($client);
         $training->setPersonal($personal);
+        if ($dueDate !== null) {
+            $training->setDueDate($dueDate);
+        }
 
         $this->trainingRepository->add($training, true);
 
@@ -179,6 +185,7 @@ class TrainingService
                 'name' => $training->getName(),
                 'createdAt' => $training->getCreatedAt()->format('d/m/Y'),
                 'isStandard' => $training->isStandard(),
+                'dueDate' => $training->getDueDate()?->format('Y-m-d'),
                 'periods' => $periods,
                 'lastFinishedAt' => $lastFinishedAt?->format(\DateTimeInterface::ATOM),
             ];
@@ -218,6 +225,7 @@ class TrainingService
             'name' => $training->getName(),
             'createdAt' => $training->getCreatedAt()->format('d/m/Y'),
             'isStandard' => $training->isStandard(),
+            'dueDate' => $training->getDueDate()?->format('Y-m-d'),
             'periods' => $periods,
         ];
     }
@@ -309,7 +317,7 @@ class TrainingService
      *
      * @param int[] $clientIds
      */
-    public function copyToClients(User $user, int $trainingId, array $clientIds): void
+    public function copyToClients(User $user, int $trainingId, array $clientIds, ?\DateTimeImmutable $dueDate = null): void
     {
         $personal = $user->getPersonal();
         if (!$personal) {
@@ -341,16 +349,19 @@ class TrainingService
                 throw new UnprocessableEntityHttpException('Cliente não pertence ao seu cadastro.');
             }
 
-            $this->copyTrainingToClient($training, $personal, $client);
+            $this->copyTrainingToClient($training, $personal, $client, $dueDate);
         }
     }
 
-    private function copyTrainingToClient(Training $source, Personal $personal, Client $client): void
+    private function copyTrainingToClient(Training $source, Personal $personal, Client $client, ?\DateTimeImmutable $dueDate = null): void
     {
         $training = new Training();
         $training->setName($source->getName() ?? '');
         $training->setPersonal($personal);
         $training->setClient($client);
+        if ($dueDate !== null) {
+            $training->setDueDate($dueDate);
+        }
         $this->trainingRepository->add($training, true);
 
         foreach ($source->getPeriods() as $period) {

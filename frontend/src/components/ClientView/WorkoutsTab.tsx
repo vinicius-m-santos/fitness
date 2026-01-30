@@ -236,7 +236,7 @@ export default function WorkoutsTab({ isActive = true }: WorkoutsTabProps) {
                               className={`h-4 w-4 mr-1 ${workout.isStandard ? "fill-amber-400 text-amber-500" : ""}`}
                             />
                           )}
-                          Padrão
+                          Criar treino padrão
                         </Button>
                       </>
                     )}

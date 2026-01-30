@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Client;
+use App\Entity\Personal;
 use App\Entity\Training;
 use App\Entity\TrainingExecution;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -69,5 +70,66 @@ class TrainingExecutionRepository extends ServiceEntityRepository
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * Count finished training executions in week for personal's clients.
+     */
+    public function countFinishedInWeek(Personal $personal, \DateTimeImmutable $weekStart, \DateTimeImmutable $weekEnd): int
+    {
+        $qb = $this->createQueryBuilder('te')
+            ->select('COUNT(te.id)')
+            ->innerJoin('te.training', 't')
+            ->where('t.personal = :personal')
+            ->andWhere('te.finishedAt IS NOT NULL')
+            ->andWhere('te.finishedAt >= :weekStart')
+            ->andWhere('te.finishedAt <= :weekEnd')
+            ->setParameter('personal', $personal)
+            ->setParameter('weekStart', $weekStart->setTime(0, 0, 0))
+            ->setParameter('weekEnd', $weekEnd->setTime(23, 59, 59));
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Client IDs that had at least one finished execution in the week.
+     *
+     * @return int[]
+     */
+    public function findClientIdsFinishedInWeek(Personal $personal, \DateTimeImmutable $weekStart, \DateTimeImmutable $weekEnd): array
+    {
+        $qb = $this->createQueryBuilder('te')
+            ->select('DISTINCT IDENTITY(te.client)')
+            ->innerJoin('te.training', 't')
+            ->where('t.personal = :personal')
+            ->andWhere('te.finishedAt IS NOT NULL')
+            ->andWhere('te.finishedAt >= :weekStart')
+            ->andWhere('te.finishedAt <= :weekEnd')
+            ->setParameter('personal', $personal)
+            ->setParameter('weekStart', $weekStart->setTime(0, 0, 0))
+            ->setParameter('weekEnd', $weekEnd->setTime(23, 59, 59));
+        $result = $qb->getQuery()->getSingleColumnResult();
+        return array_map('intval', $result);
+    }
+
+    /**
+     * Last finished_at per client for personal's clients (clients who never finished return null).
+     *
+     * @return array<int, \DateTimeImmutable|null> clientId => lastFinishedAt
+     */
+    public function findLastFinishedAtByPersonalClients(int $personalId): array
+    {
+        $conn = $this->em->getConnection();
+        $sql = 'SELECT te.client_id, MAX(te.finished_at) AS last_finished
+                FROM training_executions te
+                INNER JOIN training t ON t.id = te.training_id
+                WHERE t.personal_id = :personalId AND te.finished_at IS NOT NULL
+                GROUP BY te.client_id';
+        $rows = $conn->executeQuery($sql, ['personalId' => $personalId])->fetchAllAssociative();
+        $out = [];
+        foreach ($rows as $row) {
+            $out[(int) $row['client_id']] = $row['last_finished']
+                ? new \DateTimeImmutable($row['last_finished']) : null;
+        }
+        return $out;
     }
 }

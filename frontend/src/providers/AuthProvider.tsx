@@ -88,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (userData.roles.includes("ROLE_CLIENT")) {
       navigate("/student");
     } else {
-      navigate("/clients");
+      navigate("/week-summary");
     }
   };
 
