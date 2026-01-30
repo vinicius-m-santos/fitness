@@ -283,7 +283,8 @@ export default function ClientCreateModal() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-              <div className="sm:col-span-4 flex items-center space-x-2">
+              <div className="hidden sm:block" />
+              <div className="sm:col-span-3 flex items-center space-x-2">
                 <input
                   type="checkbox"
                   id="sendAccessEmail"
