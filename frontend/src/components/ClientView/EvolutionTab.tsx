@@ -19,6 +19,7 @@ import ContainerLoader from "@/components/ui/containerLoader";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChartNoAxesColumnIncreasing } from "lucide-react";
+import { useAuth } from "@/providers/AuthProvider";
 
 interface Measurement {
     id: number;
@@ -31,7 +32,7 @@ interface Measurement {
 export default function EvolutionTab() {
     const { id } = useParams();
     const request = useRequest();
-
+    const { user } = useAuth();
     const { data: measurements, isFetching } = useQuery<Measurement[]>({
         queryKey: ["measurements", id],
         queryFn: async () => {
@@ -95,12 +96,12 @@ export default function EvolutionTab() {
 
     return (
         <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-semibold text-black flex items-center gap-2">
-            <ChartNoAxesColumnIncreasing className="h-5 w-5" />
-            Evolução do Aluno
-          </h3>
-        </div>
+            <div className="flex flex-col md:flex-row gap-2 md:gap-0 items-center justify-between">
+                <h3 className="text-lg md:text-xl font-semibold text-black flex items-center gap-2">
+                    <ChartNoAxesColumnIncreasing className="h-4 w-4 md:h-5 md:w-5" />
+                    {user?.roles.includes("ROLE_PERSONAL") ? "Evolução do Aluno" : "Evolução Pessoal"}
+                </h3>
+            </div>
             <Card>
                 <CardHeader>
                     <CardTitle>Peso Corporal (kg)</CardTitle>

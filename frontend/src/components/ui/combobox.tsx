@@ -139,10 +139,12 @@ export const ComboboxTrigger = ({ children, ...props }: ComboboxTriggerProps) =>
 
   return (
     <PopoverTrigger asChild>
-      <Button variant="outline" {...(props as any)} ref={ref}>
+      <Button variant="outline" className="min-w-0 overflow-hidden" {...(props as any)} ref={ref}>
         {children ?? (
-          <span className="flex w-full items-center justify-between gap-2">
-            {value ? data.find(item => item.value === value)?.label : `Select ${type}...`}
+          <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+            <span className="truncate">
+              {value ? data.find(item => item.value === value)?.label : `Select ${type}...`}
+            </span>
             <ChevronsUpDownIcon className="shrink-0 text-muted-foreground" size={16} />
           </span>
         )}

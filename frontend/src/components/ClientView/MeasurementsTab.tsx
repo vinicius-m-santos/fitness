@@ -100,9 +100,9 @@ export default function MeasurementsTab() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold text-black flex items-center gap-2">
-          <Ruler className="h-5 w-5" />
+      <div className="flex flex-col md:flex-row gap-2 md:gap-0 items-center justify-between">
+        <h3 className="text-lg md:text-xl font-semibold text-black flex items-center gap-2">
+          <Ruler className="h-4 w-4 md:h-5 md:w-5" />
           Medidas Corporais
         </h3>
         <MeasurementCreateModal
@@ -112,7 +112,7 @@ export default function MeasurementsTab() {
         />
         <Button
           size="sm"
-          className="cursor-pointer"
+          className="cursor-pointer w-full md:w-auto"
           onClick={() => setOpen(true)}
         >
           <PlusIcon /> Nova medição

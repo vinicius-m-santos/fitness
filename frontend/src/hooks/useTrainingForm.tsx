@@ -3,10 +3,8 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
-import { useRequest } from "@/api/request";
 import { trainingCreateSchema, TrainingCreateSchema } from "@/schemas/training";
 import getFirstErrorMessage from "@/utils/ValidatorMessageExtractor";
 
@@ -19,11 +17,9 @@ export function useTrainingForm({
   defaultValues,
   onInvalidStep,
 }: UseTrainingFormProps = {}) {
-  const request = useRequest();
-
   const [currentStep, setCurrentStep] = useState(1);
-  const [selectedExercises, setSelectedExercises] = useState<
-    Record<number, string>
+  const [selectedExerciseByPeriod, setSelectedExerciseByPeriod] = useState<
+    Record<number, { id: number; name: string } | null>
   >({});
 
   const form = useForm<TrainingCreateSchema>({
@@ -36,19 +32,6 @@ export function useTrainingForm({
   });
 
   const periods = form.watch("periods");
-
-  /* =====================
-   * DATA
-   * ===================== */
-
-  const { data: exercises = [] } = useQuery({
-    queryKey: ["exercises"],
-    queryFn: async () => {
-      const res = await request({ method: "GET", url: "/exercise/all" });
-      return res.exercises;
-    },
-    staleTime: 5 * 60 * 1000,
-  });
 
   /* =====================
    * STEP CONTROL
@@ -122,11 +105,8 @@ export function useTrainingForm({
    * ===================== */
 
   const addExercise = (periodId: number) => {
-    const exerciseId = selectedExercises[periodId];
-    if (!exerciseId) return;
-
-    const exercise = exercises.find((e) => e.id.toString() === exerciseId);
-    if (!exercise) return;
+    const selected = selectedExerciseByPeriod[periodId];
+    if (!selected) return;
 
     form.setValue(
       "periods",
@@ -137,14 +117,14 @@ export function useTrainingForm({
               exercises: [
                 ...p.exercises,
                 {
-                  instanceId: `${p.id}-${exercise.id}-${Math.random()
+                  instanceId: `${p.id}-${selected.id}-${Math.random()
                     .toString(36)
                     .slice(2)}`,
-                  id: exercise.id,
-                  name: exercise.name,
-                  series: "",
-                  reps: "",
-                  rest: "",
+                  id: selected.id,
+                  name: selected.name,
+                  series: "1",
+                  reps: "1",
+                  rest: "0",
                   obs: "",
                 },
               ],
@@ -154,7 +134,7 @@ export function useTrainingForm({
       { shouldValidate: true }
     );
 
-    setSelectedExercises((prev) => ({ ...prev, [periodId]: "" }));
+    setSelectedExerciseByPeriod((prev) => ({ ...prev, [periodId]: null }));
   };
 
   const updateExercise = (
@@ -201,19 +181,18 @@ export function useTrainingForm({
   const resetForm = (values?: TrainingCreateSchema) => {
     form.reset(values ?? { name: "", periods: [] });
     setCurrentStep(1);
-    setSelectedExercises({});
+    setSelectedExerciseByPeriod({});
   };
 
   return {
     form,
     periods,
-    exercises,
     currentStep,
     nextStep,
     prevStep,
     resetForm,
-    selectedExercises,
-    setSelectedExercises,
+    selectedExerciseByPeriod,
+    setSelectedExerciseByPeriod,
     addPeriod,
     removePeriod,
     updatePeriodName,

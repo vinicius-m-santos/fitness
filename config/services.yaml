@@ -42,6 +42,14 @@ services:
                   priority: 100,
               }
 
+    App\EventListener\JWTAuthenticationFailureHandler:
+        tags:
+            - {
+                  name: kernel.event_listener,
+                  event: lexik_jwt_authentication.on_authentication_failure,
+                  method: onAuthenticationFailure,
+              }
+
     App\Service\EmailVerificationService:
         arguments:
             $appUrl: '%env(APP_URL)%'

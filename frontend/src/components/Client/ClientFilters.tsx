@@ -35,7 +35,7 @@ const ClientFilters = ({ onFilterChange }: ClientFiltersProps) => {
     }, [search, order, onFilterChange]);
 
     return (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border shadow-md rounded-xl p-4 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl p-3 sm:p-4 mb-4 bg-white/80 dark:bg-gray-900/70 backdrop-blur border border-gray-200/60 dark:border-gray-800/60 shadow-md">
             <div className="relative w-full sm:w-1/2">
                 <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
                 <Input

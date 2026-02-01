@@ -6,6 +6,7 @@ import {
 } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { WheelPicker, WheelPickerWrapper } from "@/components/wheel-picker";
 import {
   Combobox,
   ComboboxContent,
@@ -19,18 +20,52 @@ import {
 import { TrashIcon, ChevronUpIcon, ChevronDownIcon, CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import { EXERCISES_LABELS } from "@/utils/constants/Client/constants";
 import { TrainingCreateSchema } from "@/schemas/training";
-import { useState } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { useExerciseSearch } from "@/hooks/useExerciseSearch";
+import { Label } from "@/components/ui/label";
 
-type ExerciseField = "series" | "reps" | "rest" | "obs";
+const DEBOUNCE_MS = 350;
+
+const SERIES_OPTIONS = Array.from({ length: 30 }, (_, i) => ({
+  value: String(i + 1),
+  label: String(i + 1),
+}));
+
+const REPS_OPTIONS = Array.from({ length: 100 }, (_, i) => ({
+  value: String(i + 1),
+  label: String(i + 1),
+}));
+
+const REST_OPTIONS = Array.from({ length: 61 }, (_, i) => {
+  const sec = i * 10;
+  return { value: String(sec), label: `${sec}s` };
+});
+
+function getPickerValue(
+  raw: string | undefined,
+  options: { value: string }[],
+  defaultVal: string,
+  step = 1
+): string {
+  if (!raw?.trim()) return defaultVal;
+  const num = parseInt(raw, 10);
+  if (isNaN(num)) return defaultVal;
+  const rounded = step > 1 ? Math.round(num / step) * step : num;
+  const found = options.find((o) => o.value === String(rounded));
+  if (found) return found.value;
+  const first = parseInt(options[0].value, 10);
+  const last = parseInt(options[options.length - 1].value, 10);
+  const clamped = Math.max(first, Math.min(last, rounded));
+  return String(clamped);
+}
 
 type Props = {
   periods: TrainingCreateSchema["periods"];
-  exercises: Array<{ id: number; name: string }>;
   isMobile: boolean;
-  selectedExercises: Record<number, string>;
-  setSelectedExercises: React.Dispatch<
-    React.SetStateAction<Record<number, string>>
+  selectedExerciseByPeriod: Record<number, { id: number; name: string } | null>;
+  setSelectedExerciseByPeriod: React.Dispatch<
+    React.SetStateAction<Record<number, { id: number; name: string } | null>>
   >;
   onAddExercise: (periodId: number) => void;
   onUpdateExercise: (
@@ -44,20 +79,81 @@ type Props = {
 
 export default function StepExercises({
   periods,
-  exercises,
   isMobile,
-  selectedExercises,
-  setSelectedExercises,
+  selectedExerciseByPeriod,
+  setSelectedExerciseByPeriod,
   onAddExercise,
   onUpdateExercise,
   onRemoveExercise,
 }: Props) {
-  const [expandedExerciseId, setExpandedExerciseId] = useState<string | null>(
-    null
+  const [expandedExerciseId, setExpandedExerciseId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [accumulated, setAccumulated] = useState<{ id: number; name: string }[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSearchInputChange = useCallback((value: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setSearch(value);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(value);
+      setPage(1);
+      debounceRef.current = null;
+    }, DEBOUNCE_MS);
+  }, []);
+
+  const prevDebouncedSearchRef = useRef(debouncedSearch);
+  useEffect(() => {
+    if (prevDebouncedSearchRef.current !== debouncedSearch) {
+      prevDebouncedSearchRef.current = debouncedSearch;
+      setAccumulated([]);
+    }
+  }, [debouncedSearch]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  const { exercises: pageExercises, totalPages, isLoading } = useExerciseSearch(
+    debouncedSearch,
+    page,
+    true
+  );
+
+  useEffect(() => {
+    if (!Array.isArray(pageExercises) || isLoading) return;
+    if (page === 1) {
+      setAccumulated(pageExercises);
+    } else {
+      setAccumulated((prev) => {
+        const ids = new Set(prev.map((e) => e.id));
+        const newOnes = pageExercises.filter((e) => !ids.has(e.id));
+        return newOnes.length ? [...prev, ...newOnes] : prev;
+      });
+    }
+  }, [page, pageExercises, isLoading]);
+
+  const handleListScroll = useCallback(
+    (e: React.UIEvent<HTMLDivElement>) => {
+      const el = e.currentTarget;
+      if (isLoading || page >= totalPages) return;
+      if (el.scrollHeight - el.scrollTop - el.clientHeight < 80) {
+        setPage((p) => p + 1);
+      }
+    },
+    [isLoading, page, totalPages]
   );
 
   const getExerciseId = (periodId: number, instanceId: string) =>
     `${periodId}-${instanceId}`;
+
+  const comboboxData = useMemo(
+    () => accumulated.map((ex) => ({ label: ex.name, value: ex.name })),
+    [accumulated]
+  );
 
   return (
     <Accordion type="single" collapsible>
@@ -67,57 +163,69 @@ export default function StepExercises({
           <AccordionContent className="space-y-3">
             <div className="flex gap-2">
               <Combobox
-                data={exercises.map((ex) => ({
-                  label: ex.name,
-                  value: String(ex.id),
-                }))}
+                data={comboboxData}
                 type="exercício"
-                value={
-                  selectedExercises[period.id]
-                    ? exercises.find(
-                        (ex) => String(ex.id) === selectedExercises[period.id]
-                      )?.name || ""
-                    : ""
-                }
+                value={selectedExerciseByPeriod[period.id]?.name ?? ""}
                 onValueChange={(val) => {
-                  const exercise = exercises.find((ex) => ex.name === val);
-                  if (exercise) {
-                    setSelectedExercises((prev) => ({
+                  const ex = accumulated.find((e) => e.name === val);
+                  if (ex) {
+                    setSelectedExerciseByPeriod((prev) => ({
                       ...prev,
-                      [period.id]: String(exercise.id),
+                      [period.id]: { id: ex.id, name: ex.name },
                     }));
                   }
                 }}
               >
-                <ComboboxTrigger className="w-52">
-                  <span className="flex w-full items-center justify-between gap-2">
-                    {selectedExercises[period.id]
-                      ? exercises.find(
-                          (ex) => String(ex.id) === selectedExercises[period.id]
-                        )?.name
-                      : "Escolher exercício"}
+                <ComboboxTrigger className="w-52 min-w-0 overflow-hidden">
+                  <span className="flex min-w-0 flex-1 items-center justify-between gap-2 truncate">
+                    <span className="truncate">
+                      {selectedExerciseByPeriod[period.id]?.name ?? "Escolher exercício"}
+                    </span>
                     <ChevronsUpDownIcon className="shrink-0 text-muted-foreground" size={16} />
                   </span>
                 </ComboboxTrigger>
-                <ComboboxContent>
-                  <ComboboxInput placeholder="Buscar exercício..." />
-                  <ComboboxList>
-                    <ComboboxEmpty>Nenhum exercício encontrado.</ComboboxEmpty>
-                    <ComboboxGroup>
-                      {exercises.map((ex) => {
-                        const isExerciseAdded = period.exercises.some(
-                          (periodEx) => periodEx.id === ex.id
-                        );
-                        return (
-                          <ComboboxItem key={ex.id} value={ex.name}>
-                            {isExerciseAdded && (
-                              <CheckIcon className="mr-2 h-4 w-4 text-green-600" />
-                            )}
-                            {ex.name}
-                          </ComboboxItem>
-                        );
-                      })}
-                    </ComboboxGroup>
+                <ComboboxContent
+                  shouldFilter={false}
+                  popoverOptions={{ className: "p-0" }}
+                >
+                  <ComboboxInput
+                    placeholder="Buscar exercício..."
+                    onValueChange={handleSearchInputChange}
+                  />
+                  <ComboboxList
+                    onScroll={handleListScroll}
+                    className="max-h-[240px] overflow-y-auto overflow-x-hidden"
+                  >
+                    {isLoading && accumulated.length === 0 ? (
+                      <div className="py-8 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        Carregando exercícios...
+                      </div>
+                    ) : (
+                      <>
+                        <ComboboxEmpty>Nenhum exercício encontrado.</ComboboxEmpty>
+                        <ComboboxGroup>
+                          {accumulated.map((ex) => {
+                            const isExerciseAdded = period.exercises.some(
+                              (periodEx) => periodEx.id === ex.id
+                            );
+                            return (
+                              <ComboboxItem key={ex.id} value={ex.name}>
+                                {isExerciseAdded && (
+                                  <CheckIcon className="mr-2 h-4 w-4 shrink-0 text-green-600" />
+                                )}
+                                <span className="truncate">{ex.name}</span>
+                              </ComboboxItem>
+                            );
+                          })}
+                        </ComboboxGroup>
+                      </>
+                    )}
+                    {isLoading && page > 1 && (
+                      <div className="py-2 text-center text-sm text-muted-foreground">
+                        Carregando...
+                      </div>
+                    )}
                   </ComboboxList>
                 </ComboboxContent>
               </Combobox>
@@ -126,7 +234,7 @@ export default function StepExercises({
                 type="button"
                 size="sm"
                 onClick={() => onAddExercise(period.id)}
-                className="cursor-pointer"
+                className="cursor-pointer shrink-0"
               >
                 Adicionar
               </Button>
@@ -153,47 +261,81 @@ export default function StepExercises({
                         setExpandedExerciseId(isExpanded ? null : exerciseId)
                       }
                     >
-                      <span className="font-medium">{ex.name}</span>
+                      <span className="font-medium truncate">{ex.name}</span>
                       {isExpanded ? (
-                        <ChevronUpIcon className="w-4 h-4" />
+                        <ChevronUpIcon className="w-4 h-4 shrink-0" />
                       ) : (
-                        <ChevronDownIcon className="w-4 h-4" />
+                        <ChevronDownIcon className="w-4 h-4 shrink-0" />
                       )}
                     </div>
 
                     {isExpanded && (
-                      <div className="space-y-2 pt-2">
-                        {(["series", "reps", "rest", "obs"] as ExerciseField[]).map(
-                          (field, index) => (
-                            <Input
-                              key={field}
-                              placeholder={EXERCISES_LABELS[field]}
-                              className="text-sm font-medium"
-                              value={ex[field] ?? ""}
-                              onChange={(e) =>
-                                onUpdateExercise(
-                                  period.id,
-                                  ex.instanceId,
-                                  field,
-                                  e.target.value
-                                )
-                              }
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  e.preventDefault();
-                                  const inputs = e.currentTarget
-                                    .closest("div")
-                                    ?.querySelectorAll("input");
-                                  if (inputs && index < inputs.length - 1) {
-                                    (
-                                      inputs[index + 1] as HTMLInputElement
-                                    )?.focus();
-                                  }
+                      <div className="space-y-2 pt-2 w-full">
+                        <div className="flex gap-3">
+                          <div className="flex flex-col gap-1 w-full">
+                            <span className="text-xs text-muted-foreground block text-center">
+                              {EXERCISES_LABELS.series}
+                            </span>
+                            <WheelPickerWrapper className="w-full">
+                              <WheelPicker
+                                value={getPickerValue(ex.series, SERIES_OPTIONS, "1")}
+                                onValueChange={(v) =>
+                                  onUpdateExercise(period.id, ex.instanceId, "series", v as string)
                                 }
-                              }}
-                            />
-                          )
-                        )}
+                                options={SERIES_OPTIONS}
+                                optionItemHeight={32}
+                              />
+                            </WheelPickerWrapper>
+                          </div>
+                          <div className="flex flex-col gap-1 w-full">
+                            <span className="text-xs text-muted-foreground block text-center">
+                              {EXERCISES_LABELS.reps}
+                            </span>
+                            <WheelPickerWrapper className="w-full">
+                              <WheelPicker
+                                value={getPickerValue(ex.reps, REPS_OPTIONS, "1")}
+                                onValueChange={(v) =>
+                                  onUpdateExercise(period.id, ex.instanceId, "reps", v as string)
+                                }
+                                options={REPS_OPTIONS}
+                                optionItemHeight={32}
+                              />
+                            </WheelPickerWrapper>
+                          </div>
+                          <div className="flex flex-col gap-1 w-full">
+                            <span className="text-xs text-muted-foreground block text-center">
+                              {EXERCISES_LABELS.rest}
+                            </span>
+                            <WheelPickerWrapper className="w-full">
+                              <WheelPicker
+                                value={getPickerValue(ex.rest, REST_OPTIONS, "0", 10)}
+                                onValueChange={(v) =>
+                                  onUpdateExercise(period.id, ex.instanceId, "rest", v as string)
+                                }
+                                options={REST_OPTIONS}
+                                optionItemHeight={32}
+                              />
+                            </WheelPickerWrapper>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-muted-foreground">
+                            {EXERCISES_LABELS.obs}
+                          </span>
+                          <Input
+                            placeholder={EXERCISES_LABELS.obs}
+                            className="text-sm font-medium"
+                            value={ex.obs ?? ""}
+                            onChange={(e) =>
+                              onUpdateExercise(
+                                period.id,
+                                ex.instanceId,
+                                "obs",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
 
                         <Button
                           type="button"
@@ -203,7 +345,7 @@ export default function StepExercises({
                           className="w-full text-red-500 font-bold cursor-pointer"
                           variant="destructive"
                         >
-                          <TrashIcon className="w-4 h-4 text-white" />
+                          <TrashIcon className="h-4 w-4 text-white" />
                         </Button>
                       </div>
                     )}
@@ -214,47 +356,75 @@ export default function StepExercises({
               return (
                 <div
                   key={ex.instanceId}
-                  className="flex items-center gap-2 border rounded-md p-2"
+                  className="flex flex-wrap items-center gap-2 border rounded-md p-2"
                 >
-                  <span className="w-40 font-medium">{ex.name}</span>
+                  <span className="w-full min-w-0 font-medium truncate sm:w-auto sm:min-w-[120px]">{ex.name}</span>
 
-                  {(["series", "reps", "rest", "obs"] as ExerciseField[]).map(
-                    (field, index) => (
-                      <Input
-                        key={field}
-                        placeholder={EXERCISES_LABELS[field]}
-                        className="text-sm font-medium"
-                        value={ex[field] ?? ""}
-                        onChange={(e) =>
-                          onUpdateExercise(
-                            period.id,
-                            ex.instanceId,
-                            field,
-                            e.target.value
-                          )
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            const inputs = e.currentTarget
-                              .closest("div")
-                              ?.querySelectorAll("input");
-                            if (inputs && index < inputs.length - 1) {
-                              (inputs[index + 1] as HTMLInputElement)?.focus();
-                            }
+                  <div className="w-full flex items-center gap-2">
+                    <div className="w-full justify-center">
+                      <Label className="block text-center mb-2">Séries</Label>
+                      <WheelPickerWrapper className="w-auto">
+                        <WheelPicker
+                          value={getPickerValue(ex.series, SERIES_OPTIONS, "1")}
+                          onValueChange={(v) =>
+                            onUpdateExercise(period.id, ex.instanceId, "series", v as string)
                           }
-                        }}
-                      />
-                    )
-                  )}
+                          options={SERIES_OPTIONS}
+                          optionItemHeight={32}
+                        />
+                      </WheelPickerWrapper>
+                    </div>
+                    <div className="w-full justify-center">
+                      <Label className="block text-center mb-2">Repetições</Label>
+                      <WheelPickerWrapper className="w-auto">
+                        <WheelPicker
+                          value={getPickerValue(ex.reps, REPS_OPTIONS, "1")}
+                          onValueChange={(v) =>
+                            onUpdateExercise(period.id, ex.instanceId, "reps", v as string)
+                          }
+                          options={REPS_OPTIONS}
+                          optionItemHeight={32}
+                        />
+                      </WheelPickerWrapper>
+                    </div>
+                    <div className="w-full justify-center">
+                      <Label className="block text-center mb-2">Descanso</Label>
+                      <WheelPickerWrapper className="w-auto">
+                        <WheelPicker
+                          value={getPickerValue(ex.rest, REST_OPTIONS, "0", 10)}
+                          onValueChange={(v) =>
+                            onUpdateExercise(period.id, ex.instanceId, "rest", v as string)
+                          }
+                          options={REST_OPTIONS}
+                          optionItemHeight={32}
+                        />
+                      </WheelPickerWrapper>
+                    </div>
+                  </div>
+                  <div className="w-full">
+                    <Label>Observações</Label>
+                    <Input
+                      placeholder={EXERCISES_LABELS.obs}
+                      className="w-full text-sm font-medium min-w-[80px] flex-1"
+                      value={ex.obs ?? ""}
+                      onChange={(e) =>
+                        onUpdateExercise(
+                          period.id,
+                          ex.instanceId,
+                          "obs",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
 
                   <Button
                     type="button"
                     onClick={() => onRemoveExercise(period.id, ex.instanceId)}
-                    className="text-red-500 font-bold px-2 cursor-pointer hover:opacity-75"
+                    className="text-red-500 font-bold px-2 cursor-pointer hover:opacity-75 shrink-0 w-full"
                     variant="destructive"
                   >
-                    <TrashIcon className="w-4 h-4 text-white" />
+                    <TrashIcon className="h-4 w-4 text-white" />
                   </Button>
                 </div>
               );

@@ -7,23 +7,46 @@ import {
     Shield,
     Settings,
 } from "lucide-react";
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRequest } from "@/api/request";
 import { useAuth } from "@/providers/AuthProvider";
 import toast from "react-hot-toast";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import SecuritySection from "@/components/Profile/SecuritySection";
 import PreferencesSection from "@/components/Profile/PreferencesSection";
 import PersonalDataSection from "@/components/Profile/PersonalDataSection";
 import ProfileUpdateModal from "@/components/Profile/ProfileUpdateModal";
 import { UserFormSchema } from "@/schemas/user";
+import EditableAvatar from "@/components/ui/EditableAvatar";
+import Loader from "@/components/ui/loader";
 
 export default function ProfilePage() {
     const [section, setSection] = useState<"profile" | "security" | "preferences">("profile");
     const { user, updateUser } = useAuth();
     const request = useRequest();
     const queryClient = useQueryClient();
+
+    const isClient = user?.roles?.includes("ROLE_CLIENT");
+    const clientId = user?.client?.id;
+
+    const { data: client, isLoading: isLoadingClient } = useQuery({
+        queryKey: ["client", String(clientId)],
+        queryFn: async () => {
+            const res = await request({ method: "GET", url: `/client/${clientId}` });
+            return res;
+        },
+        enabled: !!isClient && !!clientId,
+        refetchOnMount: true,
+        staleTime: 5 * 60 * 1000,
+    });
+
+    const profileUser = useMemo(() => {
+        if (!user) return null;
+        if (isClient && client?.user) {
+            return { ...user, ...client.user, roles: user.roles };
+        }
+        return user;
+    }, [user, isClient, client]);
 
     const updateUserMutation = useMutation({
         mutationFn: async (payload: UserFormSchema): Promise<unknown> => {
@@ -39,8 +62,12 @@ export default function ProfilePage() {
         },
         onSuccess: (updatedUser: any) => {
             queryClient.setQueryData(["user", user?.id], updatedUser);
-            if (updatedUser && user && typeof updatedUser === 'object') {
-                // Garantir que todos os campos necessários estejam presentes
+            if (isClient && clientId) {
+                queryClient.setQueryData(["client", String(clientId)], (old: { user?: object }) =>
+                    old ? { ...old, user: updatedUser } : old
+                );
+            }
+            if (updatedUser && user && typeof updatedUser === "object") {
                 const updatedUserData = {
                     ...user,
                     ...updatedUser,
@@ -77,43 +104,36 @@ export default function ProfilePage() {
 
     return (
         <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
+            <Loader loading={isClient && isLoadingClient} />
             <Card>
                 <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-6">
-                    <Avatar className="h-24 w-24">
-                        {user?.avatarUrl ? (
-                            <AvatarImage
-                                src={user.avatarUrl}
-                                alt="Foto do perfil"
-                                className="object-cover object-center"
-                            />
-                        ) : (
-                            <AvatarFallback className="bg-muted text-xl font-semibold">
-                                {user?.firstName?.[0].toUpperCase()}
-                                {user?.lastName?.[0].toUpperCase()}
-                            </AvatarFallback>
-                        )}
-                    </Avatar>
+                    {!profileUser && (
+                        <div className="h-24 w-24 rounded-full bg-gray-300 animate-pulse" />
+                    )}
+                    {profileUser && (
+                        <EditableAvatar variant="user" data={profileUser} />
+                    )}
 
                     <div className="flex-1 text-center sm:text-left space-y-1">
                         <h2 className="text-2xl font-semibold">
-                            {user?.firstName} {user?.lastName}
+                            {profileUser?.firstName} {profileUser?.lastName}
                         </h2>
                         <p className="text-sm text-muted-foreground">
                             {getUserType()}
                         </p>
                     </div>
 
-                    {user && (
+                    {profileUser && (
                         <ProfileUpdateModal
-                            key={user.id}
+                            key={profileUser.id}
                             userData={{
-                                id: user.id,
-                                firstName: user.firstName,
-                                lastName: user.lastName,
-                                email: user.email,
-                                phone: user.phone || null,
-                                avatarUrl: user.avatarUrl || null,
-                                birthDate: user.birthDate || null,
+                                id: profileUser.id,
+                                firstName: profileUser.firstName,
+                                lastName: profileUser.lastName,
+                                email: profileUser.email,
+                                phone: profileUser.phone || null,
+                                avatarUrl: profileUser.avatarUrl || null,
+                                birthDate: profileUser.birthDate || null,
                             }}
                             onSubmit={handleUserUpdate}
                             isLoading={updateUserMutation.isPending}
@@ -164,7 +184,7 @@ export default function ProfilePage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2 }}
                 >
-                    <PersonalDataSection />
+                    <PersonalDataSection userData={profileUser} />
                 </motion.div>
             )}
 

@@ -40,6 +40,7 @@ const ExerciseCreateModal = ({ openProp, onOpenChange }: ExerciseCreateModalProp
   const [muscleGroups, setMuscleGroups] = useState<{ id: number; name: string }[]>(
     []
   );
+  const [favorite, setFavorite] = useState<boolean>(false);
   const [open, setOpen] = useState<boolean>(false);
 
   const exerciseSchema = z.object({
@@ -79,10 +80,11 @@ const ExerciseCreateModal = ({ openProp, onOpenChange }: ExerciseCreateModalProp
   }, [open]);
 
   const saveExercise = async (data: any) => {
-    const res = await api.post("/exercise/create", data);
+    const res = await api.post("/exercise/create", { ...data, favorite });
     setName("");
     setCategoryId("");
     setMuscleGroupId("");
+    setFavorite(false);
     return res.data;
   };
 
@@ -110,7 +112,7 @@ const ExerciseCreateModal = ({ openProp, onOpenChange }: ExerciseCreateModalProp
         muscleGroupId: muscleGroupId,
       });
 
-      await mutation.mutateAsync(data);
+      await mutation.mutateAsync({ ...data, favorite });
     } catch (err) {
       if (err instanceof ZodError) {
         console.log(err);
@@ -129,6 +131,7 @@ const ExerciseCreateModal = ({ openProp, onOpenChange }: ExerciseCreateModalProp
     setName("");
     setCategoryId("");
     setMuscleGroupId("");
+    setFavorite(false);
   };
 
   const handleOpenChange = (value: boolean) => {
@@ -227,6 +230,21 @@ const ExerciseCreateModal = ({ openProp, onOpenChange }: ExerciseCreateModalProp
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                id="favorite"
+                type="checkbox"
+                checked={favorite}
+                onChange={(e) => setFavorite(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <label
+                htmlFor="favorite"
+                className="text-sm font-medium cursor-pointer"
+              >
+                Favorito?
+              </label>
             </div>
           </div>
 

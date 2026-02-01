@@ -4,20 +4,13 @@ import toast from "react-hot-toast";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ButtonLoader from "@/components/ui/buttonLoader";
-import { Eye, EyeOff, CalendarIcon } from "lucide-react";
-import { useForm, Controller, Control } from "react-hook-form";
+import { Eye, EyeOff } from "lucide-react";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import z from "zod";
-import { format, parse, isValid as isValidDate } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { parse, isValid as isValidDate } from "date-fns";
 import PhoneInput from "@/components/ui/Inputs/PhoneInput";
-import { IMaskInput } from "react-imask";
+import BirthDateInput, { birthDateToISO } from "@/components/Inputs/BirthDateInput";
 import { useRequest } from "@/api/request";
 
 const registerSchema = z
@@ -37,16 +30,12 @@ const registerSchema = z
                 { message: "Telefone inválido. Use o formato (00) 00000-0000 ou (00) 0000-0000" }
             ),
         birthDate: z
-            .union([z.date(), z.string()])
+            .string()
             .optional()
             .nullable()
             .refine(
                 (val) => {
-                    if (!val) return true;
-                    if (val instanceof Date) {
-                        return val <= new Date() && val >= new Date("1900-01-01");
-                    }
-                    // Se for string, tenta parsear
+                    if (!val?.trim()) return true;
                     const parsed = parse(val, "dd/MM/yyyy", new Date());
                     if (isValidDate(parsed)) {
                         return parsed <= new Date() && parsed >= new Date("1900-01-01");
@@ -69,129 +58,6 @@ const registerSchema = z
     });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
-
-// Componente interno para o campo de data
-function BirthDateField({
-    field,
-    fieldState,
-}: {
-    field: {
-        value: string | Date | null | undefined;
-        onChange: (value: string | Date | null) => void;
-        onBlur: () => void;
-    };
-    fieldState: { error?: { message?: string } };
-}) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [inputValue, setInputValue] = useState<string>("");
-
-    // Converte o valor do campo para string formatada
-    const getDisplayValue = () => {
-        if (!field.value) return "";
-        if (field.value instanceof Date) {
-            return format(field.value, "dd/MM/yyyy", { locale: ptBR });
-        }
-        return field.value;
-    };
-
-    // Sincroniza inputValue quando field.value muda (apenas quando vem de fora, não quando o usuário digita)
-    useEffect(() => {
-        if (field.value) {
-            const displayValue = field.value instanceof Date
-                ? format(field.value, "dd/MM/yyyy", { locale: ptBR })
-                : String(field.value);
-            setInputValue(displayValue);
-        } else {
-            setInputValue("");
-        }
-    }, [field.value]);
-
-    const handleDateSelect = (date: Date | undefined) => {
-        if (date) {
-            field.onChange(date);
-            setInputValue(format(date, "dd/MM/yyyy", { locale: ptBR }));
-        } else {
-            field.onChange(null);
-            setInputValue("");
-        }
-        setIsOpen(false);
-    };
-
-    // Converte string para Date quando necessário para o Calendar
-    const getDateValue = (): Date | undefined => {
-        if (!field.value) return undefined;
-        if (field.value instanceof Date) return field.value;
-        const parsed = parse(field.value, "dd/MM/yyyy", new Date());
-        return isValidDate(parsed) ? parsed : undefined;
-    };
-
-    return (
-        <div>
-            <div className="relative">
-                <IMaskInput
-                    mask="00/00/0000"
-                    value={inputValue || getDisplayValue()}
-                    onAccept={(value: string) => {
-                        setInputValue(value);
-                        field.onChange(value || null);
-                    }}
-                    onBlur={field.onBlur}
-                    placeholder="dd/mm/aaaa"
-                    className="w-full text-black border border-gray-300 rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    id="birthDate"
-                />
-                <Popover open={isOpen} onOpenChange={setIsOpen}>
-                    <PopoverTrigger asChild>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                            onClick={() => setIsOpen(!isOpen)}
-                        >
-                            <CalendarIcon className="h-4 w-4 text-gray-500" />
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                            mode="single"
-                            selected={getDateValue()}
-                            onSelect={handleDateSelect}
-                            disabled={(date) =>
-                                date > new Date() || date < new Date("1900-01-01")
-                            }
-                            initialFocus
-                        />
-                    </PopoverContent>
-                </Popover>
-            </div>
-            {fieldState.error && (
-                <p className="text-xs text-red-500 mt-1">
-                    {fieldState.error.message}
-                </p>
-            )}
-        </div>
-    );
-}
-
-// Componente para o campo de data de nascimento
-function BirthDateInput({
-    control,
-    name,
-}: {
-    control: Control<RegisterFormData>;
-    name: "birthDate";
-}) {
-    return (
-        <Controller
-            control={control}
-            name={name}
-            render={({ field, fieldState }) => (
-                <BirthDateField field={field} fieldState={fieldState} />
-            )}
-        />
-    );
-}
 
 function getPasswordStrength(password: string): {
     strength: "weak" | "medium" | "strong";
@@ -256,19 +122,7 @@ const Register = () => {
     const onSubmit = async (data: RegisterFormData) => {
         setLoading(true);
 
-        // Converte birthDate para string se necessário
-        let birthDateString: string | null = null;
-        if (data.birthDate) {
-            if (data.birthDate instanceof Date) {
-                birthDateString = data.birthDate.toISOString().split('T')[0];
-            } else {
-                // Se for string, tenta parsear
-                const parsed = parse(data.birthDate, "dd/MM/yyyy", new Date());
-                if (isValidDate(parsed)) {
-                    birthDateString = parsed.toISOString().split('T')[0];
-                }
-            }
-        }
+        const birthDateString = birthDateToISO(data.birthDate ?? null);
 
         await request({
             method: "POST",
@@ -411,9 +265,26 @@ const Register = () => {
                         >
                             Data de Nascimento (opcional)
                         </label>
-                        <BirthDateInput
+                        <Controller
                             control={control}
                             name="birthDate"
+                            render={({ field, fieldState }) => (
+                                <div>
+                                    <BirthDateInput
+                                        value={field.value ?? ""}
+                                        onChange={(val) => field.onChange(val)}
+                                        onBlur={field.onBlur}
+                                        placeholder="dd/mm/aaaa"
+                                        id="birthDate"
+                                        className="w-full text-black border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                    {fieldState.error && (
+                                        <p className="text-xs text-red-500 mt-1">
+                                            {fieldState.error.message}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                         />
                     </div>
 

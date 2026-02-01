@@ -60,16 +60,16 @@ export default function GalleryTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-xl font-semibold text-black flex items-center gap-2">
-          <Images className="h-5 w-5" />
+      <div className="flex flex-col md:flex-row gap-2 md:gap-0 justify-between items-center">
+        <h3 className="text-lg md:text-xl font-semibold text-black flex items-center gap-2">
+          <Images className="h-4 w-4 md:h-5 md:w-5" />
           Galeria de Progresso
         </h3>
 
         {!user?.roles.includes("ROLE_PERSONAL") && (
           <Button
             size="sm"
-            className="cursor-pointer"
+            className="cursor-pointer w-full md:w-auto"
             onClick={() => setOpen(true)}
           >
             <PlusIcon /> Adicionar foto

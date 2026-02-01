@@ -31,6 +31,7 @@ import SaveButton from "@/components/ui/Buttons/components/SaveButton";
 import OutlineButton from "@/components/ui/Buttons/components/OutlineButton";
 import GenderSelect from "@/components/ui/Select/GenderSelect";
 import PhoneInput from "@/components/ui/Inputs/PhoneInput";
+import BirthDateInput, { birthDateToISO } from "@/components/Inputs/BirthDateInput";
 
 import { useRequest } from "@/api/request";
 import { useQueryClient } from "@tanstack/react-query";
@@ -60,7 +61,7 @@ export default function ClientCreateModal() {
       email: "",
       phone: null,
       gender: "",
-      age: null,
+      birthDate: null,
       height: null,
       weight: null,
       objective: null,
@@ -71,11 +72,13 @@ export default function ClientCreateModal() {
 
   const onSubmit = async (data: ClientFormSchema) => {
     setLoading(true);
+    const birthDateISO = birthDateToISO(data.birthDate ?? null);
+    const payload = { ...data, birthDate: birthDateISO };
 
     await request({
       method: "POST",
       url: "/client/clientByPersonal",
-      data,
+      data: payload,
       successMessage: "Aluno cadastrado",
       showSuccess: true,
       onAccept: () => {
@@ -202,14 +205,28 @@ export default function ClientCreateModal() {
               )}
             </div>
 
-            {/* Idade */}
+            {/* Data de nascimento */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-              <Label className="sm:text-right">Idade</Label>
-              <Input
-                type="number"
-                className="sm:col-span-3"
-                {...register("age")}
-              />
+              <Label className="sm:text-right">Data de nascimento</Label>
+              <div className="sm:col-span-3 space-y-1">
+                <Controller
+                  name="birthDate"
+                  control={control}
+                  render={({ field }) => (
+                    <BirthDateInput
+                      value={field.value ?? ""}
+                      onChange={(val) => field.onChange(val)}
+                      onBlur={field.onBlur}
+                      placeholder="dd/mm/aaaa"
+                    />
+                  )}
+                />
+                {errors.birthDate && (
+                  <p className="text-xs text-destructive">
+                    {errors.birthDate.message}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Altura */}

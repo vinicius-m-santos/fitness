@@ -24,7 +24,7 @@ final class ExerciseController extends AbstractController
     ) {}
 
     #[Route('/all', name: 'get_all_exercises', methods: ['GET'])]
-    public function getAll(ExerciseRepository $exerciseRepository): JsonResponse
+    public function getAll(Request $request): JsonResponse
     {
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
@@ -33,10 +33,33 @@ final class ExerciseController extends AbstractController
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 
-        $exercises = $exerciseRepository->findAllWithRelationsByUser($user->getId());
+        $personal = $user->getPersonal();
+        $personalId = $personal?->getId();
+        $page = max(1, (int) $request->query->get('page', 1));
+        $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
+        $favoritesOnly = filter_var($request->query->get('favoritesOnly', false), \FILTER_VALIDATE_BOOLEAN);
+        $ownOnly = filter_var($request->query->get('ownOnly', false), \FILTER_VALIDATE_BOOLEAN);
+        $search = $request->query->get('search', '');
+        $order = $request->query->get('order', 'newest');
+
+        $favoriteIds = $personalId !== null ? $this->exerciseRepository->getExerciseIdsFavoritedByPersonal($personalId) : [];
+
+        [$exercises, $total] = $this->exerciseRepository->findPaginatedByUser(
+            $user->getId(),
+            $personalId,
+            $page,
+            $limit,
+            $favoritesOnly,
+            $favoriteIds,
+            $search,
+            $order,
+            $ownOnly
+        );
 
         $data = [];
         foreach ($exercises as $exercise) {
+            $fav = $exercise->getFavorite();
+            $isFavorite = $personalId !== null && in_array($personalId, $fav, true);
             $data[] = [
                 'id' => $exercise->getId(),
                 'name' => $exercise->getName(),
@@ -44,10 +67,20 @@ final class ExerciseController extends AbstractController
                 'exerciseCategory' => $exercise->getExerciseCategory()->getName(),
                 'muscleGroup' => $exercise->getMuscleGroup()->getName(),
                 'createdAt' => $exercise->getCreatedAt()->format('Y-m-d H:i:s'),
+                'isStandard' => $exercise->isStandard(),
+                'isFavorite' => $isFavorite,
             ];
         }
 
-        return new JsonResponse(['exercises' => $data]);
+        $totalPages = (int) ceil($total / $limit);
+
+        return new JsonResponse([
+            'exercises' => $data,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+            'totalPages' => $totalPages,
+        ]);
     }
 
     #[Route('/create', name: 'create_exercise', methods: ['POST'])]
@@ -71,6 +104,29 @@ final class ExerciseController extends AbstractController
             ], 201);
         } catch (\Exception $e) {
             return new JsonResponse(['error' => $e->getMessage()], 409);
+        }
+    }
+
+    #[Route('/{id}/favorite', name: 'toggle_exercise_favorite', methods: ['PATCH'])]
+    public function toggleFavorite(int $id): JsonResponse
+    {
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+        if (!$user) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $exercise = $this->exerciseService->toggleFavorite($id, $user);
+            $personalId = $user->getPersonal()?->getId();
+            $fav = $exercise->getFavorite();
+            $isFavorite = $personalId !== null && in_array($personalId, $fav, true);
+            $data = $this->normalizer->normalize($exercise, null, ['groups' => ['exercise_all']]);
+            $data['isFavorite'] = $isFavorite;
+
+            return new JsonResponse(['exercise' => $data, 'isFavorite' => $isFavorite]);
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 400);
         }
     }
 
@@ -107,12 +163,20 @@ final class ExerciseController extends AbstractController
         }
 
         $exercise = $this->exerciseRepository->find($id);
-
-        if (!$exercise || $exercise->getPersonal()->getUser()->getId() !== $user->getId()) {
+        if (!$exercise) {
             return new JsonResponse(['error' => 'Exercício não encontrado'], 404);
         }
 
+        $personal = $user->getPersonal();
+        $personalId = $personal?->getId();
+        $canEdit = !$exercise->isStandard() && $exercise->getPersonal() && $exercise->getPersonal()->getUser()->getId() === $user->getId();
+        $fav = $exercise->getFavorite();
+        $isFavorite = $personalId !== null && in_array($personalId, $fav, true);
+
         $data = $this->normalizer->normalize($exercise, null, ['groups' => ['exercise_all']]);
+        $data['isFavorite'] = $isFavorite;
+        $data['isStandard'] = $exercise->isStandard();
+        $data['canEdit'] = $canEdit;
 
         return new JsonResponse(['exercise' => $data]);
     }

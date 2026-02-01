@@ -47,6 +47,15 @@ class Exercise
     #[Groups(['exercise_all', 'training_client'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    #[Groups(['exercise_all', 'training_client'])]
+    private bool $isStandard = false;
+
+    /** @var int[] Array of personal IDs who favorited this exercise */
+    #[ORM\Column(type: 'json', nullable: true)]
+    #[Groups(['exercise_all', 'training_client'])]
+    private ?array $favorite = [];
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -73,7 +82,7 @@ class Exercise
         return $this->exerciseCategory;
     }
 
-        public function getPersonal(): ?Personal
+    public function getPersonal(): ?Personal
     {
         return $this->personal;
     }
@@ -114,6 +123,30 @@ class Exercise
     public function setUpdatedAt(?\DateTimeImmutable $updatedAt): self
     {
         $this->updatedAt = $updatedAt;
+        return $this;
+    }
+
+    public function isStandard(): bool
+    {
+        return $this->isStandard;
+    }
+
+    public function setIsStandard(bool $isStandard): self
+    {
+        $this->isStandard = $isStandard;
+        return $this;
+    }
+
+    /** @return int[] */
+    public function getFavorite(): array
+    {
+        return $this->favorite ?? [];
+    }
+
+    /** @param int[] $favorite */
+    public function setFavorite(array $favorite): self
+    {
+        $this->favorite = $favorite;
         return $this;
     }
 }

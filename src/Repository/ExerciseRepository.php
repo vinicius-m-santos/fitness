@@ -59,7 +59,7 @@ class ExerciseRepository extends ServiceEntityRepository
             ->addSelect('c')
             ->leftJoin('e.personal', 'p')
             ->leftJoin('p.user', 'u')
-            ->where('u.id = :userId OR e.personal IS NULL')
+            ->where('e.isStandard = true OR u.id = :userId')
             ->setParameter('userId', $userId)
             ->orderBy('e.name', 'ASC');
 
@@ -69,6 +69,111 @@ class ExerciseRepository extends ServiceEntityRepository
         }
 
         return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * @param int[]|null $favoriteIds IDs of exercises favorited by current personal (for ordering)
+     * @return array{0: Exercise[], 1: int}
+     */
+    public function findPaginatedByUser(int $userId, ?int $personalId, int $page = 1, int $limit = 20, bool $favoritesOnly = false, ?array $favoriteIds = null, string $search = '', string $order = 'newest', bool $ownOnly = false): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        $sqlDefaults = 'SELECT deleted_default_exercises FROM personal p INNER JOIN users u ON u.id = p.user_id WHERE u.id = :userId';
+        $stmt = $conn->prepare($sqlDefaults);
+        $result = $stmt->executeQuery(['userId' => $userId])->fetchAssociative();
+
+        $excludedIds = [];
+        if (!empty($result['deleted_default_exercises'])) {
+            $decoded = json_decode($result['deleted_default_exercises'], true);
+            if (is_array($decoded)) {
+                $excludedIds = array_map(fn($e) => (int) $e, $decoded);
+            }
+        }
+
+        $qb = $this->createQueryBuilder('e')
+            ->leftJoin('e.exerciseCategory', 'c')
+            ->addSelect('c')
+            ->leftJoin('e.muscleGroup', 'm')
+            ->addSelect('m')
+            ->leftJoin('e.personal', 'p')
+            ->leftJoin('p.user', 'u')
+            ->where('e.isStandard = true OR u.id = :userId')
+            ->setParameter('userId', $userId);
+
+        if ($ownOnly && $personalId !== null) {
+            $qb->andWhere('e.personal = :personalId')
+                ->setParameter('personalId', $personalId);
+        }
+
+        if (!empty($excludedIds)) {
+            $qb->andWhere('e.id NOT IN (:excludedIds)')
+                ->setParameter('excludedIds', $excludedIds);
+        }
+
+        // Apply search filter
+        if (!empty($search)) {
+            $qb->andWhere('LOWER(e.name) LIKE LOWER(:search) OR LOWER(c.name) LIKE LOWER(:search) OR LOWER(m.name) LIKE LOWER(:search)')
+                ->setParameter('search', '%' . $search . '%');
+        }
+
+        if ($favoritesOnly && $personalId !== null) {
+            $idsForFilter = $favoriteIds ?? $this->getExerciseIdsFavoritedByPersonal($personalId);
+            if (empty($idsForFilter)) {
+                return [[], 0];
+            }
+            $qb->andWhere('e.id IN (:favoriteIds)')
+                ->setParameter('favoriteIds', $idsForFilter);
+        }
+
+        $totalQb = clone $qb;
+        $total = (int) $totalQb->select('COUNT(e.id)')->getQuery()->getSingleScalarResult();
+
+        // Apply ordering
+        if (!empty($favoriteIds)) {
+            $qb->addOrderBy('CASE WHEN e.id IN (:orderFavoriteIds) THEN 0 ELSE 1 END', 'ASC')
+                ->setParameter('orderFavoriteIds', $favoriteIds);
+        }
+
+        switch ($order) {
+            case 'name-asc':
+                $qb->addOrderBy('e.name', 'ASC');
+                break;
+            case 'name-desc':
+                $qb->addOrderBy('e.name', 'DESC');
+                break;
+            case 'oldest':
+                $qb->addOrderBy('e.createdAt', 'ASC');
+                break;
+            case 'newest':
+            default:
+                $qb->addOrderBy('e.createdAt', 'DESC');
+                break;
+        }
+
+        $offset = ($page - 1) * $limit;
+        $exercises = $qb
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        return [$exercises, $total];
+    }
+
+    /**
+     * @return int[]
+     */
+    public function getExerciseIdsFavoritedByPersonal(int $personalId): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        $sql = "SELECT id FROM exercises WHERE favorite IS NOT NULL AND favorite::jsonb @> to_jsonb(:personalId::int)";
+        $result = $conn->executeQuery($sql, ['personalId' => $personalId]);
+        $rows = $result->fetchAllAssociative();
+        $ids = [];
+        foreach ($rows as $row) {
+            $ids[] = (int) $row['id'];
+        }
+        return $ids;
     }
 
 

@@ -57,6 +57,11 @@ class JWTSuccessHandler
             'appNotifications' => $user->isAppNotifications(),
             'birthDate' => $user->getBirthDate() ? $user->getBirthDate()->format('Y-m-d') : null,
             'isVerified' => $user->isVerified(),
+            'gender' => $user->getGender(),
+            'active' => $user->isActive(),
+            'deletedAt' => $user->getDeletedAt() ? $user->getDeletedAt()->format('Y-m-d H:i:s') : null,
+            'avatarKey' => $user->getAvatarKey(),
+            'avatarUrl' => $user->getAvatarUrl(),
         ];
 
         if ($user->getClient()) {

@@ -107,12 +107,10 @@ export default function TrainingUpdateModal({
 
             {training.currentStep === 3 && (
               <StepExercises
-                form={training.form}
                 periods={training.periods}
-                exercises={training.exercises}
                 isMobile={isMobile}
-                selectedExercises={training.selectedExercises}
-                setSelectedExercises={training.setSelectedExercises}
+                selectedExerciseByPeriod={training.selectedExerciseByPeriod}
+                setSelectedExerciseByPeriod={training.setSelectedExerciseByPeriod}
                 onAddExercise={training.addExercise}
                 onUpdateExercise={training.updateExercise}
                 onRemoveExercise={training.removeExercise}

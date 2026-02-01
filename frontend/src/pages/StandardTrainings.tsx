@@ -130,41 +130,44 @@ export default function StandardTrainings() {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl p-3 sm:p-4 mb-4 bg-white dark:bg-gray-900/80 backdrop-blur border border-gray-200/60 dark:border-gray-800/60 shadow-md">
+        <div className="relative w-full sm:flex-1">
+          <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4 pointer-events-none" />
           <Input
             type="text"
             placeholder="Buscar por nome do treino, período ou exercício..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 w-full text-black font-medium text-sm"
+            className="pl-9 pr-9 font-medium text-sm text-black placeholder:text-gray-500 focus-visible:ring-gray-500"
           />
-          <X
+          <button
+            type="button"
             onClick={() => setSearchQuery("")}
-            className="absolute right-3 top-2.5 text-gray-400 w-4 h-4"
-          />
+            className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+            aria-label="Limpar busca"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
-        <div className="w-full sm:w-[200px]">
-          <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-            <SelectTrigger className="w-full text-black font-semibold text-sm">
-              <SelectValue placeholder="Ordenar por" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="name-asc" className="text-black text-sm">Nome (A-Z)</SelectItem>
-              <SelectItem value="name-desc" className="text-black text-sm">Nome (Z-A)</SelectItem>
-              <SelectItem value="date-desc" className="text-black text-sm">Mais novos</SelectItem>
-              <SelectItem value="date-asc" className="text-black text-sm">Mais antigos</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+          <SelectTrigger className="w-full font-medium text-sm sm:w-64 text-black focus-visible:ring-gray-500">
+            <SelectValue placeholder="Ordenar por" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="name-asc" className="text-black text-sm">Nome (A-Z)</SelectItem>
+            <SelectItem value="name-desc" className="text-black text-sm">Nome (Z-A)</SelectItem>
+            <SelectItem value="date-desc" className="text-black text-sm">Mais novos</SelectItem>
+            <SelectItem value="date-asc" className="text-black text-sm">Mais antigos</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {workouts.length === 0 ? (
-        <p className="text-muted-foreground text-sm">Nenhum treino padrão cadastrado. Crie um para replicar para os alunos.</p>
+        <p className="text-muted-foreground text-sm rounded-xl p-4 bg-white dark:bg-gray-900/80 border border-gray-200/60 dark:border-gray-800/60 shadow-md">Nenhum treino padrão cadastrado. Crie um para replicar para os alunos.</p>
       ) : filteredAndSortedWorkouts.length === 0 ? (
-        <p className="text-muted-foreground text-sm">Nenhum treino encontrado com os filtros aplicados.</p>
+        <p className="text-muted-foreground text-sm rounded-xl p-4 bg-white dark:bg-gray-900/80 border border-gray-200/60 dark:border-gray-800/60 shadow-md">Nenhum treino encontrado com os filtros aplicados.</p>
       ) : (
+        <div className="rounded-xl overflow-hidden border border-gray-200/60 dark:border-gray-800/60 shadow-md bg-white dark:bg-gray-900/80 p-4">
         <Accordion type="single" collapsible className="space-y-3">
           {filteredAndSortedWorkouts.map((workout) => (
             <AccordionItem key={workout.id} value={String(workout.id)}>
@@ -242,6 +245,7 @@ export default function StandardTrainings() {
             </AccordionItem>
           ))}
         </Accordion>
+        </div>
       )}
 
       {toDelete && (

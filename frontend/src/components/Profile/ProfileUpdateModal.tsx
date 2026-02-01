@@ -21,9 +21,10 @@ import { Edit } from "lucide-react";
 import SaveButton from "@/components/ui/Buttons/components/SaveButton";
 import OutlineButton from "@/components/ui/Buttons/components/OutlineButton";
 import PhoneInput from "@/components/ui/Inputs/PhoneInput";
+import BirthDateInput, { birthDateToISO, isoToBirthDate } from "@/components/Inputs/BirthDateInput";
 
 import { userFormSchema, UserFormSchema } from "@/schemas/user";
-import EditableUserAvatar from "@/components/Profile/EditableUserAvatar";
+import EditableAvatar from "@/components/ui/EditableAvatar";
 
 type User = {
   id: number;
@@ -74,12 +75,13 @@ export default function ProfileUpdateModal({
       lastName: userData.lastName ?? "",
       email: userData.email ?? "",
       phone: userData.phone ?? null,
-      birthDate: userData.birthDate ? userData.birthDate.split('T')[0] : null,
+      birthDate: isoToBirthDate(userData.birthDate) || null,
     });
   }, [userData, reset, open]);
 
   const handleSave = (data: UserFormSchema) => {
-    onSubmit(data, setOpen);
+    const birthDateISO = birthDateToISO(data.birthDate ?? null);
+    onSubmit({ ...data, birthDate: birthDateISO }, setOpen);
   };
 
   return (
@@ -106,7 +108,7 @@ export default function ProfileUpdateModal({
         <form onSubmit={handleSubmit(handleSave)}>
           <div className="grid gap-4 py-4">
             <div className="flex justify-center pb-4">
-              <EditableUserAvatar userData={userData} />
+              <EditableAvatar variant="user" data={userData} />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
@@ -173,10 +175,17 @@ export default function ProfileUpdateModal({
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
               <Label className="sm:text-right">Data de nascimento</Label>
               <div className="sm:col-span-3 space-y-1">
-                <Input
-                  type="date"
-                  {...register("birthDate")}
-                  max={new Date().toISOString().split('T')[0]}
+                <Controller
+                  name="birthDate"
+                  control={control}
+                  render={({ field }) => (
+                    <BirthDateInput
+                      value={field.value ?? ""}
+                      onChange={(val) => field.onChange(val)}
+                      onBlur={field.onBlur}
+                      placeholder="dd/mm/aaaa"
+                    />
+                  )}
                 />
                 {errors.birthDate && (
                   <p className="text-xs text-destructive">

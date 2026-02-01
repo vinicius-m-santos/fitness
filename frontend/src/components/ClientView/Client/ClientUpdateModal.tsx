@@ -34,6 +34,7 @@ import SaveButton from "@/components/ui/Buttons/components/SaveButton";
 import OutlineButton from "@/components/ui/Buttons/components/OutlineButton";
 import GenderSelect from "@/components/ui/Select/GenderSelect";
 import PhoneInput from "@/components/ui/Inputs/PhoneInput";
+import BirthDateInput, { birthDateToISO, isoToBirthDate } from "@/components/Inputs/BirthDateInput";
 
 import { clientFormSchema, ClientFormSchema } from "@/schemas/clients";
 import { useAuth } from "@/providers/AuthProvider";
@@ -66,7 +67,7 @@ export default function ClientUpdateModal({
       email: "",
       phone: null,
       gender: "",
-      age: null,
+      birthDate: null,
       height: null,
       weight: null,
       objective: null,
@@ -84,7 +85,7 @@ export default function ClientUpdateModal({
       email: clientData.user?.email ?? "",
       phone: clientData.user?.phone ?? null,
       gender: clientData.gender ?? "",
-      age: clientData.age ? String(clientData.age) : null,
+      birthDate: clientData.user?.birthDate ? isoToBirthDate(clientData.user.birthDate) : null,
       height: clientData.height ? String(clientData.height) : null,
       weight: clientData.weight ? String(clientData.weight) : null,
       objective: clientData.objective ? String(clientData.objective) : null,
@@ -93,7 +94,9 @@ export default function ClientUpdateModal({
   }, [clientData, reset]);
 
   const handleSave = (data: ClientFormSchema) => {
-    onSubmit(data, setOpen);
+    const birthDateISO = birthDateToISO(data.birthDate ?? null);
+    const payload = { ...data, birthDate: birthDateISO };
+    onSubmit(payload as ClientFormSchema, setOpen);
   };
 
   return (
@@ -105,15 +108,15 @@ export default function ClientUpdateModal({
           className="flex items-center cursor-pointer gap-2"
         >
           <Edit className="h-4 w-4 mr-2" />
-          Editar
+          Editar Perfil
         </Button>
       </DialogTrigger>
 
       <DialogContent className="rounded-md w-[90vw] max-w-[400px] sm:max-w-[500px] md:max-w-[600px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar dados do aluno</DialogTitle>
+          <DialogTitle>Editar dados {user?.roles.includes("ROLE_PERSONAL") ? "do aluno" : "pessoais"}</DialogTitle>
           <DialogDescription>
-            Atualize as informações pessoais do aluno e clique em "Salvar".
+            Atualize as informações {user?.roles.includes("ROLE_PERSONAL") ? "do aluno" : "pessoais"} e clique em "Salvar".
           </DialogDescription>
         </DialogHeader>
 
@@ -199,13 +202,26 @@ export default function ClientUpdateModal({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-              <Label className="sm:text-right">Idade</Label>
-              <Input
-                type="number"
-                placeholder="Idade"
-                className="sm:col-span-3"
-                {...register("age")}
-              />
+              <Label className="sm:text-right">Data de nascimento</Label>
+              <div className="sm:col-span-3 space-y-1">
+                <Controller
+                  name="birthDate"
+                  control={control}
+                  render={({ field }) => (
+                    <BirthDateInput
+                      value={field.value ?? ""}
+                      onChange={(val) => field.onChange(val)}
+                      onBlur={field.onBlur}
+                      placeholder="dd/mm/aaaa"
+                    />
+                  )}
+                />
+                {errors.birthDate && (
+                  <p className="text-xs text-destructive">
+                    {errors.birthDate.message}
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">

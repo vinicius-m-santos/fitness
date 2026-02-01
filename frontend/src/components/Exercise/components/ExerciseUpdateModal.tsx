@@ -47,6 +47,7 @@ const ExerciseUpdateModal = ({
   const [muscleGroups, setMuscleGroups] = useState<{ id: number; name: string }[]>(
     []
   );
+  const [favorite, setFavorite] = useState(false);
   const [open, setOpen] = useState(openProp);
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
@@ -68,10 +69,11 @@ const ExerciseUpdateModal = ({
     name: string;
     category: number;
     muscleGroup: number;
+    favorite?: boolean;
   };
 
   const saveExercise = async (data: ExerciseData) => {
-    const res = await api.put(`/exercise/${exerciseId}`, data);
+    const res = await api.put(`/exercise/${exerciseId}`, { ...data, favorite });
     return res.data;
   };
 
@@ -104,7 +106,7 @@ const ExerciseUpdateModal = ({
         category: Number(category),
         muscleGroup: Number(muscleGroup),
       });
-      await mutation.mutateAsync(data);
+      await mutation.mutateAsync({ ...data, favorite });
     } catch (err) {
       if (err instanceof ZodError) {
         err.issues.forEach((e) => toast.error(e.message));
@@ -146,6 +148,7 @@ const ExerciseUpdateModal = ({
       setName(data.name || "");
       setCategory(data.exerciseCategory?.id?.toString() || "");
       setMuscleGroup(data.muscleGroup?.id?.toString() || "");
+      setFavorite(!!data.isFavorite);
     }
   }, [data]);
 
@@ -222,7 +225,7 @@ const ExerciseUpdateModal = ({
                 <SelectTrigger className="w-full px-3 py-2 text-sm rounded-md bg-gray-100 border border-gray-300 focus:ring-1 outline-none">
                   <SelectValue placeholder="Selecione a categoria" />
                 </SelectTrigger>
-                <SelectContent position="popper">
+                <SelectContent position="popper" side="bottom" avoidCollisions={false}>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id.toString()}>
                       {cat.name}
@@ -243,7 +246,7 @@ const ExerciseUpdateModal = ({
                 <SelectTrigger className="w-full px-3 py-2 text-sm rounded-md bg-gray-100 border border-gray-300 focus:ring-1 outline-none">
                   <SelectValue placeholder="Selecione o grupo muscular" />
                 </SelectTrigger>
-                <SelectContent position="popper">
+                <SelectContent position="popper" side="bottom" avoidCollisions={false}>
                   {muscleGroups.map((mg) => (
                     <SelectItem key={mg.id} value={mg.id.toString()}>
                       {mg.name}
@@ -251,6 +254,21 @@ const ExerciseUpdateModal = ({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                id="favorite-update"
+                type="checkbox"
+                checked={favorite}
+                onChange={(e) => setFavorite(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <label
+                htmlFor="favorite-update"
+                className="text-sm font-medium cursor-pointer"
+              >
+                Favorito?
+              </label>
             </div>
           </div>
         )}
