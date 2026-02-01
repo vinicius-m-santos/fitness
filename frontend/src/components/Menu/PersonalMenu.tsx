@@ -10,6 +10,7 @@ import {
     Dumbbell,
     BicepsFlexed,
     Users,
+    ChartNoAxesColumnIncreasing,
 } from "lucide-react";
 
 const PersonalMenu = () => {
@@ -21,7 +22,7 @@ const PersonalMenu = () => {
                 <div className="flex justify-between items-center py-4">
                     {/* Logo */}
                     <div className="flex items-center space-x-2">
-                        <Link to="/clients">
+                        <Link to="/week-summary">
                             <img
                                 src={logo}
                                 className="w-30 h-10 mt-2 object-contain"
@@ -32,6 +33,13 @@ const PersonalMenu = () => {
                     {/* Desktop Menu */}
                     <div className="hidden md:w-full md:flex md:justify-between space-x-2 items-center">
                         <div className="flex">
+                            <Link
+                                to="/week-summary"
+                                className="flex items-center px-4 py-2 text-sm font-bold hover:text-gray-600 rounded-lg transition duration-500"
+                            >
+                                <ChartNoAxesColumnIncreasing size={16} className="mr-2" />
+                                Resumo da Semana
+                            </Link>
                             <Link
                                 to="/clients"
                                 className="flex items-center px-4 py-2 text-sm font-bold hover:text-gray-600 rounded-lg transition duration-500"
@@ -75,6 +83,14 @@ const PersonalMenu = () => {
                 {/* Mobile Menu */}
                 {mobileMenuOpen && (
                     <div className="md:hidden pb-4 flex flex-col">
+                        <Link
+                            to="/week-summary"
+                            className="flex items-center px-4 py-2 mb-1 rounded-lg hover:bg-gray-200 transition"
+                            onClick={() => setMobileMenuOpen(false)}
+                        >
+                            <ChartNoAxesColumnIncreasing size={16} className="mr-2" />
+                            Resumo da Semana
+                        </Link>
                         <Link
                             to="/clients"
                             className="flex items-center px-4 py-2 mb-1 rounded-lg hover:bg-gray-200 transition"

@@ -74,40 +74,94 @@ class TrainingExecutionRepository extends ServiceEntityRepository
 
     /**
      * Count finished training executions in week for personal's clients.
+     * When $activePairs is provided, only counts executions of (client_id, training_id) in the list (treino ativo).
+     *
+     * @param array<int, array{0: int, 1: int}> $activePairs list of [clientId, trainingId]
      */
-    public function countFinishedInWeek(Personal $personal, \DateTimeImmutable $weekStart, \DateTimeImmutable $weekEnd): int
+    public function countFinishedInWeek(Personal $personal, \DateTimeImmutable $weekStart, \DateTimeImmutable $weekEnd, array $activePairs = []): int
     {
-        $qb = $this->createQueryBuilder('te')
-            ->select('COUNT(te.id)')
-            ->innerJoin('te.training', 't')
-            ->where('t.personal = :personal')
-            ->andWhere('te.finishedAt IS NOT NULL')
-            ->andWhere('te.finishedAt >= :weekStart')
-            ->andWhere('te.finishedAt <= :weekEnd')
-            ->setParameter('personal', $personal)
-            ->setParameter('weekStart', $weekStart->setTime(0, 0, 0))
-            ->setParameter('weekEnd', $weekEnd->setTime(23, 59, 59));
-        return (int) $qb->getQuery()->getSingleScalarResult();
+        if (empty($activePairs)) {
+            $qb = $this->createQueryBuilder('te')
+                ->select('COUNT(te.id)')
+                ->innerJoin('te.training', 't')
+                ->where('t.personal = :personal')
+                ->andWhere('te.finishedAt IS NOT NULL')
+                ->andWhere('te.finishedAt >= :weekStart')
+                ->andWhere('te.finishedAt <= :weekEnd')
+                ->setParameter('personal', $personal)
+                ->setParameter('weekStart', $weekStart->setTime(0, 0, 0))
+                ->setParameter('weekEnd', $weekEnd->setTime(23, 59, 59));
+            return (int) $qb->getQuery()->getSingleScalarResult();
+        }
+        return $this->countFinishedInWeekFiltered($personal->getId(), $weekStart, $weekEnd, $activePairs);
+    }
+
+    /**
+     * @param array<int, array{0: int, 1: int}> $activePairs
+     */
+    private function countFinishedInWeekFiltered(int $personalId, \DateTimeImmutable $weekStart, \DateTimeImmutable $weekEnd, array $activePairs): int
+    {
+        $conn = $this->em->getConnection();
+        $conditions = [];
+        $params = [
+            'personalId' => $personalId,
+            'weekStart' => $weekStart->setTime(0, 0, 0)->format('Y-m-d H:i:s'),
+            'weekEnd' => $weekEnd->setTime(23, 59, 59)->format('Y-m-d H:i:s'),
+        ];
+        foreach ($activePairs as $i => $p) {
+            $conditions[] = "(te.client_id = :c$i AND te.training_id = :t$i)";
+            $params["c$i"] = $p[0];
+            $params["t$i"] = $p[1];
+        }
+        $sql = 'SELECT COUNT(te.id) FROM training_executions te
+                INNER JOIN training t ON t.id = te.training_id
+                WHERE t.personal_id = :personalId AND te.finished_at IS NOT NULL
+                  AND te.finished_at >= :weekStart AND te.finished_at <= :weekEnd
+                  AND (' . implode(' OR ', $conditions) . ')';
+        return (int) $conn->executeQuery($sql, $params)->fetchOne();
     }
 
     /**
      * Client IDs that had at least one finished execution in the week.
+     * When $activePairs is provided, only considers executions of treino ativo.
      *
+     * @param array<int, array{0: int, 1: int}> $activePairs
      * @return int[]
      */
-    public function findClientIdsFinishedInWeek(Personal $personal, \DateTimeImmutable $weekStart, \DateTimeImmutable $weekEnd): array
+    public function findClientIdsFinishedInWeek(Personal $personal, \DateTimeImmutable $weekStart, \DateTimeImmutable $weekEnd, array $activePairs = []): array
     {
-        $qb = $this->createQueryBuilder('te')
-            ->select('DISTINCT IDENTITY(te.client)')
-            ->innerJoin('te.training', 't')
-            ->where('t.personal = :personal')
-            ->andWhere('te.finishedAt IS NOT NULL')
-            ->andWhere('te.finishedAt >= :weekStart')
-            ->andWhere('te.finishedAt <= :weekEnd')
-            ->setParameter('personal', $personal)
-            ->setParameter('weekStart', $weekStart->setTime(0, 0, 0))
-            ->setParameter('weekEnd', $weekEnd->setTime(23, 59, 59));
-        $result = $qb->getQuery()->getSingleColumnResult();
+        if (empty($activePairs)) {
+            $qb = $this->createQueryBuilder('te')
+                ->select('DISTINCT IDENTITY(te.client)')
+                ->innerJoin('te.training', 't')
+                ->where('t.personal = :personal')
+                ->andWhere('te.finishedAt IS NOT NULL')
+                ->andWhere('te.finishedAt >= :weekStart')
+                ->andWhere('te.finishedAt <= :weekEnd')
+                ->setParameter('personal', $personal)
+                ->setParameter('weekStart', $weekStart->setTime(0, 0, 0))
+                ->setParameter('weekEnd', $weekEnd->setTime(23, 59, 59));
+            $result = $qb->getQuery()->getSingleColumnResult();
+            return array_map('intval', $result);
+        }
+        $conn = $this->em->getConnection();
+        $conditions = [];
+        $params = [
+            'personalId' => $personal->getId(),
+            'weekStart' => $weekStart->setTime(0, 0, 0)->format('Y-m-d H:i:s'),
+            'weekEnd' => $weekEnd->setTime(23, 59, 59)->format('Y-m-d H:i:s'),
+        ];
+        foreach ($activePairs as $i => $p) {
+            $conditions[] = "(te.client_id = :c$i AND te.training_id = :t$i)";
+            $params["c$i"] = $p[0];
+            $params["t$i"] = $p[1];
+        }
+        $sql = 'SELECT DISTINCT te.client_id FROM training_executions te
+                INNER JOIN training t ON t.id = te.training_id
+                WHERE t.personal_id = :personalId AND te.finished_at IS NOT NULL
+                  AND te.finished_at >= :weekStart AND te.finished_at <= :weekEnd
+                  AND (' . implode(' OR ', $conditions) . ')';
+        $result = $conn->executeQuery($sql, $params)->fetchFirstColumn();
         return array_map('intval', $result);
     }
 
@@ -118,18 +172,138 @@ class TrainingExecutionRepository extends ServiceEntityRepository
      */
     public function findLastFinishedAtByPersonalClients(int $personalId): array
     {
+        return $this->findLastFinishedAtByPersonalClientsBeforeOrOn($personalId, new \DateTimeImmutable('now'));
+    }
+
+    /**
+     * Last finished_at per client for personal's clients, only considering executions
+     * with finished_at <= beforeOrOn. When $activeMap is provided (clientId => trainingId),
+     * only considers executions of treino ativo.
+     *
+     * @param array<int, int> $activeMap clientId => trainingId
+     * @return array<int, \DateTimeImmutable|null> clientId => lastFinishedAt
+     */
+    public function findLastFinishedAtByPersonalClientsBeforeOrOn(int $personalId, \DateTimeImmutable $beforeOrOn, array $activeMap = []): array
+    {
         $conn = $this->em->getConnection();
-        $sql = 'SELECT te.client_id, MAX(te.finished_at) AS last_finished
-                FROM training_executions te
-                INNER JOIN training t ON t.id = te.training_id
-                WHERE t.personal_id = :personalId AND te.finished_at IS NOT NULL
-                GROUP BY te.client_id';
-        $rows = $conn->executeQuery($sql, ['personalId' => $personalId])->fetchAllAssociative();
+        if (empty($activeMap)) {
+            $sql = 'SELECT te.client_id, MAX(te.finished_at) AS last_finished
+                    FROM training_executions te
+                    INNER JOIN training t ON t.id = te.training_id
+                    WHERE t.personal_id = :personalId AND te.finished_at IS NOT NULL AND te.finished_at <= :beforeOrOn
+                    GROUP BY te.client_id';
+            $rows = $conn->executeQuery($sql, [
+                'personalId' => $personalId,
+                'beforeOrOn' => $beforeOrOn->format('Y-m-d H:i:s'),
+            ])->fetchAllAssociative();
+        } else {
+            $conditions = [];
+            $params = ['personalId' => $personalId, 'beforeOrOn' => $beforeOrOn->format('Y-m-d H:i:s')];
+            foreach ($activeMap as $i => $tid) {
+                $conditions[] = "(te.client_id = :c$i AND te.training_id = :t$i)";
+                $params["c$i"] = $i;
+                $params["t$i"] = $tid;
+            }
+            $sql = 'SELECT te.client_id, MAX(te.finished_at) AS last_finished
+                    FROM training_executions te
+                    INNER JOIN training t ON t.id = te.training_id
+                    WHERE t.personal_id = :personalId AND te.finished_at IS NOT NULL AND te.finished_at <= :beforeOrOn
+                      AND (' . implode(' OR ', $conditions) . ')
+                    GROUP BY te.client_id';
+            $rows = $conn->executeQuery($sql, $params)->fetchAllAssociative();
+        }
         $out = [];
         foreach ($rows as $row) {
             $out[(int) $row['client_id']] = $row['last_finished']
                 ? new \DateTimeImmutable($row['last_finished']) : null;
         }
         return $out;
+    }
+
+    /**
+     * Count of finished training executions per training period in the week.
+     * When $activePairs is provided, only counts executions of treino ativo.
+     *
+     * @param array<int, array{0: int, 1: int}> $activePairs
+     * @return array<int, array{periodId: int, periodName: string, trainingName: string, count: int}>
+     */
+    public function countExecutionsByPeriodInWeek(Personal $personal, \DateTimeImmutable $weekStart, \DateTimeImmutable $weekEnd, array $activePairs = []): array
+    {
+        $conn = $this->em->getConnection();
+        $params = [
+            'personalId' => $personal->getId(),
+            'weekStart' => $weekStart->setTime(0, 0, 0)->format('Y-m-d H:i:s'),
+            'weekEnd' => $weekEnd->setTime(23, 59, 59)->format('Y-m-d H:i:s'),
+        ];
+        $activeFilter = '';
+        if (!empty($activePairs)) {
+            $conditions = [];
+            foreach ($activePairs as $i => $p) {
+                $conditions[] = "(te.client_id = :c$i AND te.training_id = :t$i)";
+                $params["c$i"] = $p[0];
+                $params["t$i"] = $p[1];
+            }
+            $activeFilter = ' AND (' . implode(' OR ', $conditions) . ')';
+        }
+        $sql = 'SELECT tp.id AS period_id, tp.name AS period_name, t.name AS training_name,
+                       COUNT(DISTINCT te.id) AS execution_count
+                FROM training_executions te
+                INNER JOIN training t ON t.id = te.training_id
+                INNER JOIN exercise_executions ee ON ee.training_execution_id = te.id
+                INNER JOIN period_exercises pe ON pe.id = ee.period_exercise_id
+                INNER JOIN training_periods tp ON tp.id = pe.training_period_id
+                WHERE t.personal_id = :personalId AND te.finished_at IS NOT NULL
+                  AND te.finished_at >= :weekStart AND te.finished_at <= :weekEnd' . $activeFilter . '
+                GROUP BY tp.id, tp.name, t.name
+                ORDER BY execution_count DESC';
+        $rows = $conn->executeQuery($sql, $params)->fetchAllAssociative();
+        $out = [];
+        foreach ($rows as $row) {
+            $out[] = [
+                'periodId' => (int) $row['period_id'],
+                'periodName' => (string) $row['period_name'],
+                'trainingName' => (string) $row['training_name'],
+                'count' => (int) $row['execution_count'],
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * Average execution duration in the week (finished_at - started_at). Only finished executions.
+     * When $activePairs is provided, only executions of treino ativo.
+     *
+     * @param array<int, array{0: int, 1: int}> $activePairs
+     * @return array{totalSeconds: int, count: int}
+     */
+    public function getAverageExecutionDurationInWeek(Personal $personal, \DateTimeImmutable $weekStart, \DateTimeImmutable $weekEnd, array $activePairs = []): array
+    {
+        $conn = $this->em->getConnection();
+        $params = [
+            'personalId' => $personal->getId(),
+            'weekStart' => $weekStart->setTime(0, 0, 0)->format('Y-m-d H:i:s'),
+            'weekEnd' => $weekEnd->setTime(23, 59, 59)->format('Y-m-d H:i:s'),
+        ];
+        $activeFilter = '';
+        if (!empty($activePairs)) {
+            $conditions = [];
+            foreach ($activePairs as $i => $p) {
+                $conditions[] = "(te.client_id = :c$i AND te.training_id = :t$i)";
+                $params["c$i"] = $p[0];
+                $params["t$i"] = $p[1];
+            }
+            $activeFilter = ' AND (' . implode(' OR ', $conditions) . ')';
+        }
+        $sql = 'SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (te.finished_at - te.started_at))::int), 0) AS total_seconds,
+                       COUNT(te.id) AS cnt
+                FROM training_executions te
+                INNER JOIN training t ON t.id = te.training_id
+                WHERE t.personal_id = :personalId AND te.finished_at IS NOT NULL
+                  AND te.finished_at >= :weekStart AND te.finished_at <= :weekEnd' . $activeFilter;
+        $row = $conn->executeQuery($sql, $params)->fetchAssociative();
+        return [
+            'totalSeconds' => (int) ($row['total_seconds'] ?? 0),
+            'count' => (int) ($row['cnt'] ?? 0),
+        ];
     }
 }
