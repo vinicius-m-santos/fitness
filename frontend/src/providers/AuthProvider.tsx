@@ -1,6 +1,14 @@
-import axios from "axios";
-import { createContext, useState, useContext, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
+import {
+  createContext,
+  useState,
+  useContext,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
+import { useNavigate } from "react-router-dom";
 import Loader from "@/components/ui/loader";
 
 type User = {
@@ -24,6 +32,7 @@ type User = {
 type AuthContextType = {
   user: User | null;
   accessToken: string | null;
+  api: AxiosInstance;
   login: (token: string, user: User, refresh_token: string) => void;
   logout: () => void;
   updateUser: (user: User) => void;
@@ -32,15 +41,26 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTHENTICATED_ROUTES = [
-  "dashboard",
-  "clients",
-  "client-view",
-  "student",
-  "exercises",
-  "profile",
-  "standard-trainings",
-];
+const PUBLIC_PATHS = ["/login", "/logout", "/anamnese"];
+
+const refreshAccessToken = async (): Promise<{
+  token: string;
+  user: User;
+  refresh_token: string;
+}> => {
+  const refreshToken = localStorage.getItem("refresh_token");
+  if (!refreshToken) {
+    throw new Error("No refresh token");
+  }
+
+  const res = await axios.post(
+    `${import.meta.env.VITE_API_URL}/token/refresh`,
+    { refresh_token: refreshToken },
+    { withCredentials: true }
+  );
+
+  return res.data;
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -49,57 +69,109 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
-  const location = useLocation();
+  const accessTokenRef = useRef<string | null>(null);
+  const refreshPromiseRef = useRef<Promise<string> | null>(null);
 
-  const login = (token: string, user: User, refresh_token: string) => {
+  accessTokenRef.current = accessToken;
+
+  const logout = useCallback(() => {
+    setAccessToken(null);
+    setUser(null);
+    localStorage.removeItem("refresh_token");
+    navigate("/login");
+  }, [navigate]);
+
+  const login = (token: string, userData: User, refresh_token: string) => {
     setAccessToken(token);
-    setUser(user);
-
+    setUser(userData);
     localStorage.setItem("refresh_token", refresh_token);
-    if (user.roles.includes("ROLE_CLIENT")) {
+    if (userData.roles.includes("ROLE_CLIENT")) {
       navigate("/student");
     } else {
       navigate("/clients");
     }
   };
 
-  const logout = () => {
-    setAccessToken(null);
-    setUser(null);
-    localStorage.removeItem("refresh_token");
-    navigate("/login");
-  };
-
   const updateUser = (updatedUser: User) => {
     setUser(updatedUser);
   };
 
-  useEffect(() => {
-    const fetchAccessToken = async () => {
-      try {
-        const refreshToken = localStorage.getItem("refresh_token");
+  const api = useMemo(() => {
+    const instance = axios.create({ baseURL: import.meta.env.VITE_API_URL });
 
-        // if no token, just stop here (don't logout on public pages)
-        if (!refreshToken) {
-          setLoading(false);
-          return;
+    instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+      const token = accessTokenRef.current;
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    });
+
+    instance.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+
+        if (error.response?.status !== 401) {
+          return Promise.reject(error);
         }
 
-        const res = await axios.post(
-          `${import.meta.env.VITE_API_URL}/token/refresh`,
-          { refresh_token: refreshToken },
-          { withCredentials: true }
-        );
+        const isRefreshEndpoint =
+          originalRequest?.url?.includes("/token/refresh") ?? false;
+        if (isRefreshEndpoint) {
+          return Promise.reject(error);
+        }
 
-        setAccessToken(res.data.token);
-        setUser(res.data.user);
-        localStorage.setItem("refresh_token", res.data.refresh_token);
-      } catch (err) {
-        // only redirect to login if user is on a protected page
-        const publicPaths = ["/login", "/logout", "/anamnese"];
+        const refreshToken = localStorage.getItem("refresh_token");
+        if (!refreshToken) {
+          logout();
+          return Promise.reject(error);
+        }
+
+        try {
+          if (!refreshPromiseRef.current) {
+            refreshPromiseRef.current = refreshAccessToken()
+              .then((data) => {
+                setAccessToken(data.token);
+                setUser(data.user);
+                localStorage.setItem("refresh_token", data.refresh_token);
+                return data.token;
+              })
+              .finally(() => {
+                refreshPromiseRef.current = null;
+              });
+          }
+
+          const newToken = await refreshPromiseRef.current;
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return instance(originalRequest);
+        } catch {
+          logout();
+          return Promise.reject(error);
+        }
+      }
+    );
+
+    return instance;
+  }, [logout]);
+
+  useEffect(() => {
+    const fetchAccessToken = async () => {
+      const refreshToken = localStorage.getItem("refresh_token");
+
+      if (!refreshToken) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const data = await refreshAccessToken();
+        setAccessToken(data.token);
+        setUser(data.user);
+        localStorage.setItem("refresh_token", data.refresh_token);
+      } catch {
         const currentPath = window.location.pathname;
-
-        if (!publicPaths.includes(currentPath)) {
+        if (!PUBLIC_PATHS.includes(currentPath)) {
           logout();
         }
       } finally {
@@ -107,15 +179,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     };
 
-    if (
-      !AUTHENTICATED_ROUTES.some((path) => location.pathname.includes(path))
-    ) {
-      setLoading(false);
-      return;
-    }
-
     fetchAccessToken();
-  }, []);
+  }, [logout]);
 
   if (loading) {
     return <Loader loading={loading} />;
@@ -126,6 +191,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         accessToken,
         user,
+        api,
         login,
         logout,
         updateUser,
