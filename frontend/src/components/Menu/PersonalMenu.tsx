@@ -9,6 +9,7 @@ import {
     X,
     Dumbbell,
     BicepsFlexed,
+    Users,
 } from "lucide-react";
 
 const PersonalMenu = () => {
@@ -35,7 +36,7 @@ const PersonalMenu = () => {
                                 to="/clients"
                                 className="flex items-center px-4 py-2 text-sm font-bold hover:text-gray-600 rounded-lg transition duration-500"
                             >
-                                <User size={16} className="mr-2" />
+                                <Users size={16} className="mr-2" />
                                 Alunos
                             </Link>
                             <Link
@@ -79,7 +80,7 @@ const PersonalMenu = () => {
                             className="flex items-center px-4 py-2 mb-1 rounded-lg hover:bg-gray-200 transition"
                             onClick={() => setMobileMenuOpen(false)}
                         >
-                            <User size={16} className="mr-2" />
+                            <Users size={16} className="mr-2" />
                             Alunos
                         </Link>
                         <Link

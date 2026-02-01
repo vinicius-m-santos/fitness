@@ -12,8 +12,9 @@ import { OBJECTIVES } from "@/utils/constants/Client/constants";
 import { useRequest } from "@/api/request";
 import Loader from "@/components/ui/loader";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import EditableAvatar from "@/components/ClientView/Client/EditableAvatar";
+import EditableAvatar from "@/components/ui/EditableAvatar";
 import ContactButtonDropdown from "@/components/ClientView/Client/ContactButtonDropdown";
+import { calculateAgeFromBirthDate } from "@/utils/dateUtils";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/providers/AuthProvider";
@@ -84,13 +85,18 @@ export default function ClientView() {
         {!client && (
           <div className="h-24 w-24 rounded-full bg-gray-300 animate-pulse" />
         )}
-        {client && <EditableAvatar clientData={client} />}
+        {client && <EditableAvatar variant="client" data={client} />}
         <div className="flex-1 space-y-2">
-          <h2 className="text-2xl font-semibold">
+          <h2 className="text-2xl font-semibold text-center">
             {getClientNameFormatted(client?.name, client?.lastName)}
           </h2>
           <p className="text-sm text-muted-foreground">
-            {client?.age ? `Idade: ${client.age} anos • ` : ""}
+            {(client?.age ?? calculateAgeFromBirthDate(client?.user?.birthDate))
+              ? `Idade: ${client?.age ?? calculateAgeFromBirthDate(client?.user?.birthDate)} anos`
+              : ""}
+            {(client?.age ?? calculateAgeFromBirthDate(client?.user?.birthDate)) &&
+              client?.objective &&
+              " • "}
             {client?.objective
               ? `Objetivo: ${OBJECTIVES[client.objective]}`
               : ""}
@@ -109,33 +115,33 @@ export default function ClientView() {
       </Card>
 
       <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <TabsList className="grid grid-cols-3 sm:grid-cols-6 mb-6">
+        <TabsList className="h-auto grid grid-cols-2 sm:grid-cols-6 mb-3 gap-2">
           <TabsTrigger
-            className="cursor-pointer mx-1 hover:bg-gray-200"
+            className="cursor-pointer hover:bg-gray-200 w-full text-md md:text-sm"
             value="evolucao"
           >
             Evolução
           </TabsTrigger>
           <TabsTrigger
-            className="cursor-pointer mx-1 hover:bg-gray-200"
+            className="cursor-pointer mx-1 hover:bg-gray-200 w-full text-md md:text-sm"
             value="medidas"
           >
             Medidas
           </TabsTrigger>
           <TabsTrigger
-            className="cursor-pointer mx-1 hover:bg-gray-200"
+            className="cursor-pointer mx-1 hover:bg-gray-200 w-full text-md md:text-sm"
             value="treinos"
           >
             Treinos
           </TabsTrigger>
           <TabsTrigger
-            className="cursor-pointer mx-1 hover:bg-gray-200"
+            className="cursor-pointer mx-1 hover:bg-gray-200 w-full text-md md:text-sm"
             value="galeria"
           >
             Galeria
           </TabsTrigger>
           <TabsTrigger
-            className="cursor-pointer mx-1 hover:bg-gray-200"
+            className="cursor-pointer mx-1 hover:bg-gray-200 w-full text-md md:text-sm"
             value="anamnese"
           >
             Anamnese

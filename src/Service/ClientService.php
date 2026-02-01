@@ -82,10 +82,19 @@ class ClientService
         }
 
         $user->setEmail($email);
-        $user->setFirstName($client->getName());
-        $user->setLastName($client->getLastName());
+        $user->setFirstName($data['name'] ?? $client->getName());
+        $user->setLastName($data['lastName'] ?? $client->getLastName());
+        $user->setGender($data['gender'] ?? $client->getGender());
+        $user->setActive($data['active'] ?? $client->getActive());
         $user->setRoles(['ROLE_CLIENT']);
         $user->setPassword($this->passwordHasher->hashPassword($user, $email));
+
+        if ($data && isset($data['birthDate']) && !empty($data['birthDate'])) {
+            $birthDate = \DateTimeImmutable::createFromFormat('Y-m-d', $data['birthDate']);
+            if ($birthDate) {
+                $user->setBirthDate($birthDate);
+            }
+        }
 
         // Se os dados foram fornecidos, setar phone, avatarKey e avatarUrl do array
         if ($data) {
@@ -103,6 +112,7 @@ class ClientService
         $this->userRepository->add($user, false);
 
         $client->setUser($user);
+        $client->clearPendingUserData();
         $client->setPersonal($personal);
         $this->add($client);
 

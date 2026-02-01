@@ -8,6 +8,7 @@ import { ClientAllData } from "@/types/client";
 import { Stethoscope } from "lucide-react";
 import AnamneseUpdateModal from "../Anamnese/Modals/AnamneseUpdateModal";
 import { useState } from "react";
+import { calculateAgeFromBirthDate } from "@/utils/dateUtils";
 import toast from "react-hot-toast";
 
 export default function AnamneseTab() {
@@ -52,10 +53,10 @@ export default function AnamneseTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold text-black flex items-center gap-2">
-          <Stethoscope className="h-5 w-5" />
-          Anamnese do Aluno
+      <div className="flex flex-col md:flex-row gap-2 md:gap-0 items-center justify-between">
+        <h3 className="text-lg md:text-xl font-semibold text-black flex items-center gap-2">
+          <Stethoscope className="h-4 w-4 md:h-5 md:w-5" />
+          Anamnese
         </h3>
 
         <AnamneseUpdateModal
@@ -75,7 +76,10 @@ export default function AnamneseTab() {
           <div>
             <span className="text-muted-foreground">Idade:</span>
             <p className="font-medium">
-              {client?.age ? `${client.age} anos` : "-"}
+              {client?.age ??
+              calculateAgeFromBirthDate(client?.user?.birthDate)
+                ? `${client?.age ?? calculateAgeFromBirthDate(client?.user?.birthDate)} anos`
+                : "-"}
             </p>
           </div>
           <div>

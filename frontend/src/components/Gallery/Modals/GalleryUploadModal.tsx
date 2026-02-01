@@ -186,9 +186,8 @@ export default function GalleryUploadModal({
                       <Button
                         type="button"
                         variant="outline"
-                        className={`w-full justify-start text-left font-normal ${
-                          !field.value && "text-muted-foreground"
-                        }`}
+                        className={`w-full justify-start text-left font-normal ${!field.value && "text-muted-foreground"
+                          }`}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {field.value
@@ -239,10 +238,9 @@ export default function GalleryUploadModal({
                     })
                   }
                   className={`flex-1 border rounded-lg p-3 text-sm font-medium transition
-                    ${
-                      form.watch("visibility") === "PRIVATE"
-                        ? "border-primary bg-primary/10"
-                        : "border-muted"
+                    ${form.watch("visibility") === "PRIVATE"
+                      ? "border-primary bg-primary/10"
+                      : "border-muted"
                     }`}
                 >
                   Privada
@@ -259,10 +257,9 @@ export default function GalleryUploadModal({
                     })
                   }
                   className={`flex-1 border rounded-lg p-3 text-sm font-medium transition
-                    ${
-                      form.watch("visibility") === "TRAINER"
-                        ? "border-primary bg-primary/10"
-                        : "border-muted"
+                    ${form.watch("visibility") === "TRAINER"
+                      ? "border-primary bg-primary/10"
+                      : "border-muted"
                     }`}
                 >
                   Personal

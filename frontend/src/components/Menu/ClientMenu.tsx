@@ -9,7 +9,7 @@ import {
     X,
     Dumbbell,
     Home,
-    ChartNoAxesColumnIncreasing,
+    Activity,
 } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -52,8 +52,8 @@ const ClientMenu = () => {
                                 to={`/client-view/${user?.client?.id}`}
                                 className="flex items-center px-4 py-2 text-sm font-bold hover:text-gray-600 rounded-lg transition duration-500"
                             >
-                                <ChartNoAxesColumnIncreasing size={16} className="mr-2" />
-                                Dashboard
+                                <Activity size={16} className="mr-2" />
+                                Acompanhamento
                             </Link>
                         </div>
                         <UserDropdown />
@@ -98,8 +98,8 @@ const ClientMenu = () => {
                             className="flex items-center px-4 py-2 mb-1 rounded-lg hover:bg-gray-200 transition"
                             onClick={() => setMobileMenuOpen(false)}
                         >
-                            <ChartNoAxesColumnIncreasing size={16} className="mr-2" />
-                            Dashboard
+                            <Activity size={16} className="mr-2" />
+                            Acompanhamento
                         </Link>
                         <Link
                             to="/profile"

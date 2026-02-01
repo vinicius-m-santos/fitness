@@ -70,8 +70,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $phone = null;
 
     #[ORM\Column(type: "date_immutable", nullable: true)]
-    #[Groups(['user_all', 'client_all'])]
+    #[Groups(['user_all', 'client_all', 'anamnese_all', 'client_list'])]
     private ?\DateTimeImmutable $birthDate = null;
+
+    #[ORM\Column(length: 1, nullable: true)]
+    #[Groups(['user_all', 'client_all', 'anamnese_all', 'client_list'])]
+    private ?string $gender = null;
+
+    #[ORM\Column(type: "boolean", options: ["default" => true])]
+    #[Groups(['user_all', 'client_all', 'anamnese_all', 'client_list'])]
+    private bool $active = true;
 
     #[ORM\Column(type: "datetime_immutable", nullable: true)]
     private ?\DateTimeImmutable $deletedAt = null;
@@ -223,6 +231,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getBirthDate(): ?\DateTimeImmutable
     {
         return $this->birthDate;
+    }
+
+    public function setGender(?string $gender): self
+    {
+        $this->gender = $gender;
+        return $this;
+    }
+
+    public function getGender(): ?string
+    {
+        return $this->gender;
+    }
+
+    public function setActive(bool $active): self
+    {
+        $this->active = $active;
+        return $this;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->active;
     }
 
     public function getCreatedAt(): \DateTimeImmutable

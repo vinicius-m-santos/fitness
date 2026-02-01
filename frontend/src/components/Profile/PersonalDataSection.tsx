@@ -12,9 +12,23 @@ import {
 import { useAuth } from "@/providers/AuthProvider";
 import { parseISO, format } from "date-fns";
 
-export default function PersonalDataSection() {
-  const { user } = useAuth();
-  console.log(user);
+type UserData = {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string | null;
+  birthDate?: string | null;
+  createdAt?: string;
+  roles?: string[];
+};
+
+type PersonalDataSectionProps = {
+  userData?: UserData | null;
+};
+
+export default function PersonalDataSection({ userData: propUser }: PersonalDataSectionProps) {
+  const { user: authUser } = useAuth();
+  const user = propUser ?? authUser;
 
   const getUserType = () => {
     if (!user?.roles) return "";
@@ -23,7 +37,7 @@ export default function PersonalDataSection() {
     return "";
   };
 
-  const formatDate = (dateString?: string) => {
+  const formatDate = (dateString?: string | null) => {
     if (!dateString) return "Não informado";
     try {
       const date = parseISO(dateString);

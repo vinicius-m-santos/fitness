@@ -1,52 +1,25 @@
-import { useMemo, useState } from "react";
 import Loader from "@/components/ui/loader";
 import ExerciseCard from "@/components/Exercise/components/ExerciseCard";
-import ExerciseFilters from "./ExerciseFilters";
+import { Button } from "@/components/ui/button";
+import type { ExerciseListPagination, ExerciseListItem } from "./ExerciseList";
 
-export default function ClientCards({
+interface ExerciseCardsProps {
+  exerciseTableData: ExerciseListItem[];
+  loading: boolean;
+  onToggleFavorite?: (exerciseId: number) => Promise<void>;
+  pagination?: ExerciseListPagination;
+  onPageChange?: (page: number) => void;
+}
+
+export default function ExerciseCards({
   exerciseTableData,
   loading,
-}: {
-  exerciseTableData: any[];
-  loading: boolean;
-}) {
-  const [filters, setFilters] = useState({ search: "", order: "newest" });
-
-  const filteredData = useMemo(() => {
-    let data = exerciseTableData ? [...exerciseTableData] : [];
-
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      data = data.filter(
-        (exercise) =>
-          exercise.name.toLowerCase().includes(searchLower) ||
-          exercise.exerciseCategory?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    switch (filters.order) {
-      case "name-asc":
-        data.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case "name-desc":
-        data.sort((a, b) => b.name.localeCompare(a.name));
-        break;
-      case "newest":
-        data.sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        break;
-      case "oldest":
-        data.sort(
-          (a, b) =>
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        );
-        break;
-    }
-
-    return data;
-  }, [exerciseTableData, filters]);
+  onToggleFavorite,
+  pagination,
+  onPageChange,
+}: ExerciseCardsProps) {
+  // Data is now filtered and sorted by the backend
+  const data = exerciseTableData || [];
 
   if (loading) {
     return (
@@ -58,18 +31,49 @@ export default function ClientCards({
 
   return (
     <div className="space-y-4">
-      <ExerciseFilters onFilterChange={setFilters} />
-
-      {filteredData.length === 0 ? (
+      {data.length === 0 ? (
         <div className="flex justify-center items-center h-40 text-gray-400">
-          Nenhum aluno encontrado.
+          Nenhum exercício encontrado.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredData.map((exercise) => (
-            <ExerciseCard key={exercise.id} exercise={exercise} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {data.map((exercise) => (
+              <ExerciseCard
+                key={exercise.id}
+                exercise={exercise}
+                onToggleFavorite={onToggleFavorite}
+              />
+            ))}
+          </div>
+
+          {pagination && pagination.totalPages > 1 && onPageChange && (
+            <div className="flex flex-wrap items-center justify-between gap-2 py-2">
+              <p className="text-sm text-gray-600">
+                {pagination.total} exercício(s) • Página {pagination.page} de{" "}
+                {pagination.totalPages}
+              </p>
+              <div className="flex items-center gap-2 text-black">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pagination.page <= 1}
+                  onClick={() => onPageChange(pagination.page - 1)}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pagination.page >= pagination.totalPages}
+                  onClick={() => onPageChange(pagination.page + 1)}
+                >
+                  Próxima
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

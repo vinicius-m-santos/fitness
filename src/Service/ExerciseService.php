@@ -74,6 +74,12 @@ class ExerciseService
         $exercise->setExerciseCategory($category);
         $exercise->setMuscleGroup($muscleGroup);
         $exercise->setPersonal($personal);
+        $exercise->setIsStandard(false);
+
+        $favorite = !empty($data['favorite']);
+        if ($favorite) {
+            $exercise->setFavorite([$personal->getId()]);
+        }
 
         $this->exerciseRepository->add($exercise, true);
 
@@ -88,12 +94,16 @@ class ExerciseService
             throw new \Exception('Personal não encontrado.');
         }
 
-        $exercise = $this->exerciseRepository->findOneBy([
-            'id' => $exerciseId,
-            'personal' => $personal
-        ]);
-
+        $exercise = $this->exerciseRepository->find($exerciseId);
         if (!$exercise) {
+            throw new UnprocessableEntityHttpException('Exercício não encontrado.');
+        }
+
+        if ($exercise->isStandard()) {
+            throw new UnprocessableEntityHttpException('Não é permitido excluir exercícios padrão.');
+        }
+
+        if ($exercise->getPersonal()?->getId() !== $personal->getId()) {
             throw new UnprocessableEntityHttpException('Exercício não encontrado.');
         }
 
@@ -182,7 +192,15 @@ class ExerciseService
         }
 
         $exercise = $this->exerciseRepository->find($id);
-        if (!$exercise || $exercise->getPersonal()->getUser()->getId() !== $user->getId()) {
+        if (!$exercise) {
+            throw new UnprocessableEntityHttpException('Exercício não encontrado.');
+        }
+
+        if ($exercise->isStandard()) {
+            throw new UnprocessableEntityHttpException('Não é permitido editar exercícios padrão.');
+        }
+
+        if ($exercise->getPersonal()?->getUser()->getId() !== $user->getId()) {
             throw new UnprocessableEntityHttpException('Exercício não encontrado.');
         }
 
@@ -190,8 +208,48 @@ class ExerciseService
         $exercise->setExerciseCategory($category);
         $exercise->setMuscleGroup($muscleGroup);
 
+        if (isset($data['favorite'])) {
+            $favoriteIds = $exercise->getFavorite();
+            $personalId = $personal->getId();
+            if ($data['favorite']) {
+                if (!in_array($personalId, $favoriteIds, true)) {
+                    $favoriteIds[] = $personalId;
+                    $exercise->setFavorite($favoriteIds);
+                }
+            } else {
+                $exercise->setFavorite(array_values(array_filter($favoriteIds, fn($id) => $id !== $personalId)));
+            }
+        }
+
         $this->exerciseRepository->add($exercise, true);
 
+        return $exercise;
+    }
+
+    public function toggleFavorite(int $exerciseId, User $user): Exercise
+    {
+        $personal = $this->personalRepository->findOneBy(['user' => $user]);
+        if (!$personal) {
+            throw new \Exception('Personal não encontrado.');
+        }
+
+        $exercise = $this->exerciseRepository->find($exerciseId);
+        if (!$exercise) {
+            throw new UnprocessableEntityHttpException('Exercício não encontrado.');
+        }
+
+        $favoriteIds = $exercise->getFavorite();
+        $personalId = $personal->getId();
+        $idx = array_search($personalId, $favoriteIds, true);
+        if ($idx !== false) {
+            unset($favoriteIds[$idx]);
+            $exercise->setFavorite(array_values($favoriteIds));
+        } else {
+            $favoriteIds[] = $personalId;
+            $exercise->setFavorite($favoriteIds);
+        }
+
+        $this->exerciseRepository->add($exercise, true);
         return $exercise;
     }
 }

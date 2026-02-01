@@ -5,10 +5,9 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Eye } from "lucide-react";
+import { Mail, Eye } from "lucide-react";
 import { GENDERS } from "@/utils/constants/Client/constants";
 import DateConverterComponent from "@/utils/DateConverter";
-import { useAuth } from "@/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import ClientDeleteModal from "@/components/Client/components/ClientDeleteModal";
@@ -22,23 +21,27 @@ interface ClientCardProps {
 
 export default function ClientCard({ client }: ClientCardProps) {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const request = useRequest();
   const queryClient = useQueryClient();
 
   const handleView = () => navigate(`/client-view/${client.id}`);
 
-  const handleAnamneseLinkCopy = () => {
-    if (!user.uuid || !client.uuid) {
-      toast.error("Erro ao copiar link!");
+  const handleSendRegistrationLink = async () => {
+    if (!client?.id) {
+      toast.error("Erro ao enviar link!");
       return;
     }
-    navigator.clipboard.writeText(
-      `${import.meta.env.VITE_FRONTEND_URL}/anamnese?token=${
-        user.uuid
-      }&client=${client.uuid}`
-    );
-    toast.success("Link copiado!");
+    try {
+      await request({
+        method: "POST",
+        url: `/client/send-registration-link/${client.id}`,
+        showSuccess: true,
+        successMessage: "Link de cadastro enviado com sucesso!",
+        onAccept: () => queryClient.invalidateQueries({ queryKey: ["clients"] }),
+      });
+    } catch {
+      toast.error("Erro ao enviar link de cadastro");
+    }
   };
 
   const handleClientDelete = async () => {
@@ -56,7 +59,7 @@ export default function ClientCard({ client }: ClientCardProps) {
     : "-";
 
   return (
-    <Card className="bg-gray-100 text-gray-100 rounded-2xl shadow-md">
+    <Card className="bg-white/80 dark:bg-gray-900/70 backdrop-blur border border-gray-200/60 dark:border-gray-800/60 rounded-2xl shadow-md">
       <CardHeader className="flex flex-row items-center gap-3">
         <Avatar className="h-10 w-10">
           {client?.user?.avatarUrl ? (
@@ -93,26 +96,28 @@ export default function ClientCard({ client }: ClientCardProps) {
         </div>
       </CardContent>
 
-      <CardFooter className="flex flex-col justify-end gap-3 pt-2">
+      <CardFooter className="flex flex-col justify-end gap-2 pt-2">
         <Button
           onClick={handleView}
-          variant="default"
+          variant="ghost"
           size="sm"
-          className="w-full bg-blue-500 text-white hover:text-white focus:text-white transition"
+          className="w-full justify-center rounded-lg bg-blue-50 text-blue-800 hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900/40"
         >
-          <Eye className="w-5 h-5" />
+          <Eye className="w-4 h-4" />
           <span>Visualizar</span>
         </Button>
 
-        <Button
-          onClick={handleAnamneseLinkCopy}
-          variant="default"
-          size="sm"
-          className="w-full bg-green-600 text-white hover:text-white focus:text-white transition"
-        >
-          <Copy className="w-5 h-5" />
-          <span>Anamnese</span>
-        </Button>
+        {!client?.hasRegistered && (
+          <Button
+            onClick={handleSendRegistrationLink}
+            variant="ghost"
+            size="sm"
+            className="w-full justify-center rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
+          >
+            <Mail className="w-4 h-4" />
+            <span>Enviar link de cadastro</span>
+          </Button>
+        )}
 
         <ClientDeleteModal onConfirm={handleClientDelete} isMobile={true} />
       </CardFooter>

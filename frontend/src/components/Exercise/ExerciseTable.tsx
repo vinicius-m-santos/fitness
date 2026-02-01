@@ -6,89 +6,194 @@ import {
 import { AgGridReact } from "ag-grid-react";
 import { useState } from "react";
 import { localeText } from "@/utils/traduction/traduction";
-import { Pencil, Trash } from "lucide-react";
+import { Star } from "lucide-react";
 import DefaultTooltip from "@/components/ui/Tooltip/DefaultTooltip";
 import { useRequest } from "@/api/request";
 import { useQueryClient } from "@tanstack/react-query";
-import toast from "react-hot-toast";
 import ExerciseUpdateModal from "./components/ExerciseUpdateModal";
 import ExerciseDeleteModal from "./components/ExerciseDeleteModal";
 import ExerciseDeleteDefaultModal from "./components/ExerciseDeleteDefaultModal";
+import { Button } from "@/components/ui/button";
+import type { ExerciseListPagination } from "./ExerciseList";
 
 const themeDarkBlue = themeQuartz.withPart(colorSchemeLightWarm);
 
-const CategoryBadge = (params: any) => {
-  const { personal, exerciseCategory } = params.data;
+const FavoriteStar = (params: any) => {
+  const { id, isFavorite, isStandard, onToggleFavorite } = params.data;
+  const [loading, setLoading] = useState(false);
+
+  // if (isStandard) {
+  //   return null;
+  // }
+
+  const handleClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onToggleFavorite || loading) return;
+    setLoading(true);
+    try {
+      await onToggleFavorite(id);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={loading}
+      className="p-1 rounded hover:bg-gray-200/50 disabled:opacity-50"
+      aria-label={isFavorite ? "Remover dos favoritos" : "Marcar como favorito"}
+    >
+      <Star
+        className={`w-5 h-5 transition-colors ${isFavorite
+          ? "fill-yellow-400 text-yellow-500"
+          : "text-gray-400 hover:text-yellow-500/70"
+          }`}
+      />
+    </button>
+  );
+};
+
+const CategoryBadge = ({ data }: { data: any }) => {
+  const { personal, isStandard: standard, exerciseCategory } = data;
   const badges = [];
 
-  // "Padrão" tag
-  if (!personal) {
-    badges.push(
-      <span
-        key="default"
-        className="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 text-xs font-medium px-2.5 py-0.5 rounded-sm"
-      >
-        Padrão
-      </span>
-    );
-  }
+  // if (standard || !personal) {
+  //   badges.push(
+  //     <span
+  //       key="default"
+  //       className="bg-gray-100 mb-2 text-gray-800 dark:bg-gray-700 dark:text-gray-300 text-xs font-medium px-2 py-0.5 rounded-sm"
+  //     >
+  //       Padrão
+  //     </span>
+  //   );
+  // }
 
-  // Categoria tag
   if (exerciseCategory) {
-    let bgClass =
-      "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+    let color = "gray";
 
     switch (exerciseCategory) {
-      case "Superiores":
-        bgClass =
-          "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+      case "Musculação":
+        color = "blue";
         break;
-      case "Inferiores":
-        bgClass =
-          "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
-        break;
-      case "Full-body":
-        bgClass =
-          "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300";
-        break;
-      case "Mobilidade":
-        bgClass = "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
+      case "Aeróbico":
+        color = "green";
         break;
       case "Funcional":
-        bgClass =
-          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+        color = "purple";
+        break;
+      case "Alongamento":
+        color = "red";
+        break;
+      case "Em casa":
+        color = "yellow";
+        break;
+      case "Mobilidade":
+        color = "red";
+        break;
+      case "Elástico":
+        color = "pink";
+        break;
+      case "MAT Pilates":
+        color = "brown";
+        break;
+      case "Laboral":
+        color = "red";
         break;
     }
 
     badges.push(
       <span
         key="category"
-        className={`${bgClass} text-xs font-medium px-2.5 py-0.5 rounded-sm`}
+        className={`bg-${color}-100 mb-2 text-${color}-800 dark:bg-${color}-700 dark:text-${color}-300 px-2 py-0.5 rounded-sm`}
       >
         {exerciseCategory}
       </span>
     );
   }
 
-  return <div className="flex mt-2.5 items-center gap-2">{badges}</div>;
+  return <div className="inline-block mt-2.5 items-center gap-2">{badges}</div>;
 };
 
-const MuscleGroupBadge = (params: any) => {
-  const { muscleGroup } = params.data;
+const MuscleGroupBadge = ({ data }: { data: any }) => {
+  const { muscleGroup } = data;
 
-  if (!muscleGroup) {
-    return <span className="text-gray-400 text-xs">-</span>;
+  if (muscleGroup) {
+    let color = "gray";
+
+    switch (muscleGroup) {
+      case "Perna":
+        color = "blue";
+        break;
+      case "Peitoral":
+        color = "green";
+        break;
+      case "Bíceps":
+        color = "purple";
+        break;
+      case "Ombro":
+        color = "red";
+        break;
+      case "Abdômen":
+        color = "yellow";
+        break;
+      case "Lombar":
+        color = "pink";
+        break;
+      case "Trapézio":
+        color = "amber";
+        break;
+      case "Dorsal":
+        color = "indigo";
+        break;
+      case "Outros":
+        color = "slate";
+        break;
+      case "Alongamento":
+        color = "cyan";
+        break;
+      case "Antebraço":
+        color = "violet";
+        break;
+      case "Elásticos e Faixas":
+        color = "teal";
+        break;
+      case "Funcional":
+        color = "emerald";
+        break;
+      case "Inferiores":
+        color = "sky";
+        break;
+      case "Laboral":
+        color = "orange";
+        break;
+      case "MAT Pilates":
+        color = "fuchsia";
+        break;
+      case "Mobilidade":
+        color = "red";
+        break;
+      case "Para Fazer em Casa":
+        color = "rose";
+        break;
+      case "Tríceps":
+        color = "zinc";
+        break;
+    }
+
+    return <span className={`bg-${color}-100 text-${color}-800 dark:bg-${color}-700 dark:text-${color}-300 px-2 py-0.5 rounded-sm`}>{muscleGroup}</span>;
   }
-
-  return (
-    <span className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300 text-xs font-medium px-2.5 py-0.5 rounded-sm">
-      {muscleGroup}
-    </span>
-  );
 };
+
+const ExerciseNameCell = (params: { value?: string }) => (
+  <div className="w-full min-w-0 py-1 break-words whitespace-normal overflow-visible">
+    {params.value ?? ""}
+  </div>
+);
 
 const ActionButtons = (params: any) => {
-  const { id, personal } = params.data;
+  const { id, personal, isStandard } = params.data;
   const queryClient = useQueryClient();
   const request = useRequest();
 
@@ -103,7 +208,9 @@ const ActionButtons = (params: any) => {
     });
   };
 
-  const isDefault = personal === 0;
+  const isDefault = isStandard || personal === null || personal === 0;
+  const showDeleteDefault = isDefault && !isStandard;
+
   return (
     <div className="flex items-center gap-2 justify-center">
       {!isDefault && (
@@ -118,7 +225,7 @@ const ActionButtons = (params: any) => {
         </>
       )}
 
-      {isDefault && (
+      {showDeleteDefault && (
         <DefaultTooltip tooltipText="Excluir exercício padrão" delay={0}>
           <ExerciseDeleteDefaultModal openProp={false} exerciseId={id} />
         </DefaultTooltip>
@@ -132,24 +239,56 @@ interface Exercise {
   name: string;
   exerciseCategory: string;
   muscleGroup: string;
-  personal: number;
+  personal: number | null;
   createdAt: string;
-  active: boolean;
+  isStandard?: boolean;
+  isFavorite?: boolean;
+  onToggleFavorite?: (id: number) => Promise<void>;
 }
 
 interface ExerciseTableProps {
   exerciseTableData?: Exercise[];
   loading?: boolean;
+  onToggleFavorite?: (exerciseId: number) => Promise<void>;
+  pagination?: ExerciseListPagination;
+  onPageChange?: (page: number) => void;
 }
 
-const ExerciseTable = ({ exerciseTableData, loading }: ExerciseTableProps) => {
+const ExerciseTable = ({
+  exerciseTableData,
+  loading,
+  onToggleFavorite,
+  pagination,
+  onPageChange,
+}: ExerciseTableProps) => {
+  // Data is now filtered and sorted by the backend
+  const data = exerciseTableData || [];
+
+  const dataWithToggle = data.map((row) => ({
+    ...row,
+    onToggleFavorite,
+  }));
+
   const [columnDefs] = useState<ColDef[]>([
+    {
+      headerName: "",
+      field: "isFavorite",
+      width: 52,
+      sortable: false,
+      filter: false,
+      cellRenderer: FavoriteStar,
+    },
     {
       headerName: "Exercício",
       field: "name",
       filter: true,
       flex: 2,
+      minWidth: 200,
       sortable: true,
+      wrapText: true,
+      autoHeight: true,
+      cellClass: "ag-cell-exercise-name",
+      cellRenderer: ExerciseNameCell,
     },
     {
       headerName: "Categoria",
@@ -179,33 +318,86 @@ const ExerciseTable = ({ exerciseTableData, loading }: ExerciseTableProps) => {
     resizable: true,
     wrapText: true,
     autoHeight: true,
+    cellClass: "ag-cell-vertical-center",
   };
 
-  return (
-    <div
-      className="bg-gray-900 rounded-xl shadow-md overflow-hidden border border-gray-200"
-      style={{ width: "100%", minHeight: "15rem", height: "30rem" }}
-    >
-      <AgGridReact
-        rowData={exerciseTableData}
-        columnDefs={columnDefs}
-        defaultColDef={defaultColDef}
-        theme={themeDarkBlue}
-        localeText={localeText}
-        pagination
-        paginationPageSize={20}
-        enableBrowserTooltips
-        suppressMenuHide={false}
-        loading={loading}
-      />
+  const pageSize = pagination?.limit ?? 20;
 
-      <style>
-        {`
-          .ag-cell-wrapper {
-            height: 100%;
-          }
-        `}
-      </style>
+  return (
+    <div className="space-y-3">
+      <div
+        className="bg-gray-900 rounded-xl shadow-md overflow-hidden border border-gray-200"
+        style={{ width: "100%", minHeight: "15rem", height: "30rem" }}
+      >
+        <AgGridReact
+          rowData={dataWithToggle}
+          columnDefs={columnDefs}
+          defaultColDef={defaultColDef}
+          theme={themeDarkBlue}
+          localeText={localeText}
+          pagination
+          paginationPageSize={pageSize}
+          paginationPageSizeSelector={[10, 20, 50]}
+          enableBrowserTooltips
+          suppressMenuHide={false}
+          loading={loading}
+        />
+
+        <style>
+          {`
+            .ag-cell-wrapper {
+              height: 100%;
+            }
+            .ag-cell.ag-cell-vertical-center {
+              display: flex;
+              align-items: center;
+            }
+            .ag-cell.ag-cell-vertical-center .ag-cell-wrapper {
+              width: 100%;
+              display: flex;
+              align-items: center;
+            }
+            .ag-cell.ag-cell-exercise-name {
+              overflow: visible !important;
+              white-space: normal !important;
+              word-break: break-word !important;
+              line-height: 1.4;
+            }
+            .ag-cell.ag-cell-exercise-name .ag-cell-wrapper {
+              overflow: visible !important;
+              white-space: normal !important;
+              word-break: break-word !important;
+            }
+          `}
+        </style>
+      </div>
+
+      {pagination && pagination.totalPages > 1 && onPageChange && (
+        <div className="flex flex-wrap items-center justify-between gap-2 py-2">
+          <p className="text-sm text-gray-600">
+            {pagination.total} exercício(s) • Página {pagination.page} de{" "}
+            {pagination.totalPages}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pagination.page <= 1}
+              onClick={() => onPageChange(pagination.page - 1)}
+            >
+              Anterior
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pagination.page >= pagination.totalPages}
+              onClick={() => onPageChange(pagination.page + 1)}
+            >
+              Próxima
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

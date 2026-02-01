@@ -1,4 +1,13 @@
 import z from "zod";
+import { parse, isValid } from "date-fns";
+
+const birthDateRefine = (val: string | null | undefined) => {
+  if (!val?.trim()) return true;
+  const parsed = parse(val, "dd/MM/yyyy", new Date());
+  if (!isValid(parsed)) return false;
+  const today = new Date();
+  return parsed <= today && parsed >= new Date("1900-01-01");
+};
 
 export const clientFormSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -17,7 +26,13 @@ export const clientFormSchema = z.object({
       { message: "Whatsapp inválido" }
     ),
   gender: z.string(),
-  age: z.string().nullable().optional(),
+  birthDate: z
+    .string()
+    .nullable()
+    .optional()
+    .refine(birthDateRefine, {
+      message: "Data inválida. Use o formato dd/mm/aaaa",
+    }),
   height: z.string().nullable().optional(),
   weight: z.string().nullable().optional(),
   objective: z.string().nullable().optional(),

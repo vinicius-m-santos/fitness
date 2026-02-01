@@ -80,7 +80,7 @@ export default function SecuritySection() {
                 </CardContent>
             </Card> */}
 
-            <Card className="border-destructive/30">
+            {/* <Card className="border-destructive/30">
                 <CardContent className="p-6 space-y-4">
                     <div className="flex items-center gap-3 text-destructive">
                         <Trash2 />
@@ -92,10 +92,10 @@ export default function SecuritySection() {
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-3">
-                        {/* <Button variant="outline" className="gap-2">
+                        <Button variant="outline" className="gap-2">
                             <LogOut size={16} />
                             Sair de todos os dispositivos
-                        </Button> */}
+                        </Button>
 
                         <Button
                             variant="destructive"
@@ -111,7 +111,7 @@ export default function SecuritySection() {
             <DeleteAccountModal
                 open={isDeleteAccountOpen}
                 onOpenChange={setIsDeleteAccountOpen}
-            />
+            /> */}
         </div>
     );
 }

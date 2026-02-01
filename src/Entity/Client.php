@@ -25,21 +25,8 @@ class Client
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private ?Uuid $uuid = null;
 
-    #[ORM\Column(length: 255)]
-    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
-    private string $name;
-
-    #[ORM\Column(length: 255)]
-    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
-    private string $lastName;
-
-    #[ORM\Column(type: "integer", nullable: true)]
-    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
-    private ?int $age;
-
-    #[ORM\Column(length: 1, nullable: true)]
-    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
-    private ?string $gender;
+    /** @var array{name?: string, lastName?: string, gender?: string, birthDate?: string, active?: bool}|null Dados pendentes quando User ainda não existe (fluxo de criação) */
+    private ?array $pendingUserData = null;
 
     #[ORM\Column(type: "float", nullable: true)]
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
@@ -60,10 +47,6 @@ class Client
     #[ORM\Column(type: "integer", nullable: true)]
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private ?int $workoutDaysPerWeek;
-
-    #[ORM\Column(type: "boolean", options: ['default' => true])]
-    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
-    private bool $active = true;
 
     #[ORM\OneToOne(mappedBy: "client", cascade: ['persist', 'remove'])]
     #[Groups(['client_all'])]
@@ -131,47 +114,89 @@ class Client
         return $this->id;
     }
 
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     public function getName(): string
     {
-        return $this->name;
+        if ($this->user !== null) {
+            return $this->user->getFirstName();
+        }
+        return $this->pendingUserData['name'] ?? '';
     }
 
-    public function setName(string $name): self
+    public function setPendingName(?string $name): self
     {
-        $this->name = $name;
+        $this->pendingUserData = $this->pendingUserData ?? [];
+        $this->pendingUserData['name'] = $name ?? '';
         return $this;
     }
 
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     public function getLastName(): string
     {
-        return $this->lastName;
+        if ($this->user !== null) {
+            return $this->user->getLastName();
+        }
+        return $this->pendingUserData['lastName'] ?? '';
     }
 
-    public function setLastName(string $lastName): self
+    public function setPendingLastName(?string $lastName): self
     {
-        $this->lastName = $lastName;
+        $this->pendingUserData = $this->pendingUserData ?? [];
+        $this->pendingUserData['lastName'] = $lastName ?? '';
         return $this;
     }
 
-    public function getAge(): int
+    /** Idade calculada a partir de birthDate do User */
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
+    public function getAge(): ?int
     {
-        return $this->age;
+        $birthDate = $this->user?->getBirthDate();
+        if ($birthDate === null) {
+            return null;
+        }
+        return $birthDate->diff(new \DateTimeImmutable())->y;
     }
 
-    public function setAge(int $age): self
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
+    public function getGender(): ?string
     {
-        $this->age = $age;
+        if ($this->user !== null) {
+            return $this->user->getGender();
+        }
+        return $this->pendingUserData['gender'] ?? null;
+    }
+
+    public function setPendingGender(?string $gender): self
+    {
+        $this->pendingUserData = $this->pendingUserData ?? [];
+        $this->pendingUserData['gender'] = $gender;
         return $this;
     }
 
-    public function getGender(): string
+    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
+    public function getActive(): bool
     {
-        return $this->gender;
+        if ($this->user !== null) {
+            return $this->user->isActive();
+        }
+        return $this->pendingUserData['active'] ?? true;
     }
 
-    public function setGender(string $gender): self
+    public function setPendingActive(bool $active): self
     {
-        $this->gender = $gender;
+        $this->pendingUserData = $this->pendingUserData ?? [];
+        $this->pendingUserData['active'] = $active;
+        return $this;
+    }
+
+    public function getPendingUserData(): ?array
+    {
+        return $this->pendingUserData;
+    }
+
+    public function clearPendingUserData(): self
+    {
+        $this->pendingUserData = null;
         return $this;
     }
 
@@ -227,17 +252,6 @@ class Client
     public function setWorkoutDaysPerWeek(int $workoutDaysPerWeek): self
     {
         $this->workoutDaysPerWeek = $workoutDaysPerWeek;
-        return $this;
-    }
-
-    public function getActive(): bool
-    {
-        return $this->active;
-    }
-
-    public function setActive(bool $active): self
-    {
-        $this->active = $active;
         return $this;
     }
 
@@ -377,20 +391,48 @@ class Client
 
     public function getDataFromArray(array $data): self
     {
-        if (isset($data['name']) && !empty($data['name'])) {
-            $this->name = $data['name'];
-        }
-
-        if (isset($data['lastName']) && !empty($data['lastName'])) {
-            $this->lastName = $data['lastName'];
-        }
-
-        if (isset($data['age'])) {
-            $this->age = (int) $data['age'];
-        }
-
-        if (isset($data['gender']) && !empty($data['gender'])) {
-            $this->gender = $data['gender'];
+        $user = $this->user;
+        if ($user !== null) {
+            if (isset($data['name']) && !empty($data['name'])) {
+                $user->setFirstName($data['name']);
+            }
+            if (isset($data['lastName']) && !empty($data['lastName'])) {
+                $user->setLastName($data['lastName']);
+            }
+            if (isset($data['gender'])) {
+                $user->setGender($data['gender'] ?? null);
+            }
+            if (isset($data['birthDate']) && !empty($data['birthDate'])) {
+                $birthDate = \DateTimeImmutable::createFromFormat('Y-m-d', $data['birthDate']);
+                if ($birthDate) {
+                    $user->setBirthDate($birthDate);
+                }
+            } elseif (isset($data['age']) && $data['age'] !== '' && $data['age'] !== null) {
+                $age = (int) $data['age'];
+                if ($age > 0 && $age <= 150) {
+                    $year = (new \DateTimeImmutable())->format('Y') - $age;
+                    $user->setBirthDate(new \DateTimeImmutable("{$year}-01-01"));
+                }
+            }
+            if (isset($data['active'])) {
+                $user->setActive((bool) $data['active']);
+            }
+            if (isset($data['phone'])) {
+                $user->setPhone($data['phone'] ?? null);
+            }
+        } else {
+            if (isset($data['name'])) {
+                $this->setPendingName($data['name']);
+            }
+            if (isset($data['lastName'])) {
+                $this->setPendingLastName($data['lastName']);
+            }
+            if (isset($data['gender'])) {
+                $this->setPendingGender($data['gender'] ?? null);
+            }
+            if (isset($data['active'])) {
+                $this->setPendingActive((bool) $data['active']);
+            }
         }
 
         if (isset($data['weight'])) {
@@ -412,10 +454,6 @@ class Client
 
         if (isset($data['bloodPressure']) && !empty($data['bloodPressure'])) {
             $this->bloodPressure = (int) $data['bloodPressure'];
-        }
-
-        if (isset($data['active']) && !empty($data['active'])) {
-            $this->active = $data['active'];
         }
 
         if (isset($data['user']) && !empty($data['user'])) {

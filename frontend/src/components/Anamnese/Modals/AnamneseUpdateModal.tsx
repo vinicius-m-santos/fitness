@@ -121,7 +121,7 @@ export default function AnamneseUpdateModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button size="sm" className="cursor-pointer">
+        <Button size="sm" className="cursor-pointer w-full md:w-auto">
           <Edit /> Editar
         </Button>
       </DialogTrigger>
@@ -137,10 +137,10 @@ export default function AnamneseUpdateModal({
       >
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
-            Anamnese do Aluno
+            Anamnese
           </DialogTitle>
           <DialogDescription>
-            Atualize as informações do aluno.
+            Atualize as informações da anamnese.
           </DialogDescription>
         </DialogHeader>
 

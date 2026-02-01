@@ -151,10 +151,10 @@ export default function WorkoutsTab({ isActive = true }: WorkoutsTabProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold text-black flex items-center gap-2">
-          <Dumbbell className="h-5 w-5" />
-          Treinos do Aluno
+      <div className="flex flex-col md:flex-row gap-2 md:gap-0 items-center justify-between">
+        <h3 className="text-lg md:text-xl font-semibold text-black flex items-center gap-2">
+          <Dumbbell className="h-4 w-4 md:h-5 md:w-5" />
+          {user?.roles.includes("ROLE_PERSONAL") ? "Treinos do Aluno" : "Meus Treinos"}
         </h3>
 
         {user?.roles.includes("ROLE_PERSONAL") && (
@@ -167,7 +167,7 @@ export default function WorkoutsTab({ isActive = true }: WorkoutsTabProps) {
 
             <Button
               size="sm"
-              className="cursor-pointer"
+              className="cursor-pointer w-full md:w-auto"
               onClick={() => setOpenModal(true)}
             >
               <PlusIcon /> Novo treino
@@ -240,35 +240,39 @@ export default function WorkoutsTab({ isActive = true }: WorkoutsTabProps) {
                         </Button>
                       </>
                     )}
-                    <TrainingEditButton
-                      trainingId={workout.id}
-                      initialData={workout}
-                    />
-                    <Button
-                      size="sm"
-                      className="w-full text-white flex items-center gap-1 cursor-pointer"
-                      variant="destructive"
-                      onClick={() => {
-                        setTrainingToDelete(workout);
-                        setOpenDeleteModal(true);
-                      }}
-                    >
-                      <Trash className="h-4 w-4 mr-1" /> Excluir
-                    </Button>
-                    {trainingToDelete && (
-                      <TrainingDeleteModal
-                        openProp={openDeleteModal}
-                        trainingId={trainingToDelete.id}
-                        onOpenChange={(open) => {
-                          setOpenDeleteModal(open);
-                          if (!open) {
-                            setTrainingToDelete(null);
-                            queryClient.invalidateQueries({
-                              queryKey: ["trainings"],
-                            });
-                          }
-                        }}
-                      />
+                    {user?.roles.includes("ROLE_PERSONAL") && (
+                      <>
+                        <TrainingEditButton
+                          trainingId={workout.id}
+                          initialData={workout}
+                        />
+                        <Button
+                          size="sm"
+                          className="w-full text-white flex items-center gap-1 cursor-pointer"
+                          variant="destructive"
+                          onClick={() => {
+                            setTrainingToDelete(workout);
+                            setOpenDeleteModal(true);
+                          }}
+                        >
+                          <Trash className="h-4 w-4 mr-1" /> Excluir
+                        </Button>
+                        {trainingToDelete && (
+                          <TrainingDeleteModal
+                            openProp={openDeleteModal}
+                            trainingId={trainingToDelete.id}
+                            onOpenChange={(open) => {
+                              setOpenDeleteModal(open);
+                              if (!open) {
+                                setTrainingToDelete(null);
+                                queryClient.invalidateQueries({
+                                  queryKey: ["trainings"],
+                                });
+                              }
+                            }}
+                          />
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

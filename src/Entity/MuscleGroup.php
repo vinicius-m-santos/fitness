@@ -11,12 +11,11 @@ use Symfony\Component\Serializer\Annotation\Groups;
 class MuscleGroup
 {
     #[ORM\Id]
-    #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
     #[Groups(['exercise_all'])]
     private ?int $id = null;
 
-    #[ORM\Column(type: 'string', length: 150, unique: true)]
+    #[ORM\Column(type: 'string', length: 150, unique: false)]
     #[Groups(['exercise_all'])]
     private string $name;
 
