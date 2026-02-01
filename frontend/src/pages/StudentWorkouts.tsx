@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, Calendar, Dumbbell } from "lucide-react";
+import { Play, Calendar, Dumbbell, ChevronLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useRequest } from "@/api/request";
@@ -32,7 +32,7 @@ export default function StudentWorkouts() {
 
   const activeCheck = useActiveWorkoutCheck({
     request,
-    onFinished: () => {},
+    onFinished: () => { },
   });
 
   const handleFinishWorkout = async () => {
@@ -85,8 +85,16 @@ export default function StudentWorkouts() {
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-4 space-y-6">
+    <div className="w-full max-w-6xl mx-auto p-4 space-y-4">
       <Loader loading={isFetching} />
+      <div className="flex justify-start">
+        <Button asChild variant="ghost" className="w-fit gap-2 hover:bg-transparent text-black">
+          <Link to="/student" className="flex items-center gap-2">
+            <ChevronLeft className="w-4 h-4" />
+            Voltar
+          </Link>
+        </Button>
+      </div>
       <Card className="rounded-2xl shadow-sm">
         <CardHeader className="space-y-1">
           <CardTitle className="text-xl md:text-2xl flex items-center gap-2">

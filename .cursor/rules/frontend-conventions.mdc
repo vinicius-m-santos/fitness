@@ -6,3 +6,7 @@ globs: frontend/**/*.tsx, frontend/**/*.ts
 # Frontend – convenções
 
 - **Componentes:** Prefira criar novos componentes em vez de amontoar toda a lógica em uma tela só. Isso facilita manutenção, testes e reuso (ex.: telas de “continuar treino”, modais, cards reutilizáveis).
+
+- **Modais em telas pequenas:** Use o layout responsivo `rounded-md w-[90vw] max-w-[420px]` no conteúdo do modal (ex.: AlertDialogContent, DialogContent) para evitar corte nas laterais em mobile.
+
+- **Comentários:** Não usar comentários no código, nunca.
