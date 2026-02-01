@@ -10,6 +10,7 @@ import { useRequest } from "@/api/request";
 import { Link, useNavigate } from "react-router-dom";
 import Loader from "@/components/ui/loader";
 import ContinueWorkoutPrompt from "@/components/Student/ContinueWorkoutPrompt";
+import TrainingHistorySection from "@/components/Student/TrainingHistorySection";
 import { useActiveWorkoutCheck } from "@/hooks/useActiveWorkoutCheck";
 import { clearActiveSession } from "@/lib/activeSessionDb";
 
@@ -143,6 +144,14 @@ export default function StudentHome() {
             </Button>
           </CardContent>
         </Card>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
+        <TrainingHistorySection />
       </motion.div>
     </div>
   );

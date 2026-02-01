@@ -18,6 +18,16 @@ use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 class TrainingExecutionService
 {
+    private const EDIT_WINDOW_HOURS = 24;
+
+    public static function isWithinEditWindow(?\DateTimeImmutable $finishedAt): bool
+    {
+        if ($finishedAt === null) {
+            return true;
+        }
+        $deadline = $finishedAt->modify('+' . self::EDIT_WINDOW_HOURS . ' hours');
+        return (new \DateTimeImmutable()) < $deadline;
+    }
     public function __construct(
         private readonly TrainingExecutionRepository $trainingExecutionRepo,
         private readonly TrainingRepository $trainingRepo,
@@ -133,8 +143,8 @@ class TrainingExecutionService
         if ($execution->getClient()->getId() !== $client->getId()) {
             throw new NotFoundHttpException('Execução não encontrada');
         }
-        if ($execution->getFinishedAt() !== null) {
-            throw new UnprocessableEntityHttpException('Treino já finalizado');
+        if ($execution->getFinishedAt() !== null && !self::isWithinEditWindow($execution->getFinishedAt())) {
+            throw new UnprocessableEntityHttpException('Prazo para editar este treino expirou (24h após finalização)');
         }
         $existingByNumber = [];
         foreach ($exerciseExecution->getSetExecutions() as $set) {
@@ -247,6 +257,83 @@ class TrainingExecutionService
     public function getLastLoadsByPeriodExercise(Client $client, int $periodExerciseId): array
     {
         return $this->setExecutionRepo->findLastLoadsByClientAndPeriodExercise($client, $periodExerciseId);
+    }
+
+    /**
+     * Lista execuções finalizadas do aluno para histórico (ordenado por finishedAt DESC).
+     *
+     * @return list<array{id: int, finishedAt: string, startedAt: string, trainingId: int, trainingName: string, periodId: int|null, periodName: string|null, totalDurationSeconds: int, exerciseExecutions: list<array{id: int, periodExerciseId: int, exerciseName: string, durationSeconds: int|null, sets: list<array{setNumber: int, loadKg: float|null}>}>}>
+     */
+    public function getHistoryForClient(Client $client, int $limit = 30): array
+    {
+        $executions = $this->trainingExecutionRepo->findFinishedByClientOrderByFinishedAtDesc($client, $limit);
+        $result = [];
+        foreach ($executions as $execution) {
+            $finishedAt = $execution->getFinishedAt();
+            $startedAt = $execution->getStartedAt();
+            if ($finishedAt === null || $startedAt === null) {
+                continue;
+            }
+            $totalDurationSeconds = $finishedAt->getTimestamp() - $startedAt->getTimestamp();
+            $periodId = null;
+            $periodName = null;
+            $exerciseExecutions = [];
+            $ees = $execution->getExerciseExecutions()->toArray();
+            usort($ees, fn ($a, $b) => $a->getExecutionOrder() <=> $b->getExecutionOrder());
+            foreach ($ees as $ee) {
+                $pe = $ee->getPeriodExercise();
+                if ($periodId === null && $pe !== null) {
+                    $tp = $pe->getTrainingPeriod();
+                    if ($tp !== null) {
+                        $periodId = $tp->getId();
+                        $periodName = $tp->getName();
+                    }
+                }
+                $sets = [];
+                foreach ($ee->getSetExecutions() as $set) {
+                    $sets[] = [
+                        'setNumber' => $set->getSetNumber(),
+                        'loadKg' => $set->getLoadKg(),
+                    ];
+                }
+                usort($sets, fn ($a, $b) => $a['setNumber'] <=> $b['setNumber']);
+                $exerciseExecutions[] = [
+                    'id' => $ee->getId(),
+                    'periodExerciseId' => $pe?->getId() ?? 0,
+                    'exerciseName' => $pe?->getExercise()?->getName() ?? '—',
+                    'durationSeconds' => $ee->getDurationSeconds(),
+                    'sets' => $sets,
+                ];
+            }
+            $result[] = [
+                'id' => $execution->getId(),
+                'finishedAt' => $finishedAt->format(\DateTimeInterface::ATOM),
+                'startedAt' => $startedAt->format(\DateTimeInterface::ATOM),
+                'trainingId' => $execution->getTraining()->getId(),
+                'trainingName' => $execution->getTraining()->getName(),
+                'periodId' => $periodId,
+                'periodName' => $periodName,
+                'totalDurationSeconds' => (int) $totalDurationSeconds,
+                'exerciseExecutions' => $exerciseExecutions,
+            ];
+        }
+        return $result;
+    }
+
+    public function deleteExecution(Client $client, int $executionId): void
+    {
+        $execution = $this->trainingExecutionRepo->find($executionId);
+        if (!$execution || $execution->getClient()->getId() !== $client->getId()) {
+            throw new NotFoundHttpException('Execução não encontrada');
+        }
+        if ($execution->getFinishedAt() === null) {
+            throw new UnprocessableEntityHttpException('Só é possível excluir treinos já finalizados');
+        }
+        if (!self::isWithinEditWindow($execution->getFinishedAt())) {
+            throw new UnprocessableEntityHttpException('Prazo para excluir este treino expirou (24h após finalização)');
+        }
+        $this->em->remove($execution);
+        $this->em->flush();
     }
 
     /**

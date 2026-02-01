@@ -63,14 +63,14 @@ export default function ContinueWorkoutPrompt({
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
-                <Button size="lg" className="flex-1 gap-2" onClick={onContinue}>
+                <Button size="lg" className="flex-1 gap-2 py-3" onClick={onContinue}>
                   <Play className="w-4 h-4" />
                   Continuar treino
                 </Button>
                 <Button
                   size="lg"
                   variant="outline"
-                  className="flex-1 gap-2"
+                  className="flex-1 gap-2 py-3"
                   onClick={handleFinishClick}
                   disabled={isFinishing}
                 >

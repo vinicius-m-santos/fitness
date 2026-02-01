@@ -306,4 +306,28 @@ class TrainingExecutionRepository extends ServiceEntityRepository
             'count' => (int) ($row['cnt'] ?? 0),
         ];
     }
+
+    /**
+     * @param Client $client
+     * @param int $limit
+     * @return list<TrainingExecution>
+     */
+    public function findFinishedByClientOrderByFinishedAtDesc(Client $client, int $limit = 30): array
+    {
+        $results = $this->createQueryBuilder('te')
+            ->leftJoin('te.training', 't')->addSelect('t')
+            ->leftJoin('te.exerciseExecutions', 'ee')->addSelect('ee')
+            ->leftJoin('ee.periodExercise', 'pe')->addSelect('pe')
+            ->leftJoin('pe.exercise', 'e')->addSelect('e')
+            ->leftJoin('pe.trainingPeriod', 'tp')->addSelect('tp')
+            ->leftJoin('ee.setExecutions', 'se')->addSelect('se')
+            ->where('te.client = :client')
+            ->andWhere('te.finishedAt IS NOT NULL')
+            ->setParameter('client', $client)
+            ->orderBy('te.finishedAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+        return array_values($results);
+    }
 }

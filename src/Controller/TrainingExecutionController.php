@@ -58,12 +58,30 @@ final class TrainingExecutionController extends AbstractController
         ]);
     }
 
+    #[Route('/history', name: 'training_execution_history', methods: ['GET'])]
+    public function history(Request $request): JsonResponse
+    {
+        $client = $this->getClientOrFail();
+        $limit = $request->query->getInt('limit', 30);
+        $limit = min(50, max(1, $limit));
+        $data = $this->trainingExecutionService->getHistoryForClient($client, $limit);
+        return $this->json(['items' => $data]);
+    }
+
     #[Route('/{id}', name: 'training_execution_get', methods: ['GET'])]
     public function getExecution(int $id): JsonResponse
     {
         $client = $this->getClientOrFail();
         $data = $this->trainingExecutionService->getExecutionForClient($client, $id);
         return $this->json($data);
+    }
+
+    #[Route('/{id}', name: 'training_execution_delete', methods: ['DELETE'])]
+    public function deleteExecution(int $id): JsonResponse
+    {
+        $client = $this->getClientOrFail();
+        $this->trainingExecutionService->deleteExecution($client, $id);
+        return $this->json(['message' => 'Treino excluído']);
     }
 
     #[Route('/{id}/finish', name: 'training_execution_finish', methods: ['PATCH'])]
