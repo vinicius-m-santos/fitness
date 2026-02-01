@@ -64,6 +64,42 @@ class TrainingRepository extends ServiceEntityRepository
     }
 
     /**
+     * Active training (last created as of date) per client with period count.
+     * Only clients that have at least one training with created_at <= asOf are returned.
+     *
+     * @param int[] $clientIds
+     * @return array<int, array{trainingId: int, periodCount: int}>
+     */
+    public function findActiveTrainingWithPeriodCountByClientAsOf(int $personalId, array $clientIds, \DateTimeImmutable $asOf): array
+    {
+        if (empty($clientIds)) {
+            return [];
+        }
+        $conn = $this->em->getConnection();
+        $asOfStr = $asOf->format('Y-m-d H:i:s');
+        $clientPlaceholders = implode(',', array_fill(0, count($clientIds), '?'));
+        $sql = "SELECT t.client_id, t.id AS training_id, COUNT(tp.id) AS period_count
+                FROM training t
+                LEFT JOIN training_periods tp ON tp.training_id = t.id
+                WHERE t.personal_id = ? AND t.client_id IN ($clientPlaceholders) AND t.created_at <= ?
+                  AND t.created_at = (
+                    SELECT MAX(t2.created_at) FROM training t2
+                    WHERE t2.client_id = t.client_id AND t2.personal_id = t.personal_id AND t2.created_at <= ?
+                  )
+                GROUP BY t.client_id, t.id";
+        $params = array_merge([$personalId], $clientIds, [$asOfStr, $asOfStr]);
+        $rows = $conn->executeQuery($sql, $params)->fetchAllAssociative();
+        $out = [];
+        foreach ($rows as $row) {
+            $out[(int) $row['client_id']] = [
+                'trainingId' => (int) $row['training_id'],
+                'periodCount' => (int) $row['period_count'],
+            ];
+        }
+        return $out;
+    }
+
+    /**
      * Trainings (non-standard) with dueDate between from and to (inclusive), for personal's clients.
      *
      * @return Training[]
