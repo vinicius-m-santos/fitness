@@ -12,6 +12,7 @@ use App\Repository\UserRepository;
 use App\Service\AnamneseService;
 use App\Service\S3Service;
 use App\Service\ClientRegistrationService;
+use App\Service\SubscriptionService;
 use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -38,7 +39,8 @@ class ClientController extends AbstractController
         private readonly PersonalRepository $personalRepository,
         private readonly S3Service $s3Service,
         private readonly ClientRegistrationService $clientRegistrationService,
-        private readonly UserPasswordHasherInterface $passwordHasher
+        private readonly UserPasswordHasherInterface $passwordHasher,
+        private readonly SubscriptionService $subscriptionService
     ) {}
 
     #[Route('/send-registration-link/{clientId}', name: 'client_send_registration_link', methods: ['POST'])]
@@ -105,6 +107,17 @@ class ClientController extends AbstractController
             }
 
             $personal = $this->personalRepository->findOneBy(['user' => $user]);
+            if (!$personal) {
+                throw new UnprocessableEntityHttpException('Personal trainer não encontrado');
+            }
+
+            $this->subscriptionService->ensureActiveSubscription($personal);
+            if (!$this->subscriptionService->canAddStudent($personal)) {
+                throw new UnprocessableEntityHttpException(
+                    'Você atingiu o limite de alunos do seu plano atual. Em breve teremos planos pagos com mais vagas.'
+                );
+            }
+
             $client = $this->clientService->createClient($personal, $client, $data);
 
             if (isset($data['sendAccessEmail']) && $data['sendAccessEmail'] === true) {

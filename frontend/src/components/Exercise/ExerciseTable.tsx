@@ -15,6 +15,7 @@ import ExerciseDeleteModal from "./components/ExerciseDeleteModal";
 import ExerciseDeleteDefaultModal from "./components/ExerciseDeleteDefaultModal";
 import { Button } from "@/components/ui/button";
 import type { ExerciseListPagination } from "./ExerciseList";
+import { getBadgeClassName } from "./badgeColors";
 
 const themeDarkBlue = themeQuartz.withPart(colorSchemeLightWarm);
 
@@ -106,7 +107,7 @@ const CategoryBadge = ({ data }: { data: any }) => {
     badges.push(
       <span
         key="category"
-        className={`bg-${color}-100 mb-2 text-${color}-800 dark:bg-${color}-700 dark:text-${color}-300 px-2 py-0.5 rounded-sm`}
+        className={getBadgeClassName(color, "mb-2 px-2 py-0.5 rounded-sm")}
       >
         {exerciseCategory}
       </span>
@@ -182,7 +183,7 @@ const MuscleGroupBadge = ({ data }: { data: any }) => {
         break;
     }
 
-    return <span className={`bg-${color}-100 text-${color}-800 dark:bg-${color}-700 dark:text-${color}-300 px-2 py-0.5 rounded-sm`}>{muscleGroup}</span>;
+    return <span className={getBadgeClassName(color, "px-2 py-0.5 rounded-sm")}>{muscleGroup}</span>;
   }
 };
 
@@ -382,6 +383,7 @@ const ExerciseTable = ({
             <Button
               variant="outline"
               size="sm"
+              className="text-black"
               disabled={pagination.page <= 1}
               onClick={() => onPageChange(pagination.page - 1)}
             >
@@ -390,6 +392,7 @@ const ExerciseTable = ({
             <Button
               variant="outline"
               size="sm"
+              className="text-black"
               disabled={pagination.page >= pagination.totalPages}
               onClick={() => onPageChange(pagination.page + 1)}
             >

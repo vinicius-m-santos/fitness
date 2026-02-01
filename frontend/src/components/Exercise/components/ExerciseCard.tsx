@@ -6,9 +6,9 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import DeleteExerciseModal from "@/components/Exercise/components/ExerciseDeleteModal";
+import { getBadgeClassName } from "@/components/Exercise/badgeColors";
 import { useRequest } from "@/api/request";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
 import ExerciseUpdateModal from "./ExerciseUpdateModal";
 import { Star } from "lucide-react";
 
@@ -90,7 +90,7 @@ export default function ExerciseCard({
       badges.push(
         <span
           key="category"
-          className={`bg-${color}-100 mb-2 text-${color}-800 dark:bg-${color}-700 dark:text-${color}-300 px-2 py-0.5 rounded-sm`}
+          className={getBadgeClassName(color, "mb-2 px-2 py-0.5 rounded-sm")}
         >
           {exerciseCategory}
         </span>
@@ -166,7 +166,7 @@ export default function ExerciseCard({
           break;
       }
 
-      return <span className={`bg-${color}-100 text-${color}-800 dark:bg-${color}-700 dark:text-${color}-300 px-2 py-0.5 rounded-sm`}>{muscleGroup}</span>;
+      return <span className={getBadgeClassName(color, "px-2 py-0.5 rounded-sm")}>{muscleGroup}</span>;
     }
   };
 

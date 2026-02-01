@@ -45,8 +45,8 @@ const PUBLIC_PATHS = ["/login", "/logout", "/anamnese"];
 
 const refreshAccessToken = async (): Promise<{
   token: string;
-  user: User;
-  refresh_token: string;
+  user?: User;
+  refresh_token?: string;
 }> => {
   const refreshToken = localStorage.getItem("refresh_token");
   if (!refreshToken) {
@@ -56,10 +56,17 @@ const refreshAccessToken = async (): Promise<{
   const res = await axios.post(
     `${import.meta.env.VITE_API_URL}/token/refresh`,
     { refresh_token: refreshToken },
-    { withCredentials: true }
+    {
+      headers: { "Content-Type": "application/json" },
+      withCredentials: true,
+    }
   );
 
-  return res.data;
+  const data = res.data ?? {};
+  if (!data.token) {
+    throw new Error("Refresh response missing token");
+  }
+  return data;
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -111,14 +118,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       (response) => response,
       async (error) => {
         const originalRequest = error.config;
+        const status = error.response?.status;
+        const message = (error.response?.data?.message ?? error.response?.data?.error ?? "").toString();
+        const isTokenError =
+          status === 401 ||
+          (status === 403 && /jwt|token|unauthorized/i.test(message));
 
-        if (error.response?.status !== 401) {
+        if (!isTokenError) {
           return Promise.reject(error);
         }
 
         const isRefreshEndpoint =
           originalRequest?.url?.includes("/token/refresh") ?? false;
         if (isRefreshEndpoint) {
+          return Promise.reject(error);
+        }
+
+        if (originalRequest._retry === true) {
+          logout();
           return Promise.reject(error);
         }
 
@@ -129,12 +146,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         }
 
         try {
+          originalRequest._retry = true;
           if (!refreshPromiseRef.current) {
             refreshPromiseRef.current = refreshAccessToken()
               .then((data) => {
                 setAccessToken(data.token);
-                setUser(data.user);
-                localStorage.setItem("refresh_token", data.refresh_token);
+                if (data.user != null) setUser(data.user);
+                if (data.refresh_token != null) {
+                  localStorage.setItem("refresh_token", data.refresh_token);
+                }
                 return data.token;
               })
               .finally(() => {
@@ -143,8 +163,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           }
 
           const newToken = await refreshPromiseRef.current;
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          return instance(originalRequest);
+          const retryConfig = {
+            ...originalRequest,
+            headers: {
+              ...originalRequest.headers,
+              Authorization: `Bearer ${newToken}`,
+            },
+          };
+          return instance(retryConfig);
         } catch {
           logout();
           return Promise.reject(error);
@@ -167,8 +193,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         const data = await refreshAccessToken();
         setAccessToken(data.token);
-        setUser(data.user);
-        localStorage.setItem("refresh_token", data.refresh_token);
+        if (data.user != null) setUser(data.user);
+        if (data.refresh_token != null) {
+          localStorage.setItem("refresh_token", data.refresh_token);
+        }
       } catch {
         const currentPath = window.location.pathname;
         if (!PUBLIC_PATHS.includes(currentPath)) {
