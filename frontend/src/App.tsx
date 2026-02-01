@@ -20,6 +20,7 @@ import ResetPassword from "./pages/ResetPassword";
 import ClientRegister from "./pages/ClientRegister";
 import StandardTrainings from "./pages/StandardTrainings";
 import WeekSummary from "./pages/WeekSummary";
+import PlanSubscription from "./pages/PlanSubscription";
 
 export default function App() {
     return (
@@ -182,6 +183,16 @@ export default function App() {
                     <PrivateRoute>
                         <AdminLayout>
                             <ProfilePage />
+                        </AdminLayout>
+                    </PrivateRoute>
+                }
+            />
+            <Route
+                path="/plan"
+                element={
+                    <PrivateRoute>
+                        <AdminLayout>
+                            <PlanSubscription />
                         </AdminLayout>
                     </PrivateRoute>
                 }

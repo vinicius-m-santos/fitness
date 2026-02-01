@@ -58,7 +58,7 @@ function normalizeError(error) {
         const { status, data } = error.response;
         return {
             status,
-            message: data?.error?.message || data?.message || data?.error || `Requisição falhou (${status})`,
+            message: data?.error?.message || data?.message || data?.detail || data?.error || (typeof data?.error === "string" ? data.error : null) || `Requisição falhou (${status})`,
             code: data?.error?.code || null,
         };
     }

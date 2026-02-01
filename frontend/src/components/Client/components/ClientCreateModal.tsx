@@ -39,7 +39,14 @@ import toast from "react-hot-toast";
 
 import { ClientFormSchema, clientFormSchema } from "@/schemas/clients";
 
-export default function ClientCreateModal() {
+const LIMIT_MESSAGE =
+  "Você atingiu o limite de alunos do seu plano. Em breve teremos planos pagos com mais vagas.";
+
+type ClientCreateModalProps = {
+  canAddStudent?: boolean;
+};
+
+export default function ClientCreateModal({ canAddStudent = true }: ClientCreateModalProps) {
   const request = useRequest();
   const queryClient = useQueryClient();
 
@@ -83,6 +90,7 @@ export default function ClientCreateModal() {
       showSuccess: true,
       onAccept: () => {
         queryClient.invalidateQueries({ queryKey: ["clients"] });
+        queryClient.invalidateQueries({ queryKey: ["subscription", "me"] });
         setOpen(false);
         reset();
         setLoading(false);
@@ -96,7 +104,12 @@ export default function ClientCreateModal() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="flex items-center gap-2">
+        <Button
+          size="sm"
+          className="flex items-center gap-2"
+          disabled={!canAddStudent}
+          title={!canAddStudent ? LIMIT_MESSAGE : undefined}
+        >
           <Plus className="h-4 w-4 mr-2" />
           Novo Aluno
         </Button>

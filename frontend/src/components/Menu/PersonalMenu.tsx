@@ -11,6 +11,7 @@ import {
     BicepsFlexed,
     Users,
     ChartNoAxesColumnIncreasing,
+    CreditCard,
 } from "lucide-react";
 
 const PersonalMenu = () => {
@@ -60,6 +61,13 @@ const PersonalMenu = () => {
                             >
                                 <BicepsFlexed size={16} className="mr-2" />
                                 Treinos
+                            </Link>
+                            <Link
+                                to="/plan"
+                                className="flex items-center px-4 py-2 text-sm font-bold hover:text-gray-600 rounded-lg transition duration-500"
+                            >
+                                <CreditCard size={16} className="mr-2" />
+                                Plano
                             </Link>
                         </div>
                         <UserDropdown />
@@ -114,6 +122,14 @@ const PersonalMenu = () => {
                         >
                             <BicepsFlexed size={16} className="mr-2" />
                             Treinos
+                        </Link>
+                        <Link
+                            to="/plan"
+                            className="flex items-center px-4 py-2 mb-1 rounded-lg hover:bg-gray-200 transition"
+                            onClick={() => setMobileMenuOpen(false)}
+                        >
+                            <CreditCard size={16} className="mr-2" />
+                            Plano
                         </Link>
                         <Link
                             to="/profile"

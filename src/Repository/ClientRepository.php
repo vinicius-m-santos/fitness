@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Client;
+use App\Entity\Personal;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -48,6 +49,16 @@ class ClientRepository extends ServiceEntityRepository
             ->setParameter('userId', $userId)
             ->getQuery()
             ->getResult();
+    }
+
+    public function countByPersonal(Personal $personal): int
+    {
+        return (int) $this->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->where('c.personal = :personal')
+            ->setParameter('personal', $personal)
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 
     public function findWithAnamnese(int $id): ?Client

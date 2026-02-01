@@ -48,12 +48,15 @@ const ActionButtons = (params: any) => {
   };
 
   const handleClientDelete = async () => {
-    const res = await request({
+    await request({
       method: "DELETE",
       url: `/client/${params.data.id}`,
       showSuccess: true,
       successMessage: "Aluno excluído!",
-      onAccept: () => queryClient.invalidateQueries({ queryKey: ["clients"] }),
+      onAccept: () => {
+        queryClient.invalidateQueries({ queryKey: ["clients"] });
+        queryClient.invalidateQueries({ queryKey: ["subscription", "me"] });
+      },
     });
   };
 

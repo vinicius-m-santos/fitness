@@ -50,7 +50,10 @@ export default function ClientCard({ client }: ClientCardProps) {
       url: `/client/${client.id}`,
       showSuccess: true,
       successMessage: "Aluno excluído!",
-      onAccept: () => queryClient.invalidateQueries({ queryKey: ["clients"] }),
+      onAccept: () => {
+        queryClient.invalidateQueries({ queryKey: ["clients"] });
+        queryClient.invalidateQueries({ queryKey: ["subscription", "me"] });
+      },
     });
   };
 
