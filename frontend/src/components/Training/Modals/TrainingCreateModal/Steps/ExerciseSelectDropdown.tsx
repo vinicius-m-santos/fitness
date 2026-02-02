@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useLayoutEffect, useRef } from "react";
 import { Search, CheckIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -50,7 +51,19 @@ export function ExerciseSelectDropdown({
   searchPlaceholder = "Buscar exercício...",
   emptyMessage = "Nenhum exercício encontrado.",
 }: Props) {
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const value = selectedExercise?.id != null ? String(selectedExercise.id) : "";
+
+  useLayoutEffect(() => {
+    const input = searchInputRef.current;
+    if (!input || document.activeElement === input) return;
+    const id = setTimeout(() => {
+      if (document.contains(input) && document.activeElement !== input) {
+        input.focus({ preventScroll: true });
+      }
+    }, 0);
+    return () => clearTimeout(id);
+  }, [exercises, isLoading]);
 
   const handleValueChange = (val: string) => {
     const ex = exercises.find((e) => e.id === Number(val));
@@ -71,6 +84,7 @@ export function ExerciseSelectDropdown({
     <div className="flex items-center border-b px-2 py-2">
       <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
       <Input
+        ref={searchInputRef}
         placeholder={searchPlaceholder}
         value={searchValue}
         onChange={(e) => onSearchChange(e.target.value)}
@@ -83,14 +97,14 @@ export function ExerciseSelectDropdown({
 
   return (
     <Select value={value || undefined} onValueChange={handleValueChange}>
-      <SelectTrigger className="w-full min-w-0 overflow-hidden">
+      <SelectTrigger className="w-full min-w-0 overflow-hidden [&>span]:truncate [&>span]:block [&>span]:text-left">
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContentWithSearch
         searchSlot={searchSlot}
         onViewportScroll={onListScroll}
-        viewportClassName="max-h-[50vh] sm:max-h-[240px]"
-        className="max-w-[calc(100vw-1rem)] max-h-[70vh]"
+        viewportClassName="max-h-[280px]"
+        className="max-w-[calc(100vw-1rem)] max-h-[min(70vh,360px)]"
       >
         {isLoading && exercises.length === 0 ? (
           <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
@@ -116,11 +130,11 @@ export function ExerciseSelectDropdown({
                 : ex.name;
             return (
               <SelectItem key={ex.id} value={String(ex.id)} hideIndicator>
-                <span className="flex flex-wrap items-center gap-2">
+                <span className="flex flex-wrap items-start gap-2 min-w-0">
                   {added && (
                     <CheckIcon className="h-4 w-4 shrink-0 text-green-600" />
                   )}
-                  <span className="truncate">{label}</span>
+                  <span className="min-w-0 whitespace-normal break-words">{label}</span>
                 </span>
               </SelectItem>
             );

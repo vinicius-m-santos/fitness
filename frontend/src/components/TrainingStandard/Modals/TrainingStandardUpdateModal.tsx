@@ -22,7 +22,7 @@ import { useTrainingDraft } from "@/hooks/useTrainingDraft";
 import { TrainingCreateSchema } from "@/schemas/training";
 import { NormalizeTrainingData } from "@/utils/NormalizeTrainingData";
 import { prepareTrainingPayload } from "@/utils/prepareTrainingPayload";
-import { clearTrainingDraft, notifyTrainingDraftCleared } from "@/utils/trainingDraftStorage";
+import { useWorkoutDraftStore, getDraftContextKey } from "@/stores/workoutDraftStore";
 import type { TrainingDraft } from "@/types/trainingDraft";
 
 type Props = {
@@ -53,7 +53,7 @@ export default function TrainingStandardUpdateModal({
   const normalized = useMemo(() => NormalizeTrainingData(initialData), [initialData]);
   const prevOpenRef = useRef(false);
 
-  const draftEnabled = open && (!initialDraft || restoreApplied);
+  const draftEnabled = open;
 
   const { flushDraft } = useTrainingDraft({
     type: "training-standard-update",
@@ -65,10 +65,10 @@ export default function TrainingStandardUpdateModal({
     selectedExerciseByPeriod: training.selectedExerciseByPeriod,
     formSubscribe: draftEnabled
       ? (cb) =>
-          training.form.subscribe({
-            formState: { values: true },
-            callback: cb,
-          })
+        training.form.subscribe({
+          formState: { values: true },
+          callback: cb,
+        })
       : undefined,
   });
 
@@ -98,24 +98,37 @@ export default function TrainingStandardUpdateModal({
         step: initialDraft.step,
         selectedExerciseByPeriod: initialDraft.selectedExerciseByPeriod ?? {},
       });
-      // Não chamar clearTrainingDraft aqui: é assíncrono e pode completar depois do próximo save
       setTimeout(() => training.form.trigger());
     }
   }, [open, initialDraft]);
 
+  useEffect(() => {
+    if (!open || !initialDraft || restoredRef.current) return;
+
+    restoredRef.current = true;
+
+    training.resetForm(
+      NormalizeTrainingData(initialDraft.formData),
+      {
+        step: initialDraft.step,
+        selectedExerciseByPeriod: initialDraft.selectedExerciseByPeriod ?? {},
+      }
+    );
+  }, [open, initialDraft]);
+
   const onSubmit = async (data: TrainingCreateSchema) => {
-    setLoading(true);
     try {
+      setLoading(true);
       const payload = prepareTrainingPayload(data);
       await api.put(`/training-standard/${trainingId}`, payload);
       toast.success("Treino padrão atualizado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["training-standards"] });
-      await clearTrainingDraft();
-      notifyTrainingDraftCleared();
-      setLoading(false);
+      useWorkoutDraftStore.getState().clearDraft(getDraftContextKey("training-standard-update", { trainingId }));
       onOpenChange(false);
     } catch {
       toast.error("Erro ao atualizar treino padrão");
+      setLoading(false);
+    } finally {
       setLoading(false);
     }
   };

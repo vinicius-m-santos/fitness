@@ -4,7 +4,6 @@ import ContinueTrainingDraftPrompt from "@/components/Training/ContinueTrainingD
 
 export default function AdminLayout({ children }) {
     const { draft, showPrompt, onContinue, onDiscard } = useContinueTrainingDraft();
-
     return (
         <div className="min-h-screen bg-gray-100 text-gray-100">
             <Menu />

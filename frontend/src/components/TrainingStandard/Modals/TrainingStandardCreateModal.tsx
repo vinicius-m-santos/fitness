@@ -21,7 +21,7 @@ import { useTrainingForm } from "@/hooks/useTrainingForm";
 import { useTrainingDraft } from "@/hooks/useTrainingDraft";
 import { TrainingCreateSchema } from "@/schemas/training";
 import { prepareTrainingPayload } from "@/utils/prepareTrainingPayload";
-import { clearTrainingDraft, notifyTrainingDraftCleared } from "@/utils/trainingDraftStorage";
+import { useWorkoutDraftStore, getDraftContextKey } from "@/stores/workoutDraftStore";
 import type { TrainingDraft } from "@/types/trainingDraft";
 import { NormalizeTrainingData } from "@/utils/NormalizeTrainingData";
 
@@ -42,7 +42,7 @@ export default function TrainingStandardCreateModal({ open, onOpenChange, initia
   const training = useTrainingForm();
   const formData = training.form.watch();
 
-  const draftEnabled = open && (!initialDraft || restoreApplied);
+  const draftEnabled = open;
 
   const { flushDraft } = useTrainingDraft({
     type: "training-standard-create",
@@ -53,10 +53,10 @@ export default function TrainingStandardCreateModal({ open, onOpenChange, initia
     selectedExerciseByPeriod: training.selectedExerciseByPeriod,
     formSubscribe: draftEnabled
       ? (cb) =>
-          training.form.subscribe({
-            formState: { values: true },
-            callback: cb,
-          })
+        training.form.subscribe({
+          formState: { values: true },
+          callback: cb,
+        })
       : undefined,
   });
 
@@ -77,7 +77,7 @@ export default function TrainingStandardCreateModal({ open, onOpenChange, initia
         step: initialDraft.step,
         selectedExerciseByPeriod: initialDraft.selectedExerciseByPeriod ?? {},
       });
-      // Não chamar clearTrainingDraft aqui: é assíncrono e pode completar depois do próximo save
+      // Não chamar onRestored aqui: só ao fechar o modal (evita abrir e fechar na hora).
     }
   }, [open, initialDraft]);
 
@@ -88,8 +88,7 @@ export default function TrainingStandardCreateModal({ open, onOpenChange, initia
       await api.post("/training-standard/create", payload);
       toast.success("Treino padrão criado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["training-standards"] });
-      await clearTrainingDraft();
-      notifyTrainingDraftCleared();
+      useWorkoutDraftStore.getState().clearDraft(getDraftContextKey("training-standard-create"));
       setLoading(false);
       onOpenChange(false);
     } catch {
