@@ -62,7 +62,7 @@ final class ExerciseController extends AbstractController
             $isFavorite = $personalId !== null && in_array($personalId, $fav, true);
             $data[] = [
                 'id' => $exercise->getId(),
-                'name' => $exercise->getName(),
+                'name' => trim($exercise->getName()),
                 'personal' => $exercise->getPersonal() ? $exercise->getPersonal()->getId() : null,
                 'exerciseCategory' => $exercise->getExerciseCategory()->getName(),
                 'muscleGroup' => $exercise->getMuscleGroup()->getName(),

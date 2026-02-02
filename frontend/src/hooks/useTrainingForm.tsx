@@ -179,10 +179,16 @@ export function useTrainingForm({
    * RESET
    * ===================== */
 
-  const resetForm = (values?: TrainingCreateSchema) => {
+  const resetForm = (
+    values?: TrainingCreateSchema,
+    options?: {
+      step?: number;
+      selectedExerciseByPeriod?: Record<number, { id: number; name: string } | null>;
+    }
+  ) => {
     form.reset(values ?? { name: "", dueDate: "", periods: [] });
-    setCurrentStep(1);
-    setSelectedExerciseByPeriod({});
+    setCurrentStep(options?.step ?? 1);
+    setSelectedExerciseByPeriod(options?.selectedExerciseByPeriod ?? {});
   };
 
   return {

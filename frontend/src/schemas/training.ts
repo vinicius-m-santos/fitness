@@ -1,14 +1,20 @@
 import z from "zod";
 
-export const trainingCreateSchema = z.object({
-  name: z
-    .string()
-    .min(3, "O nome do treino precisa ter pelo menos 3 caracteres")
-    .max(50),
+function todayYMD(): string {
+  const d = new Date();
+  return d.toISOString().slice(0, 10);
+}
 
-  dueDate: z.string().optional(),
+export const trainingCreateSchema = z
+  .object({
+    name: z
+      .string()
+      .min(3, "O nome do treino precisa ter pelo menos 3 caracteres")
+      .max(50),
 
-  periods: z
+    dueDate: z.string().optional(),
+
+    periods: z
     .array(
       z.object({
         id: z.number(),
@@ -32,7 +38,15 @@ export const trainingCreateSchema = z.object({
       })
     )
     .min(1, "Adicione pelo menos um período"),
-});
+  })
+  .refine(
+    (data) => {
+      const d = data.dueDate?.trim();
+      if (!d) return true;
+      return d >= todayYMD();
+    },
+    { message: "A data de vencimento não pode ser no passado.", path: ["dueDate"] }
+  );
 
 export type TrainingCreateSchema = z.infer<typeof trainingCreateSchema>;
 

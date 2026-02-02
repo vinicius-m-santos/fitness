@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Form } from "@/components/ui/form";
 import {
   Dialog,
@@ -20,14 +20,20 @@ import StepExercises from "./TrainingCreateModal/Steps/StepExercises";
 import StepReview from "./TrainingCreateModal/Steps/StepReview";
 
 import { useTrainingForm } from "@/hooks/useTrainingForm";
+import { useTrainingDraft } from "@/hooks/useTrainingDraft";
 import { TrainingCreateSchema } from "@/schemas/training";
 import { NormalizeTrainingData } from "@/utils/NormalizeTrainingData";
+import { clearTrainingDraft, notifyTrainingDraftCleared } from "@/utils/trainingDraftStorage";
+import type { TrainingDraft } from "@/types/trainingDraft";
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   trainingId: number;
   initialData: TrainingCreateSchema;
+  clientId?: number;
+  initialDraft?: TrainingDraft | null;
+  onRestored?: () => void;
 };
 
 export default function TrainingUpdateModal({
@@ -35,15 +41,41 @@ export default function TrainingUpdateModal({
   onOpenChange,
   trainingId,
   initialData,
+  clientId,
+  initialDraft,
+  onRestored,
 }: Props) {
   const api = useApi();
   const queryClient = useQueryClient();
   const isMobile = useMediaQuery({ maxWidth: 768 });
+  const restoredRef = useRef(false);
+  const [restoreApplied, setRestoreApplied] = useState(false);
 
   const [loading, setLoading] = useState(false);
 
   const training = useTrainingForm({
     defaultValues: initialData,
+  });
+  const formData = training.form.watch();
+
+  const draftEnabled = open && (!initialDraft || restoreApplied);
+
+  const { flushDraft } = useTrainingDraft({
+    type: "training-update",
+    clientId,
+    trainingId,
+    enabled: draftEnabled,
+    step: training.currentStep,
+    formData,
+    getFormData: () => training.form.getValues(),
+    selectedExerciseByPeriod: training.selectedExerciseByPeriod,
+    formSubscribe: draftEnabled
+      ? (cb) =>
+          training.form.subscribe({
+            formState: { values: true },
+            callback: cb,
+          })
+      : undefined,
   });
 
   const normalizedInitialData = useMemo(
@@ -52,14 +84,29 @@ export default function TrainingUpdateModal({
   );
 
   useEffect(() => {
-    if (open) {
+    if (open && !initialDraft) {
       training.resetForm(normalizedInitialData);
     }
+    if (!open) {
+      restoredRef.current = false;
+      setRestoreApplied(false);
+    }
+    if (open) setTimeout(() => training.form.trigger());
+  }, [open, normalizedInitialData, initialDraft]);
 
-    setTimeout(() => {
-      training.form.trigger();
-    });
-  }, [open, normalizedInitialData]);
+  useEffect(() => {
+    if (open && initialDraft && initialDraft.type === "training-update" && !restoredRef.current) {
+      restoredRef.current = true;
+      setRestoreApplied(true);
+      const normalized = NormalizeTrainingData(initialDraft.formData);
+      training.resetForm(normalized, {
+        step: initialDraft.step,
+        selectedExerciseByPeriod: initialDraft.selectedExerciseByPeriod ?? {},
+      });
+      // Não chamar clearTrainingDraft aqui: é assíncrono e pode completar depois do próximo save
+      setTimeout(() => training.form.trigger());
+    }
+  }, [open, initialDraft]);
 
   const onSubmit = async (data: TrainingCreateSchema) => {
     try {
@@ -67,6 +114,8 @@ export default function TrainingUpdateModal({
       await api.put(`/training/${trainingId}`, data);
       toast.success("Treino atualizado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["trainings"] });
+      await clearTrainingDraft();
+      notifyTrainingDraftCleared();
       onOpenChange(false);
     } catch {
       toast.error("Erro ao atualizar treino");
@@ -79,10 +128,16 @@ export default function TrainingUpdateModal({
     <Dialog
       open={open}
       onOpenChange={(v) => {
-        if (!loading) onOpenChange(v);
+        if (!loading) {
+          onOpenChange(v);
+          if (!v) onRestored?.();
+        }
       }}
     >
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl">
+      <DialogContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Editar treino</DialogTitle>
           <DialogDescription>Atualize os dados do treino</DialogDescription>
@@ -99,8 +154,14 @@ export default function TrainingUpdateModal({
               <StepPeriods
                 periods={training.periods}
                 onAddPeriod={training.addPeriod}
-                onRemovePeriod={training.removePeriod}
-                onUpdatePeriodName={training.updatePeriodName}
+                onRemovePeriod={(id) => {
+                  training.removePeriod(id);
+                  setTimeout(() => flushDraft(), 0);
+                }}
+                onUpdatePeriodName={(id, name) => {
+                  training.updatePeriodName(id, name);
+                  setTimeout(() => flushDraft(), 0);
+                }}
                 isMobile={isMobile}
               />
             )}
@@ -111,9 +172,15 @@ export default function TrainingUpdateModal({
                 isMobile={isMobile}
                 selectedExerciseByPeriod={training.selectedExerciseByPeriod}
                 setSelectedExerciseByPeriod={training.setSelectedExerciseByPeriod}
-                onAddExercise={training.addExercise}
+                onAddExercise={(periodId) => {
+                  training.addExercise(periodId);
+                  flushDraft();
+                }}
                 onUpdateExercise={training.updateExercise}
-                onRemoveExercise={training.removeExercise}
+                onRemoveExercise={(periodId, instanceId) => {
+                  training.removeExercise(periodId, instanceId);
+                  setTimeout(() => flushDraft(), 0);
+                }}
               />
             )}
 

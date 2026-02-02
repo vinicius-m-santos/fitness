@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Form } from "@/components/ui/form";
 import {
   Dialog,
@@ -18,41 +18,98 @@ import StepPeriods from "@/components/Training/Modals/TrainingCreateModal/Steps/
 import StepExercises from "@/components/Training/Modals/TrainingCreateModal/Steps/StepExercises";
 import StepReview from "@/components/Training/Modals/TrainingCreateModal/Steps/StepReview";
 import { useTrainingForm } from "@/hooks/useTrainingForm";
+import { useTrainingDraft } from "@/hooks/useTrainingDraft";
 import { TrainingCreateSchema } from "@/schemas/training";
+import { prepareTrainingPayload } from "@/utils/prepareTrainingPayload";
+import { clearTrainingDraft, notifyTrainingDraftCleared } from "@/utils/trainingDraftStorage";
+import type { TrainingDraft } from "@/types/trainingDraft";
+import { NormalizeTrainingData } from "@/utils/NormalizeTrainingData";
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialDraft?: TrainingDraft | null;
+  onRestored?: () => void;
 };
 
-export default function TrainingStandardCreateModal({ open, onOpenChange }: Props) {
+export default function TrainingStandardCreateModal({ open, onOpenChange, initialDraft, onRestored }: Props) {
   const api = useApi();
   const queryClient = useQueryClient();
   const isMobile = useMediaQuery({ maxWidth: 768 });
+  const restoredRef = useRef(false);
+  const [restoreApplied, setRestoreApplied] = useState(false);
   const [loading, setLoading] = useState(false);
   const training = useTrainingForm();
+  const formData = training.form.watch();
+
+  const draftEnabled = open && (!initialDraft || restoreApplied);
+
+  const { flushDraft } = useTrainingDraft({
+    type: "training-standard-create",
+    enabled: draftEnabled,
+    step: training.currentStep,
+    formData,
+    getFormData: () => training.form.getValues(),
+    selectedExerciseByPeriod: training.selectedExerciseByPeriod,
+    formSubscribe: draftEnabled
+      ? (cb) =>
+          training.form.subscribe({
+            formState: { values: true },
+            callback: cb,
+          })
+      : undefined,
+  });
 
   useEffect(() => {
-    if (!open) training.resetForm();
-  }, [open]);
+    if (!open) {
+      if (!initialDraft) training.resetForm();
+      restoredRef.current = false;
+      setRestoreApplied(false);
+    }
+  }, [open, initialDraft]);
+
+  useEffect(() => {
+    if (open && initialDraft && initialDraft.type === "training-standard-create" && !restoredRef.current) {
+      restoredRef.current = true;
+      setRestoreApplied(true);
+      const normalized = NormalizeTrainingData(initialDraft.formData);
+      training.resetForm(normalized, {
+        step: initialDraft.step,
+        selectedExerciseByPeriod: initialDraft.selectedExerciseByPeriod ?? {},
+      });
+      // Não chamar clearTrainingDraft aqui: é assíncrono e pode completar depois do próximo save
+    }
+  }, [open, initialDraft]);
 
   const onSubmit = async (data: TrainingCreateSchema) => {
+    setLoading(true);
     try {
-      setLoading(true);
-      await api.post("/training-standard/create", data);
+      const payload = prepareTrainingPayload(data);
+      await api.post("/training-standard/create", payload);
       toast.success("Treino padrão criado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["training-standards"] });
+      await clearTrainingDraft();
+      notifyTrainingDraftCleared();
+      setLoading(false);
       onOpenChange(false);
     } catch {
       toast.error("Erro ao salvar treino padrão");
-    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl">
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        onOpenChange(v);
+        if (!v) onRestored?.();
+      }}
+    >
+      <DialogContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Criar treino padrão</DialogTitle>
           <DialogDescription>Modelo de treino para replicar para os alunos</DialogDescription>
@@ -64,8 +121,14 @@ export default function TrainingStandardCreateModal({ open, onOpenChange }: Prop
               <StepPeriods
                 periods={training.periods}
                 onAddPeriod={training.addPeriod}
-                onRemovePeriod={training.removePeriod}
-                onUpdatePeriodName={training.updatePeriodName}
+                onRemovePeriod={(id) => {
+                  training.removePeriod(id);
+                  setTimeout(() => flushDraft(), 0);
+                }}
+                onUpdatePeriodName={(id, name) => {
+                  training.updatePeriodName(id, name);
+                  setTimeout(() => flushDraft(), 0);
+                }}
                 isMobile={isMobile}
               />
             )}
@@ -75,12 +138,18 @@ export default function TrainingStandardCreateModal({ open, onOpenChange }: Prop
                 isMobile={isMobile}
                 selectedExerciseByPeriod={training.selectedExerciseByPeriod}
                 setSelectedExerciseByPeriod={training.setSelectedExerciseByPeriod}
-                onAddExercise={training.addExercise}
+                onAddExercise={(periodId) => {
+                  training.addExercise(periodId);
+                  flushDraft();
+                }}
                 onUpdateExercise={training.updateExercise}
-                onRemoveExercise={training.removeExercise}
+                onRemoveExercise={(periodId, instanceId) => {
+                  training.removeExercise(periodId, instanceId);
+                  setTimeout(() => flushDraft(), 0);
+                }}
               />
             )}
-            {training.currentStep === 4 && <StepReview periods={training.periods} />}
+            {training.currentStep === 4 && <StepReview periods={training.periods} form={training.form} />}
             <div className={training.currentStep === 1 ? "flex justify-end pt-4" : "flex justify-between pt-4"}>
               {training.currentStep > 1 && (
                 <Button type="button" size="sm" variant="outline" onClick={training.prevStep} className="cursor-pointer">
@@ -93,7 +162,7 @@ export default function TrainingStandardCreateModal({ open, onOpenChange }: Prop
                 </Button>
               )}
               {training.currentStep === 4 && (
-                <SaveButton size="sm" type="submit" loading={loading} disabled={!training.form.formState.isValid} />
+                <SaveButton size="sm" type="submit" loading={loading} disabled={loading} />
               )}
             </div>
           </form>

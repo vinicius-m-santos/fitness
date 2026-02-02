@@ -6,7 +6,12 @@ type Props = {
   form: UseFormReturn<TrainingCreateSchema>;
 };
 
+function getTodayYMD(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export default function StepReview({ periods, form }: Props) {
+  const minDate = getTodayYMD();
   return (
     <div className="space-y-4 text-sm">
       <div className="space-y-2">
@@ -16,6 +21,7 @@ export default function StepReview({ periods, form }: Props) {
         <input
           id="dueDate"
           type="date"
+          min={minDate}
           className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           {...form.register("dueDate")}
         />

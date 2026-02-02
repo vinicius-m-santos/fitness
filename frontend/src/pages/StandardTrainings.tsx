@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Accordion,
   AccordionContent,
@@ -33,6 +34,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRequest } from "@/api/request";
 import ContainerLoader from "@/components/ui/containerLoader";
 import { TrainingCreateSchema } from "@/schemas/training";
+import type { TrainingDraft } from "@/types/trainingDraft";
 
 type SortOption =
   | "name-asc"
@@ -41,7 +43,13 @@ type SortOption =
   | "date-desc";
 
 export default function StandardTrainings() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const restoreDraft = (location.state as { restoreTrainingDraft?: TrainingDraft } | null)?.restoreTrainingDraft;
+  const prevRestoreDraftRef = useRef(restoreDraft);
+
   const [openCreate, setOpenCreate] = useState(false);
+  const [accordionValue, setAccordionValue] = useState<string>("");
   const [openDelete, setOpenDelete] = useState(false);
   const [openApply, setOpenApply] = useState(false);
   const [toDelete, setToDelete] = useState<{ id: number; name: string } | null>(null);
@@ -49,6 +57,32 @@ export default function StandardTrainings() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("name-asc");
   const request = useRequest();
+
+  useEffect(() => {
+    if (restoreDraft?.type === "training-standard-create") {
+      setOpenCreate(true);
+    }
+  }, [restoreDraft]);
+
+  useEffect(() => {
+    if (prevRestoreDraftRef.current != null && restoreDraft == null) {
+      setOpenCreate(false);
+    }
+    prevRestoreDraftRef.current = restoreDraft;
+  }, [restoreDraft]);
+
+  useEffect(() => {
+    if (
+      restoreDraft?.type === "training-standard-update" &&
+      restoreDraft.trainingId != null
+    ) {
+      setAccordionValue(String(restoreDraft.trainingId));
+    }
+  }, [restoreDraft]);
+
+  const clearRestoreState = () => {
+    navigate("/standard-trainings", { replace: true, state: {} });
+  };
 
   const { data: workouts = [], isFetching } = useQuery({
     queryKey: ["training-standards"],
@@ -123,7 +157,12 @@ export default function StandardTrainings() {
           Treinos padrão
         </h1>
         <div className="flex items-center gap-2">
-          <TrainingStandardCreateModal open={openCreate} onOpenChange={setOpenCreate} />
+          <TrainingStandardCreateModal
+            open={openCreate}
+            onOpenChange={setOpenCreate}
+            initialDraft={restoreDraft?.type === "training-standard-create" ? restoreDraft : undefined}
+            onRestored={clearRestoreState}
+          />
           <Button size="sm" className="cursor-pointer" onClick={() => setOpenCreate(true)}>
             <PlusIcon /> Novo treino
           </Button>
@@ -168,7 +207,13 @@ export default function StandardTrainings() {
         <p className="text-muted-foreground text-sm rounded-xl p-4 bg-white dark:bg-gray-900/80 border border-gray-200/60 dark:border-gray-800/60 shadow-md">Nenhum treino encontrado com os filtros aplicados.</p>
       ) : (
         <div className="rounded-xl overflow-hidden border border-gray-200/60 dark:border-gray-800/60 shadow-md bg-white dark:bg-gray-900/80 p-4">
-        <Accordion type="single" collapsible className="space-y-3">
+        <Accordion
+          type="single"
+          collapsible
+          value={accordionValue}
+          onValueChange={setAccordionValue}
+          className="space-y-3"
+        >
           {filteredAndSortedWorkouts.map((workout) => (
             <AccordionItem key={workout.id} value={String(workout.id)}>
               <AccordionTrigger className="cursor-pointer text-lg text-black font-medium">
@@ -195,7 +240,17 @@ export default function StandardTrainings() {
                     </Button>
                     <TrainingStandardEditButton
                       trainingId={workout.id}
-                      initialData={workout as TrainingCreateSchema}
+                      initialData={
+                        restoreDraft?.type === "training-standard-update" && restoreDraft.trainingId === workout.id
+                          ? restoreDraft.formData
+                          : (workout as TrainingCreateSchema)
+                      }
+                      restoreDraft={
+                        restoreDraft?.type === "training-standard-update" && restoreDraft.trainingId === workout.id
+                          ? restoreDraft
+                          : undefined
+                      }
+                      onRestored={clearRestoreState}
                     />
                     <Button
                       size="sm"
@@ -210,7 +265,7 @@ export default function StandardTrainings() {
                     </Button>
                   </div>
                 </div>
-                {workout.periods.map((period: { id: number; name: string; exercises: any[] }, pi: number) => (
+                {(workout.periods ?? []).map((period: { id: number; name: string; exercises: any[] }, pi: number) => (
                   <Card key={pi}>
                     <CardHeader>
                       <CardTitle className="text-base font-semibold">{period.name}</CardTitle>

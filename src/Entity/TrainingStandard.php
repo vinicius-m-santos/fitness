@@ -28,6 +28,9 @@ class TrainingStandard
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
+    #[ORM\Column(type: 'date_immutable', nullable: true)]
+    private ?\DateTimeImmutable $dueDate = null;
+
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -91,6 +94,17 @@ class TrainingStandard
     public function setName(string $name): self
     {
         $this->name = $name;
+        return $this;
+    }
+
+    public function getDueDate(): ?\DateTimeImmutable
+    {
+        return $this->dueDate;
+    }
+
+    public function setDueDate(?\DateTimeImmutable $dueDate): self
+    {
+        $this->dueDate = $dueDate;
         return $this;
     }
 

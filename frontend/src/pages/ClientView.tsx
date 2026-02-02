@@ -6,7 +6,8 @@ import MeasurementsTab from "@/components/ClientView/MeasurementsTab";
 import GalleryTab from "@/components/ClientView/GalleryTab";
 import AnamneseTab from "@/components/ClientView/AnamneseTab";
 import WorkoutsTab from "@/components/ClientView/WorkoutsTab";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
+import type { TrainingDraft } from "@/types/trainingDraft";
 import ClientUpdateModal from "@/components/ClientView/Client/ClientUpdateModal";
 import { OBJECTIVES } from "@/utils/constants/Client/constants";
 import { useRequest } from "@/api/request";
@@ -15,7 +16,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import EditableAvatar from "@/components/ui/EditableAvatar";
 import ContactButtonDropdown from "@/components/ClientView/Client/ContactButtonDropdown";
 import { calculateAgeFromBirthDate } from "@/utils/dateUtils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -23,6 +24,20 @@ export default function ClientView() {
   // const [loading, setLoading] = useState<boolean>(true);
   const [tab, setTab] = useState("evolucao");
   const { id } = useParams();
+  const location = useLocation();
+  const locationState = location.state as { restoreTrainingDraft?: TrainingDraft } | null;
+  const restoreDraft = locationState?.restoreTrainingDraft;
+
+  useEffect(() => {
+    if (
+      restoreDraft &&
+      (restoreDraft.type === "training-create" || restoreDraft.type === "training-update") &&
+      restoreDraft.clientId === Number(id)
+    ) {
+      setTab("treinos");
+    }
+  }, [restoreDraft, id]);
+
   const request = useRequest();
   const queryClient = useQueryClient();
   const { user } = useAuth();

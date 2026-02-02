@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Accordion,
   AccordionItem,
@@ -20,7 +20,7 @@ import { Dumbbell, Trash, File, PlusIcon, Send, Star } from "lucide-react";
 import TrainingCreateModal from "@/components/Training/Modals/TrainingCreateModal";
 import TrainingDeleteModal from "@/components/Training/Modals/TrainingDeleteModal";
 import TrainingApplyModal from "@/components/Training/Modals/TrainingApplyModal";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { PdfExercise } from "../Exercise/PdfExercise";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRequest } from "@/api/request";
@@ -30,6 +30,7 @@ import ButtonLoader from "../ui/buttonLoader";
 import { TrainingEditButton } from "../Training/TrainingEditButton";
 import { useAuth } from "@/providers/AuthProvider";
 import type { ClientAllData } from "@/types/client";
+import type { TrainingDraft } from "@/types/trainingDraft";
 
 type WorkoutsTabProps = {
   isActive?: boolean;
@@ -37,7 +38,13 @@ type WorkoutsTabProps = {
 
 export default function WorkoutsTab({ isActive = true }: WorkoutsTabProps) {
   const { id } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const restoreDraft = (location.state as { restoreTrainingDraft?: TrainingDraft } | null)?.restoreTrainingDraft;
+  const clientIdNum = id ? Number(id) : 0;
+
   const [openModal, setOpenModal] = useState(false);
+  const [accordionValue, setAccordionValue] = useState<string>("");
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [openApplyModal, setOpenApplyModal] = useState(false);
   const [trainingToDelete, setTrainingToDelete] = useState<{
@@ -50,6 +57,39 @@ export default function WorkoutsTab({ isActive = true }: WorkoutsTabProps) {
   const request = useRequest();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  const prevRestoreDraftRef = useRef(restoreDraft);
+
+  useEffect(() => {
+    if (
+      isActive &&
+      restoreDraft?.type === "training-create" &&
+      restoreDraft.clientId === clientIdNum
+    ) {
+      setOpenModal(true);
+    }
+  }, [isActive, restoreDraft, clientIdNum]);
+
+  useEffect(() => {
+    if (prevRestoreDraftRef.current != null && restoreDraft == null) {
+      setOpenModal(false);
+    }
+    prevRestoreDraftRef.current = restoreDraft;
+  }, [restoreDraft]);
+
+  useEffect(() => {
+    if (
+      isActive &&
+      restoreDraft?.type === "training-update" &&
+      restoreDraft.trainingId != null
+    ) {
+      setAccordionValue(String(restoreDraft.trainingId));
+    }
+  }, [isActive, restoreDraft]);
+
+  const clearRestoreState = () => {
+    navigate(`/client-view/${id}`, { replace: true, state: {} });
+  };
 
   const handleStandardToggle = async (workout: {
     id: number;
@@ -162,7 +202,9 @@ export default function WorkoutsTab({ isActive = true }: WorkoutsTabProps) {
             <TrainingCreateModal
               open={openModal}
               onOpenChange={(open) => setOpenModal(open)}
-              client={client?.id}
+              client={client?.id ?? 0}
+              initialDraft={restoreDraft?.type === "training-create" ? restoreDraft : undefined}
+              onRestored={clearRestoreState}
             />
 
             <Button
@@ -181,7 +223,13 @@ export default function WorkoutsTab({ isActive = true }: WorkoutsTabProps) {
           {user?.roles.includes("ROLE_PERSONAL") ? "Nenhum treino cadastrado para este aluno." : "Nenhum treino cadastrado para você. Peça ao personal que cadastre um novo treino."}
         </p>
       ) : (
-        <Accordion type="single" collapsible className="space-y-3">
+        <Accordion
+          type="single"
+          collapsible
+          value={accordionValue}
+          onValueChange={setAccordionValue}
+          className="space-y-3"
+        >
           {workouts.map((workout: { id: number; name: string; createdAt: string; isStandard?: boolean; periods: unknown[] }) => (
             <AccordionItem key={workout.id} value={String(workout.id)}>
               <AccordionTrigger className="cursor-pointer text-lg text-black font-medium">
@@ -244,7 +292,18 @@ export default function WorkoutsTab({ isActive = true }: WorkoutsTabProps) {
                       <>
                         <TrainingEditButton
                           trainingId={workout.id}
-                          initialData={workout}
+                          initialData={
+                            restoreDraft?.type === "training-update" && restoreDraft.trainingId === workout.id
+                              ? restoreDraft.formData
+                              : workout
+                          }
+                          clientId={clientIdNum}
+                          restoreDraft={
+                            restoreDraft?.type === "training-update" && restoreDraft.trainingId === workout.id
+                              ? restoreDraft
+                              : undefined
+                          }
+                          onRestored={clearRestoreState}
                         />
                         <Button
                           size="sm"

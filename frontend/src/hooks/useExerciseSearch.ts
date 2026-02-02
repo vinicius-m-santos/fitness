@@ -5,7 +5,12 @@ import { useRequest } from "@/api/request";
 
 const PAGE_SIZE = 30;
 
-export type ExerciseSearchItem = { id: number; name: string };
+export type ExerciseSearchItem = {
+  id: number;
+  name: string;
+  exerciseCategory?: string;
+  muscleGroup?: string;
+};
 
 export function useExerciseSearch(search: string, page: number, enabled: boolean) {
   const request = useRequest();
@@ -26,10 +31,14 @@ export function useExerciseSearch(search: string, page: number, enabled: boolean
         url: `/exercise/all?${params.toString()}`,
       });
       return {
-        exercises: (res.exercises ?? []).map((e: { id: number; name: string }) => ({
-          id: e.id,
-          name: e.name,
-        })),
+        exercises: (res.exercises ?? []).map(
+          (e: { id: number; name: string; exerciseCategory?: string; muscleGroup?: string }) => ({
+            id: e.id,
+            name: e.name,
+            exerciseCategory: e.exerciseCategory,
+            muscleGroup: e.muscleGroup,
+          })
+        ),
         total: res.total ?? 0,
         totalPages: res.totalPages ?? 1,
       };

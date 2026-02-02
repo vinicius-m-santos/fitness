@@ -52,6 +52,7 @@ class TrainingStandardService
         $training = new TrainingStandard();
         $training->setName($data['name']);
         $training->setPersonal($personal);
+        $this->setDueDateIfValid($training, $data['dueDate'] ?? null);
         $this->trainingStandardRepo->add($training, true);
 
         foreach ($data['periods'] ?? [] as $pData) {
@@ -105,10 +106,33 @@ class TrainingStandardService
                 'id' => $t->getId(),
                 'name' => $t->getName(),
                 'createdAt' => $t->getCreatedAt()->format('d/m/Y'),
+                'dueDate' => $t->getDueDate()?->format('Y-m-d'),
                 'periods' => $periods,
             ];
         }
         return $out;
+    }
+
+    private function setDueDateIfValid(TrainingStandard $training, mixed $dueDateValue): void
+    {
+        if ($dueDateValue === null || $dueDateValue === '') {
+            $training->setDueDate(null);
+            return;
+        }
+        try {
+            $dueDate = new \DateTimeImmutable((string) $dueDateValue);
+            $today = (new \DateTimeImmutable())->setTime(0, 0, 0);
+            $dueDateMidnight = $dueDate->setTime(0, 0, 0);
+            if ($dueDateMidnight < $today) {
+                throw new UnprocessableEntityHttpException('A data de vencimento não pode ser no passado.');
+            }
+            $training->setDueDate($dueDate);
+        } catch (\Exception $e) {
+            if ($e instanceof UnprocessableEntityHttpException) {
+                throw $e;
+            }
+            throw new UnprocessableEntityHttpException('Data de vencimento inválida.');
+        }
     }
 
     public function update(User $user, int $id, array $data): void
@@ -130,6 +154,7 @@ class TrainingStandardService
         }
 
         $training->setName($name);
+        $this->setDueDateIfValid($training, $data['dueDate'] ?? null);
 
         foreach ($training->getPeriods() as $p) {
             $this->em->remove($p);

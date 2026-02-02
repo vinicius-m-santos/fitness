@@ -90,7 +90,9 @@ export default function StepExercises({
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [accumulated, setAccumulated] = useState<{ id: number; name: string }[]>([]);
+  const [accumulated, setAccumulated] = useState<
+    { id: number; name: string; exerciseCategory?: string; muscleGroup?: string }[]
+  >([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSearchInputChange = useCallback((value: string) => {
@@ -151,7 +153,7 @@ export default function StepExercises({
     `${periodId}-${instanceId}`;
 
   const comboboxData = useMemo(
-    () => accumulated.map((ex) => ({ label: ex.name, value: ex.name })),
+    () => accumulated.map((ex) => ({ label: ex.name, value: String(ex.id) })),
     [accumulated]
   );
 
@@ -165,9 +167,12 @@ export default function StepExercises({
               <Combobox
                 data={comboboxData}
                 type="exercício"
-                value={selectedExerciseByPeriod[period.id]?.name ?? ""}
+                value={(() => {
+                  const sel = selectedExerciseByPeriod[period.id];
+                  return sel?.id != null ? String(sel.id) : "";
+                })()}
                 onValueChange={(val) => {
-                  const ex = accumulated.find((e) => e.name === val);
+                  const ex = accumulated.find((e) => e.id === Number(val));
                   if (ex) {
                     setSelectedExerciseByPeriod((prev) => ({
                       ...prev,
@@ -176,7 +181,7 @@ export default function StepExercises({
                   }
                 }}
               >
-                <ComboboxTrigger className="w-52 min-w-0 overflow-hidden">
+                <ComboboxTrigger className="w-full min-w-0 overflow-hidden">
                   <span className="flex min-w-0 flex-1 items-center justify-between gap-2 truncate">
                     <span className="truncate">
                       {selectedExerciseByPeriod[period.id]?.name ?? "Escolher exercício"}
@@ -210,11 +215,19 @@ export default function StepExercises({
                               (periodEx) => periodEx.id === ex.id
                             );
                             return (
-                              <ComboboxItem key={ex.id} value={ex.name}>
+                              <ComboboxItem key={ex.id} value={String(ex.id)}>
                                 {isExerciseAdded && (
                                   <CheckIcon className="mr-2 h-4 w-4 shrink-0 text-green-600" />
                                 )}
-                                <span className="truncate">{ex.name}</span>
+                                <span className="truncate">
+                                  {ex.name}
+                                  {(ex.exerciseCategory ?? ex.muscleGroup) && (
+                                    <span className="text-muted-foreground">
+                                      {" "}
+                                      — {[ex.exerciseCategory, ex.muscleGroup].filter(Boolean).join(" · ")}
+                                    </span>
+                                  )}
+                                </span>
                               </ComboboxItem>
                             );
                           })}
@@ -356,76 +369,99 @@ export default function StepExercises({
               return (
                 <div
                   key={ex.instanceId}
-                  className="flex flex-wrap items-center gap-2 border rounded-md p-2"
+                  className="border rounded-md p-2 space-y-2"
                 >
-                  <span className="w-full min-w-0 font-medium truncate sm:w-auto sm:min-w-[120px]">{ex.name}</span>
-
-                  <div className="w-full flex items-center gap-2">
-                    <div className="w-full justify-center">
-                      <Label className="block text-center mb-2">Séries</Label>
-                      <WheelPickerWrapper className="w-auto">
-                        <WheelPicker
-                          value={getPickerValue(ex.series, SERIES_OPTIONS, "1")}
-                          onValueChange={(v) =>
-                            onUpdateExercise(period.id, ex.instanceId, "series", v as string)
-                          }
-                          options={SERIES_OPTIONS}
-                          optionItemHeight={32}
-                        />
-                      </WheelPickerWrapper>
-                    </div>
-                    <div className="w-full justify-center">
-                      <Label className="block text-center mb-2">Repetições</Label>
-                      <WheelPickerWrapper className="w-auto">
-                        <WheelPicker
-                          value={getPickerValue(ex.reps, REPS_OPTIONS, "1")}
-                          onValueChange={(v) =>
-                            onUpdateExercise(period.id, ex.instanceId, "reps", v as string)
-                          }
-                          options={REPS_OPTIONS}
-                          optionItemHeight={32}
-                        />
-                      </WheelPickerWrapper>
-                    </div>
-                    <div className="w-full justify-center">
-                      <Label className="block text-center mb-2">Descanso</Label>
-                      <WheelPickerWrapper className="w-auto">
-                        <WheelPicker
-                          value={getPickerValue(ex.rest, REST_OPTIONS, "0", 10)}
-                          onValueChange={(v) =>
-                            onUpdateExercise(period.id, ex.instanceId, "rest", v as string)
-                          }
-                          options={REST_OPTIONS}
-                          optionItemHeight={32}
-                        />
-                      </WheelPickerWrapper>
-                    </div>
-                  </div>
-                  <div className="w-full">
-                    <Label>Observações</Label>
-                    <Input
-                      placeholder={EXERCISES_LABELS.obs}
-                      className="w-full text-sm font-medium min-w-[80px] flex-1"
-                      value={ex.obs ?? ""}
-                      onChange={(e) =>
-                        onUpdateExercise(
-                          period.id,
-                          ex.instanceId,
-                          "obs",
-                          e.target.value
-                        )
-                      }
-                    />
-                  </div>
-
-                  <Button
-                    type="button"
-                    onClick={() => onRemoveExercise(period.id, ex.instanceId)}
-                    className="text-red-500 font-bold px-2 cursor-pointer hover:opacity-75 shrink-0 w-full"
-                    variant="destructive"
+                  <div
+                    className={cn(
+                      "flex items-center justify-between cursor-pointer"
+                    )}
+                    onClick={() =>
+                      setExpandedExerciseId(isExpanded ? null : exerciseId)
+                    }
                   >
-                    <TrashIcon className="h-4 w-4 text-white" />
-                  </Button>
+                    <span className="font-medium truncate sm:min-w-[120px]">{ex.name}</span>
+                    {isExpanded ? (
+                      <ChevronUpIcon className="w-4 h-4 shrink-0" />
+                    ) : (
+                      <ChevronDownIcon className="w-4 h-4 shrink-0" />
+                    )}
+                  </div>
+
+                  {isExpanded && (
+                    <div className="flex flex-wrap items-end gap-3 pt-2">
+                      <div className="flex flex-col gap-1 shrink-0">
+                        <Label className="text-xs whitespace-nowrap text-muted-foreground">Séries</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={99}
+                          className="w-14 h-8 text-center text-sm tabular-nums"
+                          value={ex.series ?? ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === "" || /^\d+$/.test(v)) {
+                              onUpdateExercise(period.id, ex.instanceId, "series", v || "1");
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1 shrink-0">
+                        <Label className="text-xs whitespace-nowrap text-muted-foreground">Reps</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          className="w-14 h-8 text-center text-sm tabular-nums"
+                          value={ex.reps ?? ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === "" || /^\d+$/.test(v)) {
+                              onUpdateExercise(period.id, ex.instanceId, "reps", v || "1");
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1 shrink-0">
+                        <Label className="text-xs whitespace-nowrap text-muted-foreground">Descanso</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          className="w-14 h-8 text-center text-sm tabular-nums"
+                          placeholder="0"
+                          value={ex.rest ?? ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === "" || /^\d+$/.test(v)) {
+                              onUpdateExercise(period.id, ex.instanceId, "rest", v || "0");
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1 min-w-0 flex-1">
+                        <Label className="text-xs whitespace-nowrap text-muted-foreground">Obs.</Label>
+                        <Input
+                          placeholder={EXERCISES_LABELS.obs}
+                          className="h-8 text-sm font-medium min-w-[80px] flex-1"
+                          value={ex.obs ?? ""}
+                          onChange={(e) =>
+                            onUpdateExercise(
+                              period.id,
+                              ex.instanceId,
+                              "obs",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={() => onRemoveExercise(period.id, ex.instanceId)}
+                        className="text-red-500 font-bold h-8 px-2 cursor-pointer hover:opacity-75 shrink-0"
+                        variant="destructive"
+                      >
+                        <TrashIcon className="h-4 w-4 text-white" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               );
             })}

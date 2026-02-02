@@ -1,16 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Edit } from "lucide-react";
 import TrainingUpdateModal from "@/components/Training/Modals/TrainingUpdateModal";
+import type { TrainingDraft } from "@/types/trainingDraft";
 
 export function TrainingEditButton({
   trainingId,
   initialData,
+  clientId,
+  restoreDraft,
+  onRestored,
 }: {
   trainingId: number;
   initialData: any;
+  clientId?: number;
+  restoreDraft?: TrainingDraft | null;
+  onRestored?: () => void;
 }) {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (restoreDraft && restoreDraft.trainingId === trainingId) {
+      setOpen(true);
+    }
+  }, [restoreDraft, trainingId]);
 
   return (
     <>
@@ -29,6 +42,9 @@ export function TrainingEditButton({
         onOpenChange={setOpen}
         trainingId={trainingId}
         initialData={initialData}
+        clientId={clientId}
+        initialDraft={restoreDraft?.trainingId === trainingId ? restoreDraft : undefined}
+        onRestored={onRestored}
       />
     </>
   );
