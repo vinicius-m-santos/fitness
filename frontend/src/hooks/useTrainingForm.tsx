@@ -61,7 +61,6 @@ export function useTrainingForm({
     }
 
     if (!valid) {
-      console.log(form.formState);
       const message = getFirstErrorMessage(form.formState.errors);
       if (message) toast.error(message);
       onInvalidStep?.();
@@ -114,22 +113,22 @@ export function useTrainingForm({
       periods.map((p) =>
         p.id === periodId
           ? {
-              ...p,
-              exercises: [
-                ...p.exercises,
-                {
-                  instanceId: `${p.id}-${selected.id}-${Math.random()
-                    .toString(36)
-                    .slice(2)}`,
-                  id: selected.id,
-                  name: selected.name,
-                  series: "1",
-                  reps: "1",
-                  rest: "0",
-                  obs: "",
-                },
-              ],
-            }
+            ...p,
+            exercises: [
+              ...p.exercises,
+              {
+                instanceId: `${p.id}-${selected.id}-${Math.random()
+                  .toString(36)
+                  .slice(2)}`,
+                id: selected.id,
+                name: selected.name,
+                series: "1",
+                reps: "1",
+                rest: "0",
+                obs: "",
+              },
+            ],
+          }
           : p
       ),
       { shouldValidate: true }
@@ -149,11 +148,11 @@ export function useTrainingForm({
       periods.map((p) =>
         p.id === periodId
           ? {
-              ...p,
-              exercises: p.exercises.map((e) =>
-                e.instanceId === instanceId ? { ...e, [field]: value } : e
-              ),
-            }
+            ...p,
+            exercises: p.exercises.map((e) =>
+              e.instanceId === instanceId ? { ...e, [field]: value } : e
+            ),
+          }
           : p
       ),
       { shouldValidate: true }
@@ -166,9 +165,9 @@ export function useTrainingForm({
       periods.map((p) =>
         p.id === periodId
           ? {
-              ...p,
-              exercises: p.exercises.filter((e) => e.instanceId !== instanceId),
-            }
+            ...p,
+            exercises: p.exercises.filter((e) => e.instanceId !== instanceId),
+          }
           : p
       ),
       { shouldValidate: true }

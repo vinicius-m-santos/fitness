@@ -5,16 +5,15 @@ import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileEdit, Play } from "lucide-react";
 import { motion } from "framer-motion";
-import type { TrainingDraft } from "@/types/trainingDraft";
-import { clearTrainingDraft, notifyTrainingDraftCleared } from "@/utils/trainingDraftStorage";
+import type { WorkoutDraft } from "@/stores/workoutDraftStore";
 
 type ContinueTrainingDraftPromptProps = {
-  draft: TrainingDraft;
+  draft: WorkoutDraft;
   onContinue: () => void;
   onDiscard: () => void;
 };
 
-function getDraftTitle(draft: TrainingDraft): string {
+function getDraftTitle(draft: WorkoutDraft): string {
   const name = draft.formData?.name?.trim();
   if (name) return `"${name.length > 30 ? name.slice(0, 30) + "…" : name}"`;
   switch (draft.type) {
@@ -32,8 +31,8 @@ function getDraftTitle(draft: TrainingDraft): string {
 }
 
 /**
- * Exibe quando há rascunho de treino no IndexedDB (reload ou navegação).
- * Permite Continuar (navega e repopula o modal) ou Descartar.
+ * Exibe quando há rascunho de treino na store persistida (reload ou cold start).
+ * Só é exibido após hidratação da store. Permite Continuar (navega e repopula o modal) ou Descartar.
  */
 export default function ContinueTrainingDraftPrompt({
   draft,
@@ -42,15 +41,10 @@ export default function ContinueTrainingDraftPrompt({
 }: ContinueTrainingDraftPromptProps) {
   const [discarding, setDiscarding] = useState(false);
 
-  const handleDiscard = async () => {
+  const handleDiscard = () => {
     setDiscarding(true);
-    try {
-      await clearTrainingDraft();
-      notifyTrainingDraftCleared();
-      onDiscard();
-    } finally {
-      setDiscarding(false);
-    }
+    onDiscard();
+    setDiscarding(false);
   };
 
   return (

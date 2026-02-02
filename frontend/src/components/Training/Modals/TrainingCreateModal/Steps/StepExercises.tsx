@@ -16,7 +16,8 @@ import { cn } from "@/lib/utils";
 import { useExerciseSearch } from "@/hooks/useExerciseSearch";
 import { Label } from "@/components/ui/label";
 
-const DEBOUNCE_MS = 350;
+const DEBOUNCE_MS_DESKTOP = 350;
+const DEBOUNCE_MS_MOBILE = 700;
 
 const SERIES_OPTIONS = Array.from({ length: 30 }, (_, i) => ({
   value: String(i + 1),
@@ -78,6 +79,7 @@ export default function StepExercises({
   onRemoveExercise,
 }: Props) {
   const [expandedExerciseId, setExpandedExerciseId] = useState<string | null>(null);
+  const [addCount, setAddCount] = useState(0);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -86,15 +88,20 @@ export default function StepExercises({
   >([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleSearchInputChange = useCallback((value: string) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    setSearch(value);
-    debounceRef.current = setTimeout(() => {
-      setDebouncedSearch(value);
-      setPage(1);
-      debounceRef.current = null;
-    }, DEBOUNCE_MS);
-  }, []);
+  const debounceMs = isMobile ? DEBOUNCE_MS_MOBILE : DEBOUNCE_MS_DESKTOP;
+
+  const handleSearchInputChange = useCallback(
+    (value: string) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      setSearch(value);
+      debounceRef.current = setTimeout(() => {
+        setDebouncedSearch(value);
+        setPage(1);
+        debounceRef.current = null;
+      }, debounceMs);
+    },
+    [debounceMs]
+  );
 
   const prevDebouncedSearchRef = useRef(debouncedSearch);
   useEffect(() => {
@@ -146,38 +153,53 @@ export default function StepExercises({
   return (
     <Accordion type="single" collapsible>
       {periods.map((period) => (
-        <AccordionItem key={period.id} value={String(period.id)}>
+        <AccordionItem key={period.id} value={String(period.id)} className="max-w-[99%]">
           <AccordionTrigger>{period.name}</AccordionTrigger>
-          <AccordionContent className="space-y-3">
-            <div className="flex gap-2">
-              <ExerciseSelectDropdown
-                triggerLabel={selectedExerciseByPeriod[period.id]?.name ?? ""}
-                selectedExercise={selectedExerciseByPeriod[period.id] ?? null}
-                onSelect={(ex) =>
-                  setSelectedExerciseByPeriod((prev) => ({
-                    ...prev,
-                    [period.id]: { id: ex.id, name: ex.name },
-                  }))
-                }
-                searchValue={search}
-                onSearchChange={handleSearchInputChange}
-                exercises={accumulated}
-                isLoading={isLoading}
-                isLoadingMore={isLoading && page > 1}
-                onListScroll={handleListScroll}
-                isExerciseAdded={(exId) =>
-                  period.exercises.some((periodEx) => periodEx.id === exId)
-                }
-                placeholder="Escolher exercício"
-                searchPlaceholder="Buscar exercício..."
-                emptyMessage="Nenhum exercício encontrado."
-              />
+          <AccordionContent className="flex flex-col justify-center space-y-3">
+            <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-stretch">
+              <div className="min-w-0 flex-1">
+                <ExerciseSelectDropdown
+                  key={`exercise-select-${period.id}-${addCount}`}
+                  triggerLabel={selectedExerciseByPeriod[period.id]?.name ?? ""}
+                  selectedExercise={selectedExerciseByPeriod[period.id] ?? null}
+                  onSelect={(ex) =>
+                    setSelectedExerciseByPeriod((prev) => ({
+                      ...prev,
+                      [period.id]: { id: ex.id, name: ex.name },
+                    }))
+                  }
+                  searchValue={search}
+                  onSearchChange={handleSearchInputChange}
+                  exercises={accumulated}
+                  isLoading={isLoading}
+                  isLoadingMore={isLoading && page > 1}
+                  onListScroll={handleListScroll}
+                  isExerciseAdded={(exId) =>
+                    period.exercises.some((periodEx) => periodEx.id === exId)
+                  }
+                  placeholder="Escolher exercício"
+                  searchPlaceholder="Buscar exercício..."
+                  emptyMessage="Nenhum exercício encontrado."
+                />
+              </div>
 
               <Button
                 type="button"
                 size="sm"
-                onClick={() => onAddExercise(period.id)}
-                className="cursor-pointer shrink-0"
+                className="cursor-pointer shrink-0 w-full sm:w-auto"
+                onClick={() => {
+                  onAddExercise(period.id);
+                  setSelectedExerciseByPeriod((prev) => ({
+                    ...prev,
+                    [period.id]: null,
+                  }));
+                  if (debounceRef.current) {
+                    clearTimeout(debounceRef.current);
+                    debounceRef.current = null;
+                  }
+                  setSearch("");
+                  setAddCount((c) => c + 1);
+                }}
               >
                 Adicionar
               </Button>
@@ -204,7 +226,7 @@ export default function StepExercises({
                         setExpandedExerciseId(isExpanded ? null : exerciseId)
                       }
                     >
-                      <span className="font-medium truncate">{ex.name}</span>
+                      <span className="truncate">{ex.name}</span>
                       {isExpanded ? (
                         <ChevronUpIcon className="w-4 h-4 shrink-0" />
                       ) : (
@@ -309,7 +331,7 @@ export default function StepExercises({
                       setExpandedExerciseId(isExpanded ? null : exerciseId)
                     }
                   >
-                    <span className="font-medium truncate sm:min-w-[120px]">{ex.name}</span>
+                    <span className="truncate sm:min-w-[120px]">{ex.name}</span>
                     {isExpanded ? (
                       <ChevronUpIcon className="w-4 h-4 shrink-0" />
                     ) : (
@@ -370,7 +392,7 @@ export default function StepExercises({
                         <Label className="text-xs whitespace-nowrap text-muted-foreground">Obs.</Label>
                         <Input
                           placeholder={EXERCISES_LABELS.obs}
-                          className="h-8 text-sm font-medium min-w-[80px] flex-1"
+                          className="h-8 text-sm min-w-[80px] flex-1 h-[revert-layer]"
                           value={ex.obs ?? ""}
                           onChange={(e) =>
                             onUpdateExercise(

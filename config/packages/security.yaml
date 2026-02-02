@@ -37,5 +37,14 @@ security:
         - { path: ^/api/reset-password, roles: PUBLIC_ACCESS }
         - { path: ^/api/client, roles: PUBLIC_ACCESS }
         - { path: ^/api/user/check-token, roles: PUBLIC_ACCESS }
+        # Rotas exclusivas ROLE_PERSONAL (bloqueia ROLE_CLIENT)
+        - { path: ^/api/week-summary, roles: ROLE_PERSONAL }
+        - { path: ^/api/client/all, roles: ROLE_PERSONAL }
+        - { path: ^/api/client/send-registration-link, roles: ROLE_PERSONAL }
+        - { path: ^/api/client/clientByPersonal, roles: ROLE_PERSONAL }
+        - { path: ^/api/training-standard, roles: ROLE_PERSONAL }
+        - { path: ^/api/subscription, roles: ROLE_PERSONAL }
+        # Rotas exclusivas ROLE_CLIENT (bloqueia ROLE_PERSONAL)
+        - { path: ^/api/training-execution, roles: ROLE_CLIENT }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/, roles: PUBLIC_ACCESS }

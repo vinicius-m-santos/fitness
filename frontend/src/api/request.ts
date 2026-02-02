@@ -38,7 +38,6 @@ export function useRequest() {
             return payload;
         } catch (error) {
             const err = normalizeError(error);
-            console.log(err);
 
             if (showError) {
                 toast.error(err.message || "Erro inesperado");

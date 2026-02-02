@@ -6,7 +6,11 @@ import StudentExerciseSession from "./pages/StudentExerciseSession";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Logout from "./pages/Logout";
-import PrivateRoute from "./utils/Auth/PrivateRoute";
+import PrivateRoute, {
+    ROLE_CLIENT,
+    ROLE_PERSONAL,
+} from "./utils/Auth/PrivateRoute";
+import ClientViewGuard from "./utils/Auth/ClientViewGuard";
 import AdminLayout from "./layout/AdminLayout";
 import Home from "./pages/Home";
 import NoAuthLayout from "./layout/NoAuthLayout";
@@ -28,7 +32,7 @@ export default function App() {
             <Route
                 path="/week-summary"
                 element={
-                    <PrivateRoute>
+                    <PrivateRoute allowedRoles={[ROLE_PERSONAL]}>
                         <AdminLayout>
                             <WeekSummary />
                         </AdminLayout>
@@ -38,7 +42,7 @@ export default function App() {
             <Route
                 path="/clients"
                 element={
-                    <PrivateRoute>
+                    <PrivateRoute allowedRoles={[ROLE_PERSONAL]}>
                         <AdminLayout>
                             <Clients />
                         </AdminLayout>
@@ -48,17 +52,21 @@ export default function App() {
             <Route
                 path="/client-view/:id"
                 element={
-                    <PrivateRoute>
-                        <AdminLayout>
-                            <ClientView />
-                        </AdminLayout>
+                    <PrivateRoute
+                        allowedRoles={[ROLE_PERSONAL, ROLE_CLIENT]}
+                    >
+                        <ClientViewGuard>
+                            <AdminLayout>
+                                <ClientView />
+                            </AdminLayout>
+                        </ClientViewGuard>
                     </PrivateRoute>
                 }
             />
             <Route
                 path="/student"
                 element={
-                    <PrivateRoute>
+                    <PrivateRoute allowedRoles={[ROLE_CLIENT]}>
                         <AdminLayout>
                             <StudentHome />
                         </AdminLayout>
@@ -68,7 +76,7 @@ export default function App() {
             <Route
                 path="/student/workouts"
                 element={
-                    <PrivateRoute>
+                    <PrivateRoute allowedRoles={[ROLE_CLIENT]}>
                         <AdminLayout>
                             <StudentWorkouts />
                         </AdminLayout>
@@ -78,7 +86,7 @@ export default function App() {
             <Route
                 path="/student/training/:trainingId/period/:periodId/execute"
                 element={
-                    <PrivateRoute>
+                    <PrivateRoute allowedRoles={[ROLE_CLIENT]}>
                         <AdminLayout>
                             <StudentExerciseSession />
                         </AdminLayout>
@@ -160,7 +168,7 @@ export default function App() {
             <Route
                 path="/exercises"
                 element={
-                    <PrivateRoute>
+                    <PrivateRoute allowedRoles={[ROLE_PERSONAL]}>
                         <AdminLayout>
                             <Exercise />
                         </AdminLayout>
@@ -170,7 +178,7 @@ export default function App() {
             <Route
                 path="/standard-trainings"
                 element={
-                    <PrivateRoute>
+                    <PrivateRoute allowedRoles={[ROLE_PERSONAL]}>
                         <AdminLayout>
                             <StandardTrainings />
                         </AdminLayout>
@@ -180,7 +188,9 @@ export default function App() {
             <Route
                 path="/profile"
                 element={
-                    <PrivateRoute>
+                    <PrivateRoute
+                        allowedRoles={[ROLE_CLIENT, ROLE_PERSONAL]}
+                    >
                         <AdminLayout>
                             <ProfilePage />
                         </AdminLayout>
@@ -190,7 +200,7 @@ export default function App() {
             <Route
                 path="/plan"
                 element={
-                    <PrivateRoute>
+                    <PrivateRoute allowedRoles={[ROLE_PERSONAL]}>
                         <AdminLayout>
                             <PlanSubscription />
                         </AdminLayout>

@@ -25,10 +25,6 @@ const ExerciseDeleteDefaultModal = ({
   const queryExercise = useQueryClient();
   const [open, setOpen] = useState(openProp);
 
-  useEffect(() => {
-    console.log("Deleting default exerciseId:", exerciseId);
-  }, [exerciseId]);
-
   const deleteDefaultExercise = async () => {
     const res = await api.delete(`/exercise/default/${exerciseId}`);
     return res.data;

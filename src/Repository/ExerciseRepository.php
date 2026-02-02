@@ -110,10 +110,22 @@ class ExerciseRepository extends ServiceEntityRepository
                 ->setParameter('excludedIds', $excludedIds);
         }
 
-        // Apply search filter (name, category name, muscle group name)
+        // Apply search filter: all words must be present in the same field (e.g. "puxada pronada" matches "puxada fechada pronada")
         if (!empty($search)) {
-            $qb->andWhere('LOWER(e.name) LIKE LOWER(:search) OR LOWER(c.name) LIKE LOWER(:search) OR LOWER(m.name) LIKE LOWER(:search)')
-                ->setParameter('search', '%' . $search . '%');
+            $words = array_filter(preg_split('/\s+/', trim($search), -1, PREG_SPLIT_NO_EMPTY));
+            if (!empty($words)) {
+                $fieldOrs = [];
+                foreach (['e.name', 'c.name', 'm.name'] as $field) {
+                    $ands = [];
+                    foreach ($words as $i => $word) {
+                        $param = 'sw_' . str_replace('.', '_', $field) . '_' . $i;
+                        $ands[] = "LOWER({$field}) LIKE :{$param}";
+                        $qb->setParameter($param, '%' . strtolower($word) . '%');
+                    }
+                    $fieldOrs[] = '(' . implode(' AND ', $ands) . ')';
+                }
+                $qb->andWhere('(' . implode(' OR ', $fieldOrs) . ')');
+            }
         }
 
         if ($categoryId !== null) {

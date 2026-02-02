@@ -207,99 +207,99 @@ export default function StandardTrainings() {
         <p className="text-muted-foreground text-sm rounded-xl p-4 bg-white dark:bg-gray-900/80 border border-gray-200/60 dark:border-gray-800/60 shadow-md">Nenhum treino encontrado com os filtros aplicados.</p>
       ) : (
         <div className="rounded-xl overflow-hidden border border-gray-200/60 dark:border-gray-800/60 shadow-md bg-white dark:bg-gray-900/80 p-4">
-        <Accordion
-          type="single"
-          collapsible
-          value={accordionValue}
-          onValueChange={setAccordionValue}
-          className="space-y-3"
-        >
-          {filteredAndSortedWorkouts.map((workout) => (
-            <AccordionItem key={workout.id} value={String(workout.id)}>
-              <AccordionTrigger className="cursor-pointer text-lg text-black font-medium">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full text-left">
-                  <span>{workout.name}</span>
-                  <Badge variant="secondary" className="mt-1 sm:mt-0">
-                    Criado em {workout.createdAt}
-                  </Badge>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                <div className="flex justify-end">
-                  <div className="flex flex-wrap w-full md:w-auto md:flex-nowrap gap-2 text-black">
-                    <Button
-                      size="sm"
-                      variant="default"
-                      className="w-full flex items-center gap-1 cursor-pointer"
-                      onClick={() => {
-                        setToApply({ id: workout.id, name: workout.name });
-                        setOpenApply(true);
-                      }}
-                    >
-                      <Send className="h-4 w-4 mr-1" /> Aplicar
-                    </Button>
-                    <TrainingStandardEditButton
-                      trainingId={workout.id}
-                      initialData={
-                        restoreDraft?.type === "training-standard-update" && restoreDraft.trainingId === workout.id
-                          ? restoreDraft.formData
-                          : (workout as TrainingCreateSchema)
-                      }
-                      restoreDraft={
-                        restoreDraft?.type === "training-standard-update" && restoreDraft.trainingId === workout.id
-                          ? restoreDraft
-                          : undefined
-                      }
-                      onRestored={clearRestoreState}
-                    />
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="w-full flex items-center gap-1 cursor-pointer text-white"
-                      onClick={() => {
-                        setToDelete({ id: workout.id, name: workout.name });
-                        setOpenDelete(true);
-                      }}
-                    >
-                      <Trash className="h-4 w-4 mr-1" /> Excluir
-                    </Button>
+          <Accordion
+            type="single"
+            collapsible
+            value={accordionValue}
+            onValueChange={setAccordionValue}
+            className="space-y-3"
+          >
+            {filteredAndSortedWorkouts.map((workout) => (
+              <AccordionItem key={workout.id} value={String(workout.id)}>
+                <AccordionTrigger className="cursor-pointer text-lg text-black font-medium">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full text-left">
+                    <span>{workout.name}</span>
+                    <Badge variant="secondary" className="mt-1 sm:mt-0">
+                      Criado em {workout.createdAt}
+                    </Badge>
                   </div>
-                </div>
-                {(workout.periods ?? []).map((period: { id: number; name: string; exercises: any[] }, pi: number) => (
-                  <Card key={pi}>
-                    <CardHeader>
-                      <CardTitle className="text-base font-semibold">{period.name}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Exercício</TableHead>
-                            <TableHead>Séries</TableHead>
-                            <TableHead>Reps</TableHead>
-                            <TableHead>Descanso</TableHead>
-                            <TableHead>Observações</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {period.exercises.map((ex: any, ei: number) => (
-                            <TableRow key={ei}>
-                              <TableCell className="font-medium">{ex.name}</TableCell>
-                              <TableCell>{ex.series || "-"}</TableCell>
-                              <TableCell>{ex.reps || "-"}</TableCell>
-                              <TableCell>{ex.rest || "-"}</TableCell>
-                              <TableCell className="text-muted-foreground">{ex.obs || "-"}</TableCell>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3">
+                  <div className="flex justify-end">
+                    <div className="flex flex-wrap w-full md:w-auto md:flex-nowrap gap-2 text-black">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="w-full flex items-center gap-1 cursor-pointer"
+                        onClick={() => {
+                          setToApply({ id: workout.id, name: workout.name });
+                          setOpenApply(true);
+                        }}
+                      >
+                        <Send className="h-4 w-4 mr-1" /> Aplicar
+                      </Button>
+                      <TrainingStandardEditButton
+                        trainingId={workout.id}
+                        initialData={
+                          restoreDraft?.type === "training-standard-update" && restoreDraft.trainingId === workout.id
+                            ? restoreDraft.formData
+                            : (workout as TrainingCreateSchema)
+                        }
+                        restoreDraft={
+                          restoreDraft?.type === "training-standard-update" && restoreDraft.trainingId === workout.id
+                            ? restoreDraft
+                            : undefined
+                        }
+                        onRestored={clearRestoreState}
+                      />
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="w-full flex items-center gap-1 cursor-pointer text-white"
+                        onClick={() => {
+                          setToDelete({ id: workout.id, name: workout.name });
+                          setOpenDelete(true);
+                        }}
+                      >
+                        <Trash className="h-4 w-4 mr-1" /> Excluir
+                      </Button>
+                    </div>
+                  </div>
+                  {(workout.periods ?? []).map((period: { id: number; name: string; exercises: any[] }, pi: number) => (
+                    <Card key={pi}>
+                      <CardHeader>
+                        <CardTitle className="text-base font-semibold">{period.name}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Exercício</TableHead>
+                              <TableHead>Séries</TableHead>
+                              <TableHead>Reps</TableHead>
+                              <TableHead>Descanso</TableHead>
+                              <TableHead>Observações</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
-                ))}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+                          </TableHeader>
+                          <TableBody>
+                            {period.exercises.map((ex: any, ei: number) => (
+                              <TableRow key={ei}>
+                                <TableCell className="font-medium">{ex.name}</TableCell>
+                                <TableCell>{ex.series || "-"}</TableCell>
+                                <TableCell>{ex.reps || "-"}</TableCell>
+                                <TableCell>{ex.rest || "-"}</TableCell>
+                                <TableCell className="text-muted-foreground">{ex.obs || "-"}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
       )}
 

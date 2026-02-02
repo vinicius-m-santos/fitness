@@ -58,7 +58,6 @@ const ExerciseCreateModal = ({ openProp, onOpenChange }: ExerciseCreateModalProp
     const loadCategories = async () => {
       try {
         const res = await api.get("/exercise-category/all");
-        console.log("Categorias:", res.data.exerciseCategories);
         setCategories(res.data.exerciseCategories);
       } catch (err) {
         console.error("Erro ao carregar categorias", err);
@@ -68,7 +67,6 @@ const ExerciseCreateModal = ({ openProp, onOpenChange }: ExerciseCreateModalProp
     const loadMuscleGroups = async () => {
       try {
         const res = await api.get("/muscle-group/all");
-        console.log("Grupos Musculares:", res.data.muscleGroups);
         setMuscleGroups(res.data.muscleGroups);
       } catch (err) {
         console.error("Erro ao carregar grupos musculares", err);
@@ -115,7 +113,6 @@ const ExerciseCreateModal = ({ openProp, onOpenChange }: ExerciseCreateModalProp
       await mutation.mutateAsync({ ...data, favorite });
     } catch (err) {
       if (err instanceof ZodError) {
-        console.log(err);
         err.issues.forEach((e) => {
           toast.error(e.message);
         });
@@ -135,7 +132,6 @@ const ExerciseCreateModal = ({ openProp, onOpenChange }: ExerciseCreateModalProp
   };
 
   const handleOpenChange = (value: boolean) => {
-    console.log(value);
     setOpen(value);
     if (value === false) {
       resetForm();

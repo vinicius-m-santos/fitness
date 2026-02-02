@@ -1,17 +1,45 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import type { TrainingCreateSchema } from "@/schemas/training";
-import type { TrainingDraft, TrainingDraftType } from "@/types/trainingDraft";
+import type { TrainingDraftType } from "@/types/trainingDraft";
 import {
-  setTrainingDraft,
-  setTrainingDraftSync,
-  getTrainingDraft,
-  TRAINING_DRAFT_CLEARED_EVENT,
-} from "@/utils/trainingDraftStorage";
+  useWorkoutDraftStore,
+  getDraftContextKey,
+  getAnyValidDraft,
+  hasAtLeastOneField,
+  type WorkoutDraft,
+  type DraftContextKey,
+} from "@/stores/workoutDraftStore";
 
 const DEBOUNCE_MS = 300;
-/** Debounce menor no subscribe para persistir logo após adicionar exercício ou alterar campo */
 const SUBSCRIBE_DEBOUNCE_MS = 100;
+
+/**
+ * Cold start = carregamento completo da página (navegação ou reload).
+ * Retorna true apenas quando o documento foi carregado por type === 'navigate' ou 'reload',
+ * nunca quando o draft foi atualizado na mesma sessão (setField).
+ */
+function isColdStart(): boolean {
+  if (typeof performance === "undefined" || !performance.getEntriesByType) return false;
+  const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+  const type = nav?.type;
+  return type === "navigate" || type === "reload";
+}
+
+/** Retorna true somente após a store persistida ter sido hidratada. Usado para bloquear escrita antes da hidratação. */
+export function useWorkoutDraftHasHydrated(): boolean {
+  const [hasHydrated, setHasHydrated] = useState(false);
+  useEffect(() => {
+    const unsub = useWorkoutDraftStore.persist.onFinishHydration(() => {
+      setHasHydrated(true);
+    });
+    if (useWorkoutDraftStore.persist.hasHydrated()) {
+      setHasHydrated(true);
+    }
+    return unsub;
+  }, []);
+  return hasHydrated;
+}
 
 type UseTrainingDraftOptions = {
   type: TrainingDraftType;
@@ -19,12 +47,9 @@ type UseTrainingDraftOptions = {
   trainingId?: number;
   enabled: boolean;
   step: number;
-  /** Valores atuais do formulário (ex.: form.watch()) — usados para disparar o efeito de save */
   formData: TrainingCreateSchema;
-  /** Retorna os valores atuais no momento do save; se passado, o rascunho usa sempre o estado mais recente */
   getFormData?: () => TrainingCreateSchema;
   selectedExerciseByPeriod: Record<number, { id: number; name: string } | null>;
-  /** subscribe do useForm — quando passado, o rascunho é salvo a cada alteração de valores (sem depender de re-render) */
   formSubscribe?: (callback: () => void) => () => void;
 };
 
@@ -39,6 +64,9 @@ export function useTrainingDraft({
   selectedExerciseByPeriod,
   formSubscribe,
 }: UseTrainingDraftOptions): { flushDraft: () => void } {
+  const hasHydrated = useWorkoutDraftHasHydrated();
+  const contextKey = getDraftContextKey(type, { clientId, trainingId });
+  const setDraft = useWorkoutDraftStore((s) => s.setDraft);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef<string>("");
   const getFormDataRef = useRef(getFormData);
@@ -48,9 +76,17 @@ export function useTrainingDraft({
   stepRef.current = step;
   selectedRef.current = selectedExerciseByPeriod;
 
-  const buildDraft = useCallback((): TrainingDraft => {
+  /** Só permite escrita na store após hidratação para não sobrescrever draft com useState vazio. */
+  const draftEnabled = enabled && hasHydrated;
+
+  useEffect(() => {
+    if (!draftEnabled) return;
+    lastSavedRef.current = "";
+  }, [draftEnabled]);  
+
+  const buildDraft = useCallback((): WorkoutDraft => {
     const currentFormData = getFormDataRef.current?.() ?? formData;
-    const draft: TrainingDraft = {
+    const draft: WorkoutDraft = {
       type,
       step: stepRef.current,
       formData: currentFormData,
@@ -63,41 +99,46 @@ export function useTrainingDraft({
   }, [type, clientId, trainingId, step, formData, selectedExerciseByPeriod]);
 
   const save = useCallback(() => {
+    if (!hasHydrated) return;
+  
     const draft = buildDraft();
-    lastSavedRef.current = JSON.stringify({
-      step: stepRef.current,
+  
+    // Nunca sobrescrever draft válido com vazio
+    if (!hasAtLeastOneField(draft)) return;
+  
+    const snapshot = JSON.stringify({
+      step: draft.step,
       formData: draft.formData,
-      selectedExerciseByPeriod: selectedRef.current,
+      selectedExerciseByPeriod: draft.selectedExerciseByPeriod,
     });
-    setTrainingDraft(draft).catch((e) => console.error("setTrainingDraft failed:", e));
-  }, [buildDraft]);
-
-  const saveSync = useCallback(() => {
-    const draft = buildDraft();
-    setTrainingDraftSync(draft);
-  }, [buildDraft]);
+  
+    lastSavedRef.current = snapshot;
+  
+    setDraft(contextKey as DraftContextKey, draft);
+  }, [buildDraft, contextKey, setDraft, hasHydrated]);
+  
 
   const flushDraft = useCallback(() => {
-    save();
-  }, [save]);
+    if (hasHydrated) save();
+  }, [save, hasHydrated]);
 
   useEffect(() => {
-    if (!enabled) return;
-    const key = JSON.stringify({ step, formData, selectedExerciseByPeriod });
-    if (key === lastSavedRef.current) return;
+    if (!draftEnabled) return;
+  
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  
     timeoutRef.current = setTimeout(() => {
       timeoutRef.current = null;
-      lastSavedRef.current = key;
       save();
     }, DEBOUNCE_MS);
+  
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [enabled, step, formData, selectedExerciseByPeriod, save]);
+  }, [draftEnabled, step, formData, selectedExerciseByPeriod, save]);  
 
   useEffect(() => {
-    if (!enabled || !formSubscribe) return;
+    if (!draftEnabled || !formSubscribe) return;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
     const unsub = formSubscribe(() => {
       if (timeoutId) clearTimeout(timeoutId);
@@ -110,105 +151,80 @@ export function useTrainingDraft({
       unsub();
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [enabled, formSubscribe, save]);
-
-  // Ao recarregar (F5) ou fechar aba: gravação síncrona em localStorage para não perder dados
-  // (IndexedDB é assíncrono e o navegador não espera terminar antes de descarregar a página)
-  useEffect(() => {
-    if (!enabled) return;
-    const handler = () => {
-      saveSync();
-    };
-    window.addEventListener("pagehide", handler);
-    window.addEventListener("beforeunload", handler);
-    return () => {
-      window.removeEventListener("pagehide", handler);
-      window.removeEventListener("beforeunload", handler);
-    };
-  }, [enabled, saveSync]);
+  }, [draftEnabled, formSubscribe, save]);
 
   return { flushDraft };
 }
 
 export type UseContinueTrainingDraftResult = {
-  draft: TrainingDraft | null;
+  draft: WorkoutDraft | null;
+  contextKey: string | null;
   showPrompt: boolean;
+  hasHydrated: boolean;
   onContinue: () => void;
   onDiscard: () => void;
 };
 
-/** Flag no sessionStorage: setado no beforeunload para detectar F5 e ignorar state do bfcache */
-const RELOAD_FLAG_KEY = "training-draft-reload";
-
-/** Re-checa rascunho ao restaurar da bfcache (Alt+Tab longo, troca de app) ou ao voltar a aba visível (cold start atrasado). */
-function tryShowDraftPrompt(
-  setDraft: (d: TrainingDraft | null) => void,
-  setShowPrompt: (v: boolean) => void,
-  hasRestoreInState: boolean
-) {
-  if (hasRestoreInState) return;
-  getTrainingDraft().then((d) => {
-    if (d) {
-      setDraft(d);
-      setShowPrompt(true);
-    }
-  });
-}
-
 export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
   const navigate = useNavigate();
   const location = useLocation();
-  const locationState = location.state as { restoreTrainingDraft?: TrainingDraft } | null;
-  const [draft, setDraft] = useState<TrainingDraft | null>(null);
-  const [showPrompt, setShowPrompt] = useState(false);
-  const clearedStateForReloadRef = useRef(false);
+  const clearDraft = useWorkoutDraftStore((s) => s.clearDraft);
+  const hasHydrated = useWorkoutDraftHasHydrated();
+  const [promptDraft, setPromptDraft] = useState<{
+    draft: WorkoutDraft;
+    contextKey: string;
+  } | null>(null);
+  const locationState = location.state as { restoreTrainingDraft?: WorkoutDraft } | null;
   const hasRestoreInStateRef = useRef(!!locationState?.restoreTrainingDraft);
   hasRestoreInStateRef.current = !!locationState?.restoreTrainingDraft;
 
+  // Prompt independente da rota: qualquer draft válido exibe o prompt (usuário deve finalizar ou descartar).
   useEffect(() => {
-    const handler = () => {
-      try {
-        sessionStorage.setItem(RELOAD_FLAG_KEY, "1");
-      } catch {}
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
+    const unsub = useWorkoutDraftStore.persist.onFinishHydration(() => {
+      if (!isColdStart()) return;
+      if (hasRestoreInStateRef.current) return;
+      setTimeout(() => {
+        const currentDrafts = useWorkoutDraftStore.getState().drafts;
+        const result = getAnyValidDraft(currentDrafts);
+        setPromptDraft(result);
+      }, 0);
+    });
+
+    if (useWorkoutDraftStore.persist.hasHydrated()) {
+      if (isColdStart() && hasRestoreInStateRef.current) {
+        const currentDrafts = useWorkoutDraftStore.getState().drafts;
+        const result = getAnyValidDraft(currentDrafts);
+        setPromptDraft(result);
+      }
+    }
+    return unsub;
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    clearedStateForReloadRef.current = false;
-    const isReload = typeof sessionStorage !== "undefined" && sessionStorage.getItem(RELOAD_FLAG_KEY);
-    if (isReload) {
-      try {
-        sessionStorage.removeItem(RELOAD_FLAG_KEY);
-      } catch {}
-      navigate(location.pathname, { replace: true, state: {} });
-      clearedStateForReloadRef.current = true;
-    }
-    getTrainingDraft().then((d) => {
-      if (!cancelled && d && (clearedStateForReloadRef.current || !locationState?.restoreTrainingDraft)) {
-        setDraft(d);
-        setShowPrompt(true);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [location.pathname, locationState?.restoreTrainingDraft, navigate]);
+    if (!hasHydrated) return;
+    if (hasRestoreInStateRef.current) return;
+    if (!isColdStart()) return;
+    const currentDrafts = useWorkoutDraftStore.getState().drafts;
+    const result = getAnyValidDraft(currentDrafts);
+    setPromptDraft(result);
+  }, [hasHydrated]);
 
-  // Cold start / bfcache: ao restaurar a página (pageshow persisted) ou ao voltar a aba visível,
-  // re-checar IndexedDB. Na restauração o efeito de mount já rodou antes de a aba ser descartada.
+  // Visibility / bfcache: reavaliar qualquer draft válido.
   useEffect(() => {
     const onPageShow = (e: PageTransitionEvent) => {
-      if (e.persisted) {
-        navigate(location.pathname, { replace: true, state: {} });
-        tryShowDraftPrompt(setDraft, setShowPrompt, false);
+      if (e.persisted && hasHydrated && isColdStart()) {
+        if (hasRestoreInStateRef.current) return;
+        const currentDrafts = useWorkoutDraftStore.getState().drafts;
+        const result = getAnyValidDraft(currentDrafts);
+        if (result) setPromptDraft(result);
       }
     };
     const onVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        tryShowDraftPrompt(setDraft, setShowPrompt, hasRestoreInStateRef.current);
+      if (document.visibilityState === "visible" && hasHydrated && isColdStart()) {
+        if (hasRestoreInStateRef.current) return;
+        const currentDrafts = useWorkoutDraftStore.getState().drafts;
+        const result = getAnyValidDraft(currentDrafts);
+        if (result) setPromptDraft(result);
       }
     };
     window.addEventListener("pageshow", onPageShow);
@@ -217,20 +233,12 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
       window.removeEventListener("pageshow", onPageShow);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [location.pathname, navigate]);
-
-  useEffect(() => {
-    const handler = () => {
-      setDraft(null);
-      setShowPrompt(false);
-    };
-    window.addEventListener(TRAINING_DRAFT_CLEARED_EVENT, handler);
-    return () => window.removeEventListener(TRAINING_DRAFT_CLEARED_EVENT, handler);
-  }, []);
+  }, [hasHydrated]);
 
   const onContinue = () => {
-    if (!draft) return;
-    setShowPrompt(false);
+    if (!promptDraft) return;
+    setPromptDraft(null);
+    const { draft } = promptDraft;
     if (draft.type === "training-create" || draft.type === "training-update") {
       const clientId = draft.clientId ?? 0;
       navigate(`/client-view/${clientId}`, {
@@ -246,9 +254,18 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
   };
 
   const onDiscard = () => {
-    setDraft(null);
-    setShowPrompt(false);
+    if (promptDraft) {
+      clearDraft(promptDraft.contextKey as DraftContextKey);
+      setPromptDraft(null);
+    }
   };
 
-  return { draft, showPrompt, onContinue, onDiscard };
+  return {
+    draft: promptDraft?.draft ?? null,
+    contextKey: promptDraft?.contextKey ?? null,
+    showPrompt: hasHydrated && promptDraft != null,
+    hasHydrated,
+    onContinue,
+    onDiscard,
+  };
 }
