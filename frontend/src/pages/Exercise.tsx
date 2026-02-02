@@ -17,6 +17,8 @@ export default function Exercises() {
   const [ownOnly, setOwnOnly] = useState(false);
   const [search, setSearch] = useState("");
   const [order, setOrder] = useState("newest");
+  const [categoryId, setCategoryId] = useState("");
+  const [muscleGroupId, setMuscleGroupId] = useState("");
 
   const handleToggleFavorite = useCallback(
     async (exerciseId: number) => {
@@ -50,15 +52,23 @@ export default function Exercises() {
       params.append('order', order);
     }
 
+    if (categoryId) {
+      params.append('categoryId', categoryId);
+    }
+
+    if (muscleGroupId) {
+      params.append('muscleGroupId', muscleGroupId);
+    }
+
     const res = await request({
       method: "get",
       url: `/exercise/all?${params.toString()}`,
     });
     return res;
-  }, [request, page, favoritesOnly, ownOnly, search, order]);
+  }, [request, page, favoritesOnly, ownOnly, search, order, categoryId, muscleGroupId]);
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["exercises", page, favoritesOnly, ownOnly, search, order],
+    queryKey: ["exercises", page, favoritesOnly, ownOnly, search, order, categoryId, muscleGroupId],
     queryFn: loadExercises,
     staleTime: 2 * 60 * 1000,
   });
@@ -73,6 +83,8 @@ export default function Exercises() {
       order?: string;
       favoritesOnly?: boolean;
       ownOnly?: boolean;
+      categoryId?: string;
+      muscleGroupId?: string;
     }) => {
       if (filters.search !== undefined) {
         setSearch(filters.search);
@@ -88,6 +100,14 @@ export default function Exercises() {
       }
       if (filters.ownOnly !== undefined) {
         setOwnOnly(filters.ownOnly);
+        setPage(1);
+      }
+      if (filters.categoryId !== undefined) {
+        setCategoryId(filters.categoryId);
+        setPage(1);
+      }
+      if (filters.muscleGroupId !== undefined) {
+        setMuscleGroupId(filters.muscleGroupId);
         setPage(1);
       }
     },
@@ -123,6 +143,8 @@ export default function Exercises() {
           ownOnly={ownOnly}
           search={search}
           order={order}
+          categoryId={categoryId}
+          muscleGroupId={muscleGroupId}
           onFilterChange={handleFilterChange}
           onToggleFavorite={handleToggleFavorite}
         />

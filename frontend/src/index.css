@@ -192,3 +192,9 @@ body {
 .root {
   overflow: hidden;
 }
+
+/* Combobox/Command list: enable touch scroll on mobile (cmdk list inside popover) */
+[cmdk-list] {
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
+}

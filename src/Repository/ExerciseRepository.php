@@ -75,7 +75,7 @@ class ExerciseRepository extends ServiceEntityRepository
      * @param int[]|null $favoriteIds IDs of exercises favorited by current personal (for ordering)
      * @return array{0: Exercise[], 1: int}
      */
-    public function findPaginatedByUser(int $userId, ?int $personalId, int $page = 1, int $limit = 20, bool $favoritesOnly = false, ?array $favoriteIds = null, string $search = '', string $order = 'newest', bool $ownOnly = false): array
+    public function findPaginatedByUser(int $userId, ?int $personalId, int $page = 1, int $limit = 20, bool $favoritesOnly = false, ?array $favoriteIds = null, string $search = '', string $order = 'newest', bool $ownOnly = false, ?int $categoryId = null, ?int $muscleGroupId = null): array
     {
         $conn = $this->getEntityManager()->getConnection();
         $sqlDefaults = 'SELECT deleted_default_exercises FROM personal p INNER JOIN users u ON u.id = p.user_id WHERE u.id = :userId';
@@ -110,10 +110,20 @@ class ExerciseRepository extends ServiceEntityRepository
                 ->setParameter('excludedIds', $excludedIds);
         }
 
-        // Apply search filter
+        // Apply search filter (name, category name, muscle group name)
         if (!empty($search)) {
             $qb->andWhere('LOWER(e.name) LIKE LOWER(:search) OR LOWER(c.name) LIKE LOWER(:search) OR LOWER(m.name) LIKE LOWER(:search)')
                 ->setParameter('search', '%' . $search . '%');
+        }
+
+        if ($categoryId !== null) {
+            $qb->andWhere('c.id = :categoryId')
+                ->setParameter('categoryId', $categoryId);
+        }
+
+        if ($muscleGroupId !== null) {
+            $qb->andWhere('m.id = :muscleGroupId')
+                ->setParameter('muscleGroupId', $muscleGroupId);
         }
 
         if ($favoritesOnly && $personalId !== null) {

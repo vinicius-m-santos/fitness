@@ -7,20 +7,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { WheelPicker, WheelPickerWrapper } from "@/components/wheel-picker";
-import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxGroup,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-  ComboboxTrigger,
-} from "@/components/ui/combobox";
-import { TrashIcon, ChevronUpIcon, ChevronDownIcon, CheckIcon, ChevronsUpDownIcon } from "lucide-react";
+import { TrashIcon, ChevronUpIcon, ChevronDownIcon } from "lucide-react";
+import { ExerciseSelectDropdown } from "./ExerciseSelectDropdown";
 import { EXERCISES_LABELS } from "@/utils/constants/Client/constants";
 import { TrainingCreateSchema } from "@/schemas/training";
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useExerciseSearch } from "@/hooks/useExerciseSearch";
 import { Label } from "@/components/ui/label";
@@ -152,11 +143,6 @@ export default function StepExercises({
   const getExerciseId = (periodId: number, instanceId: string) =>
     `${periodId}-${instanceId}`;
 
-  const comboboxData = useMemo(
-    () => accumulated.map((ex) => ({ label: ex.name, value: String(ex.id) })),
-    [accumulated]
-  );
-
   return (
     <Accordion type="single" collapsible>
       {periods.map((period) => (
@@ -164,84 +150,28 @@ export default function StepExercises({
           <AccordionTrigger>{period.name}</AccordionTrigger>
           <AccordionContent className="space-y-3">
             <div className="flex gap-2">
-              <Combobox
-                data={comboboxData}
-                type="exercício"
-                value={(() => {
-                  const sel = selectedExerciseByPeriod[period.id];
-                  return sel?.id != null ? String(sel.id) : "";
-                })()}
-                onValueChange={(val) => {
-                  const ex = accumulated.find((e) => e.id === Number(val));
-                  if (ex) {
-                    setSelectedExerciseByPeriod((prev) => ({
-                      ...prev,
-                      [period.id]: { id: ex.id, name: ex.name },
-                    }));
-                  }
-                }}
-              >
-                <ComboboxTrigger className="w-full min-w-0 overflow-hidden">
-                  <span className="flex min-w-0 flex-1 items-center justify-between gap-2 truncate">
-                    <span className="truncate">
-                      {selectedExerciseByPeriod[period.id]?.name ?? "Escolher exercício"}
-                    </span>
-                    <ChevronsUpDownIcon className="shrink-0 text-muted-foreground" size={16} />
-                  </span>
-                </ComboboxTrigger>
-                <ComboboxContent
-                  shouldFilter={false}
-                  popoverOptions={{ className: "p-0" }}
-                >
-                  <ComboboxInput
-                    placeholder="Buscar exercício..."
-                    onValueChange={handleSearchInputChange}
-                  />
-                  <ComboboxList
-                    onScroll={handleListScroll}
-                    className="max-h-[240px] overflow-y-auto overflow-x-hidden"
-                  >
-                    {isLoading && accumulated.length === 0 ? (
-                      <div className="py-8 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                        Carregando exercícios...
-                      </div>
-                    ) : (
-                      <>
-                        <ComboboxEmpty>Nenhum exercício encontrado.</ComboboxEmpty>
-                        <ComboboxGroup>
-                          {accumulated.map((ex) => {
-                            const isExerciseAdded = period.exercises.some(
-                              (periodEx) => periodEx.id === ex.id
-                            );
-                            return (
-                              <ComboboxItem key={ex.id} value={String(ex.id)}>
-                                {isExerciseAdded && (
-                                  <CheckIcon className="mr-2 h-4 w-4 shrink-0 text-green-600" />
-                                )}
-                                <span className="truncate">
-                                  {ex.name}
-                                  {(ex.exerciseCategory ?? ex.muscleGroup) && (
-                                    <span className="text-muted-foreground">
-                                      {" "}
-                                      — {[ex.exerciseCategory, ex.muscleGroup].filter(Boolean).join(" · ")}
-                                    </span>
-                                  )}
-                                </span>
-                              </ComboboxItem>
-                            );
-                          })}
-                        </ComboboxGroup>
-                      </>
-                    )}
-                    {isLoading && page > 1 && (
-                      <div className="py-2 text-center text-sm text-muted-foreground">
-                        Carregando...
-                      </div>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
+              <ExerciseSelectDropdown
+                triggerLabel={selectedExerciseByPeriod[period.id]?.name ?? ""}
+                selectedExercise={selectedExerciseByPeriod[period.id] ?? null}
+                onSelect={(ex) =>
+                  setSelectedExerciseByPeriod((prev) => ({
+                    ...prev,
+                    [period.id]: { id: ex.id, name: ex.name },
+                  }))
+                }
+                searchValue={search}
+                onSearchChange={handleSearchInputChange}
+                exercises={accumulated}
+                isLoading={isLoading}
+                isLoadingMore={isLoading && page > 1}
+                onListScroll={handleListScroll}
+                isExerciseAdded={(exId) =>
+                  period.exercises.some((periodEx) => periodEx.id === exId)
+                }
+                placeholder="Escolher exercício"
+                searchPlaceholder="Buscar exercício..."
+                emptyMessage="Nenhum exercício encontrado."
+              />
 
               <Button
                 type="button"

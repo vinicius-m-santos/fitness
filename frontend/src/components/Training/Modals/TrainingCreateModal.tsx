@@ -120,16 +120,17 @@ export default function TrainingCreateModal({
       }}
     >
       <DialogContent
-        className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl"
+        className="flex max-h-[85vh] max-w-[calc(100vw-1rem)] flex-col gap-4 overflow-hidden rounded-2xl sm:max-w-3xl"
         onInteractOutside={(e) => e.preventDefault()}
       >
-        <DialogHeader>
+        <DialogHeader className="shrink-0">
           <DialogTitle>Criar treino</DialogTitle>
           <DialogDescription>Criação guiada de treino</DialogDescription>
         </DialogHeader>
 
-        <Form {...training.form}>
-          <form
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <Form {...training.form}>
+            <form
             onSubmit={training.form.handleSubmit(onSubmit)}
             className="space-y-6"
           >
@@ -214,7 +215,8 @@ export default function TrainingCreateModal({
               )}
             </div>
           </form>
-        </Form>
+          </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );

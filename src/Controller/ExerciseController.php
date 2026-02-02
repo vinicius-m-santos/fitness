@@ -41,6 +41,8 @@ final class ExerciseController extends AbstractController
         $ownOnly = filter_var($request->query->get('ownOnly', false), \FILTER_VALIDATE_BOOLEAN);
         $search = $request->query->get('search', '');
         $order = $request->query->get('order', 'newest');
+        $categoryId = $request->query->get('categoryId');
+        $muscleGroupId = $request->query->get('muscleGroupId');
 
         $favoriteIds = $personalId !== null ? $this->exerciseRepository->getExerciseIdsFavoritedByPersonal($personalId) : [];
 
@@ -53,7 +55,9 @@ final class ExerciseController extends AbstractController
             $favoriteIds,
             $search,
             $order,
-            $ownOnly
+            $ownOnly,
+            $categoryId !== '' && $categoryId !== null ? (int) $categoryId : null,
+            $muscleGroupId !== '' && $muscleGroupId !== null ? (int) $muscleGroupId : null
         );
 
         $data = [];

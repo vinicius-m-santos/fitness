@@ -1,5 +1,3 @@
-import { useMediaQuery } from "react-responsive";
-import ExerciseTable from "./ExerciseTable";
 import ExerciseCards from "./ExerciseCards";
 import ExerciseFilters from "./ExerciseFilters";
 
@@ -30,11 +28,15 @@ interface ExerciseListProps {
   ownOnly?: boolean;
   search?: string;
   order?: string;
+  categoryId?: string;
+  muscleGroupId?: string;
   onFilterChange?: (filters: {
-    search: string;
-    order: string;
+    search?: string;
+    order?: string;
     favoritesOnly?: boolean;
     ownOnly?: boolean;
+    categoryId?: string;
+    muscleGroupId?: string;
   }) => void;
   onToggleFavorite?: (exerciseId: number) => Promise<void>;
 }
@@ -48,38 +50,30 @@ export const ExerciseList = ({
   ownOnly = false,
   search = "",
   order = "newest",
+  categoryId = "",
+  muscleGroupId = "",
   onFilterChange,
   onToggleFavorite,
 }: ExerciseListProps) => {
-  const isMobile = useMediaQuery({ maxWidth: 768 });
-
   return (
     <div className="space-y-4">
       <ExerciseFilters
         search={search}
         order={order}
+        categoryId={categoryId}
+        muscleGroupId={muscleGroupId}
         onFilterChange={onFilterChange ?? (() => { })}
         favoritesOnly={favoritesOnly}
         ownOnly={ownOnly}
         loading={loading}
       />
-      {isMobile ? (
-        <ExerciseCards
-          exerciseTableData={exerciseTableData ?? []}
-          loading={loading ?? false}
-          onToggleFavorite={onToggleFavorite}
-          pagination={pagination}
-          onPageChange={onPageChange}
-        />
-      ) : (
-        <ExerciseTable
-          exerciseTableData={exerciseTableData ?? []}
-          loading={loading ?? false}
-          onToggleFavorite={onToggleFavorite}
-          pagination={pagination}
-          onPageChange={onPageChange}
-        />
-      )}
+      <ExerciseCards
+        exerciseTableData={exerciseTableData ?? []}
+        loading={loading ?? false}
+        onToggleFavorite={onToggleFavorite}
+        pagination={pagination}
+        onPageChange={onPageChange}
+      />
     </div>
   );
 };

@@ -140,6 +140,21 @@ export type UseContinueTrainingDraftResult = {
 /** Flag no sessionStorage: setado no beforeunload para detectar F5 e ignorar state do bfcache */
 const RELOAD_FLAG_KEY = "training-draft-reload";
 
+/** Re-checa rascunho ao restaurar da bfcache (Alt+Tab longo, troca de app) ou ao voltar a aba visível (cold start atrasado). */
+function tryShowDraftPrompt(
+  setDraft: (d: TrainingDraft | null) => void,
+  setShowPrompt: (v: boolean) => void,
+  hasRestoreInState: boolean
+) {
+  if (hasRestoreInState) return;
+  getTrainingDraft().then((d) => {
+    if (d) {
+      setDraft(d);
+      setShowPrompt(true);
+    }
+  });
+}
+
 export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
   const navigate = useNavigate();
   const location = useLocation();
@@ -147,6 +162,8 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
   const [draft, setDraft] = useState<TrainingDraft | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const clearedStateForReloadRef = useRef(false);
+  const hasRestoreInStateRef = useRef(!!locationState?.restoreTrainingDraft);
+  hasRestoreInStateRef.current = !!locationState?.restoreTrainingDraft;
 
   useEffect(() => {
     const handler = () => {
@@ -179,6 +196,28 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
       cancelled = true;
     };
   }, [location.pathname, locationState?.restoreTrainingDraft, navigate]);
+
+  // Cold start / bfcache: ao restaurar a página (pageshow persisted) ou ao voltar a aba visível,
+  // re-checar IndexedDB. Na restauração o efeito de mount já rodou antes de a aba ser descartada.
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        navigate(location.pathname, { replace: true, state: {} });
+        tryShowDraftPrompt(setDraft, setShowPrompt, false);
+      }
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        tryShowDraftPrompt(setDraft, setShowPrompt, hasRestoreInStateRef.current);
+      }
+    };
+    window.addEventListener("pageshow", onPageShow);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.removeEventListener("pageshow", onPageShow);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [location.pathname, navigate]);
 
   useEffect(() => {
     const handler = () => {
