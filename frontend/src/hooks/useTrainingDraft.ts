@@ -183,11 +183,9 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
     const unsub = useWorkoutDraftStore.persist.onFinishHydration(() => {
       if (!isColdStart()) return;
       if (hasRestoreInStateRef.current) return;
-      setTimeout(() => {
-        const currentDrafts = useWorkoutDraftStore.getState().drafts;
-        const result = getAnyValidDraft(currentDrafts);
-        setPromptDraft(result);
-      }, 0);
+      const currentDrafts = useWorkoutDraftStore.getState().drafts;
+      const result = getAnyValidDraft(currentDrafts);
+      setPromptDraft(result);
     });
 
     if (useWorkoutDraftStore.persist.hasHydrated()) {
@@ -212,8 +210,9 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
   // Visibility / bfcache: reavaliar qualquer draft válido.
   useEffect(() => {
     const onPageShow = (e: PageTransitionEvent) => {
+      console.log('bbbb');
       if (e.persisted && hasHydrated && isColdStart()) {
-        if (hasRestoreInStateRef.current) return;
+        // if (hasRestoreInStateRef.current) return;
         const currentDrafts = useWorkoutDraftStore.getState().drafts;
         const result = getAnyValidDraft(currentDrafts);
         if (result) setPromptDraft(result);
@@ -221,7 +220,8 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
     };
     const onVisibilityChange = () => {
       if (document.visibilityState === "visible" && hasHydrated && isColdStart()) {
-        if (hasRestoreInStateRef.current) return;
+        console.log('aaaa');
+        // if (hasRestoreInStateRef.current) return;
         const currentDrafts = useWorkoutDraftStore.getState().drafts;
         const result = getAnyValidDraft(currentDrafts);
         if (result) setPromptDraft(result);
@@ -233,7 +233,7 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
       window.removeEventListener("pageshow", onPageShow);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [hasHydrated]);
+  }, []);
 
   const onContinue = () => {
     if (!promptDraft) return;
