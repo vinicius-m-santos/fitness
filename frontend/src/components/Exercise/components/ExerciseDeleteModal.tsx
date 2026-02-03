@@ -24,7 +24,7 @@ export default function DeleteExerciseModal({ onConfirm, isMobile = false }) {
             <Button
               size="sm"
               variant="destructive"
-              className="h-8 w-8 p-0 text-white flex items-center gap-1 cursor-pointer"
+              className="h-8 w-8 p-0 text-white flex items-center gap-1 cursor-pointer hover:opacity-80"
             >
               <Trash className="h-4 w-4" />
             </Button>

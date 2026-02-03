@@ -23,6 +23,7 @@ import { TrainingCreateSchema } from "@/schemas/training";
 import { NormalizeTrainingData } from "@/utils/NormalizeTrainingData";
 import { useWorkoutDraftStore, getDraftContextKey } from "@/stores/workoutDraftStore";
 import type { TrainingDraft } from "@/types/trainingDraft";
+import { useNavigate } from "react-router-dom";
 
 type Props = {
   open: boolean;
@@ -55,7 +56,7 @@ export default function TrainingUpdateModal({
   const formData = training.form.watch();
   const normalized = useMemo(() => NormalizeTrainingData(initialData), [initialData]);
   const prevOpenRef = useRef(false);
-
+  const navigate = useNavigate();
   const draftEnabled = open;
 
   const { flushDraft } = useTrainingDraft({
@@ -127,6 +128,7 @@ export default function TrainingUpdateModal({
       toast.success("Treino atualizado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["trainings"] });
       useWorkoutDraftStore.getState().clearDraft(getDraftContextKey("training-update", { trainingId }));
+      navigate(location.pathname, { replace: true, state: undefined });
       onOpenChange(false);
     } catch {
       toast.error("Erro ao atualizar treino");
@@ -169,6 +171,10 @@ export default function TrainingUpdateModal({
                     training.updatePeriodName(id, name);
                     setTimeout(() => flushDraft(), 0);
                   }}
+                  onReorderPeriods={(oldIndex, newIndex) => {
+                    training.reorderPeriods(oldIndex, newIndex);
+                    setTimeout(() => flushDraft(), 0);
+                  }}
                   isMobile={isMobile}
                 />
               )}
@@ -186,6 +192,10 @@ export default function TrainingUpdateModal({
                   onUpdateExercise={training.updateExercise}
                   onRemoveExercise={(periodId, instanceId) => {
                     training.removeExercise(periodId, instanceId);
+                    setTimeout(() => flushDraft(), 0);
+                  }}
+                  onReorderExercises={(periodId, oldIndex, newIndex) => {
+                    training.reorderExercises(periodId, oldIndex, newIndex);
                     setTimeout(() => flushDraft(), 0);
                   }}
                 />

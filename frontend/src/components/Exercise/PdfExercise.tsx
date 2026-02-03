@@ -163,11 +163,13 @@ interface PdfExerciseProps {
       }>;
     }>;
   };
+  personalAvatarSrc?: string;
 }
 
 export const PdfExercise: React.FC<PdfExerciseProps> = ({
   client,
   workout,
+  personalAvatarSrc,
 }) => {
   const formatName = (firstName: string, lastName: string) => {
     firstName = firstName.length
@@ -180,13 +182,15 @@ export const PdfExercise: React.FC<PdfExerciseProps> = ({
     return `${firstName} ${lastName}`;
   };
 
+  const avatarSrc = personalAvatarSrc || profilePlaceholder;
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <View style={styles.personalBlock}>
             <Image
-              src={client.personal?.photoUrl || profilePlaceholder}
+              src={avatarSrc}
               style={styles.personalPhoto}
             />
             <View style={styles.personalInfo}>
@@ -196,7 +200,7 @@ export const PdfExercise: React.FC<PdfExerciseProps> = ({
               </Text>
               <Text style={styles.personalSlogan}>Personal Trainer</Text>
               <Text style={styles.contactText}>
-                {client.personal?.user?.phone || ""}
+                {client.personal?.user?.phoneNumber || ""}
               </Text>
               <Text style={styles.contactText}>
                 {client.personal?.user?.email || ""}

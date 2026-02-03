@@ -37,7 +37,7 @@ class ExerciseRepository extends ServiceEntityRepository
     {
         $conn = $this->getEntityManager()->getConnection();
 
-        $sqlDefaults = 'SELECT deleted_default_exercises 
+        $sqlDefaults = 'SELECT deleted_default_exercises, show_platform_exercises 
             FROM personal p 
             INNER JOIN users u ON u.id = p.user_id 
             WHERE u.id = :userId
@@ -47,11 +47,15 @@ class ExerciseRepository extends ServiceEntityRepository
         $result = $stmt->executeQuery(['userId' => $userId])->fetchAssociative();
 
         $excludedIds = [];
-        if (!empty($result['deleted_default_exercises'])) {
-            $decoded = json_decode($result['deleted_default_exercises'], true);
-            if (is_array($decoded)) {
-                $excludedIds = array_map(fn($e) => (int) $e, $decoded);
+        $showPlatformExercises = true;
+        if ($result !== false) {
+            if (!empty($result['deleted_default_exercises'])) {
+                $decoded = json_decode($result['deleted_default_exercises'], true);
+                if (is_array($decoded)) {
+                    $excludedIds = array_map(fn($e) => (int) $e, $decoded);
+                }
             }
+            $showPlatformExercises = filter_var($result['show_platform_exercises'] ?? true, \FILTER_VALIDATE_BOOLEAN);
         }
 
         $qb = $this->createQueryBuilder('e')
@@ -62,6 +66,10 @@ class ExerciseRepository extends ServiceEntityRepository
             ->where('e.isStandard = true OR u.id = :userId')
             ->setParameter('userId', $userId)
             ->orderBy('e.name', 'ASC');
+
+        if (!$showPlatformExercises) {
+            $qb->andWhere('e.isStandard = false');
+        }
 
         if (!empty($excludedIds)) {
             $qb->andWhere('e.id NOT IN (:excludedIds)')
@@ -78,16 +86,20 @@ class ExerciseRepository extends ServiceEntityRepository
     public function findPaginatedByUser(int $userId, ?int $personalId, int $page = 1, int $limit = 20, bool $favoritesOnly = false, ?array $favoriteIds = null, string $search = '', string $order = 'newest', bool $ownOnly = false, ?int $categoryId = null, ?int $muscleGroupId = null): array
     {
         $conn = $this->getEntityManager()->getConnection();
-        $sqlDefaults = 'SELECT deleted_default_exercises FROM personal p INNER JOIN users u ON u.id = p.user_id WHERE u.id = :userId';
+        $sqlDefaults = 'SELECT deleted_default_exercises, show_platform_exercises FROM personal p INNER JOIN users u ON u.id = p.user_id WHERE u.id = :userId';
         $stmt = $conn->prepare($sqlDefaults);
         $result = $stmt->executeQuery(['userId' => $userId])->fetchAssociative();
 
         $excludedIds = [];
-        if (!empty($result['deleted_default_exercises'])) {
-            $decoded = json_decode($result['deleted_default_exercises'], true);
-            if (is_array($decoded)) {
-                $excludedIds = array_map(fn($e) => (int) $e, $decoded);
+        $showPlatformExercises = true;
+        if ($result !== false) {
+            if (!empty($result['deleted_default_exercises'])) {
+                $decoded = json_decode($result['deleted_default_exercises'], true);
+                if (is_array($decoded)) {
+                    $excludedIds = array_map(fn($e) => (int) $e, $decoded);
+                }
             }
+            $showPlatformExercises = filter_var($result['show_platform_exercises'] ?? true, \FILTER_VALIDATE_BOOLEAN);
         }
 
         $qb = $this->createQueryBuilder('e')
@@ -99,6 +111,10 @@ class ExerciseRepository extends ServiceEntityRepository
             ->leftJoin('p.user', 'u')
             ->where('e.isStandard = true OR u.id = :userId')
             ->setParameter('userId', $userId);
+
+        if (!$showPlatformExercises) {
+            $qb->andWhere('e.isStandard = false');
+        }
 
         if ($ownOnly && $personalId !== null) {
             $qb->andWhere('e.personal = :personalId')
@@ -150,10 +166,14 @@ class ExerciseRepository extends ServiceEntityRepository
         $totalQb = clone $qb;
         $total = (int) $totalQb->select('COUNT(e.id)')->getQuery()->getSingleScalarResult();
 
-        // Apply ordering
+        // Apply ordering: 1) favorites, 2) own (not favorite), 3) name/date
         if (!empty($favoriteIds)) {
             $qb->addOrderBy('CASE WHEN e.id IN (:orderFavoriteIds) THEN 0 ELSE 1 END', 'ASC')
                 ->setParameter('orderFavoriteIds', $favoriteIds);
+        }
+        if ($personalId !== null) {
+            $qb->addOrderBy('CASE WHEN p.id = :personalIdOrder THEN 0 ELSE 1 END', 'ASC')
+                ->setParameter('personalIdOrder', $personalId);
         }
 
         switch ($order) {

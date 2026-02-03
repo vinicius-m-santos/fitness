@@ -25,6 +25,7 @@ import { TrainingCreateSchema } from "@/schemas/training";
 import { useWorkoutDraftStore, getDraftContextKey } from "@/stores/workoutDraftStore";
 import type { TrainingDraft } from "@/types/trainingDraft";
 import { NormalizeTrainingData } from "@/utils/NormalizeTrainingData";
+import { useNavigate } from "react-router-dom";
 
 type Props = {
   open: boolean;
@@ -50,6 +51,7 @@ export default function TrainingCreateModal({
 
   const training = useTrainingForm();
   const formData = training.form.watch();
+  const navigate = useNavigate();
 
   const { flushDraft } = useTrainingDraft({
     type: "training-create",
@@ -99,6 +101,7 @@ export default function TrainingCreateModal({
       useWorkoutDraftStore
         .getState()
         .clearDraft(getDraftContextKey("training-create", { clientId: client }));
+      navigate(location.pathname, { replace: true, state: undefined });
       onOpenChange(false);
     } catch {
       toast.error("Erro ao salvar treino");
@@ -137,6 +140,10 @@ export default function TrainingCreateModal({
                   training.updatePeriodName(id, name);
                   flushDraft();
                 }}
+                onReorderPeriods={(oldIndex, newIndex) => {
+                  training.reorderPeriods(oldIndex, newIndex);
+                  flushDraft();
+                }}
                 isMobile={isMobile}
               />
             )}
@@ -154,6 +161,10 @@ export default function TrainingCreateModal({
                 onUpdateExercise={training.updateExercise}
                 onRemoveExercise={(periodId, instanceId) => {
                   training.removeExercise(periodId, instanceId);
+                  flushDraft();
+                }}
+                onReorderExercises={(periodId, oldIndex, newIndex) => {
+                  training.reorderExercises(periodId, oldIndex, newIndex);
                   flushDraft();
                 }}
               />

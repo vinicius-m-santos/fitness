@@ -1,4 +1,5 @@
 import type { TrainingCreateSchema } from "@/schemas/training";
+import { getEffectiveDueDateISO } from "@/utils/dateUtils";
 
 /** Garante payload sem undefined/null para a API e evita quebra no submit. */
 function str(value: string | null | undefined): string {
@@ -13,7 +14,7 @@ export function prepareTrainingPayload(data: TrainingCreateSchema): Record<strin
   const periods = Array.isArray(data.periods) ? data.periods : [];
   return {
     name: typeof data.name === "string" ? data.name : "",
-    dueDate: data.dueDate ?? "",
+    dueDate: getEffectiveDueDateISO(data.dueDate) ?? "",
     periods: periods.map((period) => ({
       id: period.id,
       name: typeof period.name === "string" ? period.name : "",

@@ -23,6 +23,7 @@ import TrainingApplyModal from "@/components/Training/Modals/TrainingApplyModal"
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { PdfExercise } from "../Exercise/PdfExercise";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useApi } from "@/api/Api";
 import { useRequest } from "@/api/request";
 import ContainerLoader from "../ui/containerLoader";
 import { pdf } from "@react-pdf/renderer";
@@ -54,6 +55,7 @@ export default function WorkoutsTab({ isActive = true }: WorkoutsTabProps) {
   const [trainingToApply, setTrainingToApply] = useState<{ id: number; name: string } | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [standardLoadingId, setStandardLoadingId] = useState<number | null>(null);
+  const api = useApi();
   const request = useRequest();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -131,13 +133,32 @@ export default function WorkoutsTab({ isActive = true }: WorkoutsTabProps) {
     staleTime: 5 * 60 * 1000,
   });
 
+  const blobToDataUrl = (blob: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
   const handleGeneratePdf = async (
     client: ClientAllData | undefined,
     workout: { name?: string; periods: unknown[] }
   ) => {
     if (!client) return;
     setPdfLoading(true);
-
+    let personalAvatarSrc: string | undefined;
+    const personalUser = client.personal?.user;
+    if (personalUser?.id != null && personalUser?.avatarUrl) {
+      try {
+        const res = await api.get(`/user/avatar/${personalUser.id}`, {
+          responseType: "blob",
+        });
+        personalAvatarSrc = await blobToDataUrl(res.data as Blob);
+      } catch {
+        personalAvatarSrc = undefined;
+      }
+    }
     const periods = workout.periods as Array<{ name: string; exercises: Array<{ name: string; series?: string; reps?: string; rest?: string; obs?: string }> }>;
     const doc = (
       <PdfExercise
@@ -155,6 +176,7 @@ export default function WorkoutsTab({ isActive = true }: WorkoutsTabProps) {
             })),
           })),
         }}
+        personalAvatarSrc={personalAvatarSrc}
       />
     );
     const asPdf = pdf(doc);

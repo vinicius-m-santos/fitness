@@ -10,6 +10,14 @@ import {
   type WorkoutDraft,
   type DraftContextKey,
 } from "@/stores/workoutDraftStore";
+import { useAuth } from "@/providers/AuthProvider";
+
+const ROLE_CLIENT = "ROLE_CLIENT";
+
+export function useIsDraftCacheEnabled(): boolean {
+  const { user } = useAuth();
+  return !!user && !user.roles?.includes(ROLE_CLIENT);
+}
 
 const DEBOUNCE_MS = 300;
 const SUBSCRIBE_DEBOUNCE_MS = 100;
@@ -65,6 +73,7 @@ export function useTrainingDraft({
   formSubscribe,
 }: UseTrainingDraftOptions): { flushDraft: () => void } {
   const hasHydrated = useWorkoutDraftHasHydrated();
+  const isDraftCacheEnabled = useIsDraftCacheEnabled();
   const contextKey = getDraftContextKey(type, { clientId, trainingId });
   const setDraft = useWorkoutDraftStore((s) => s.setDraft);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -77,7 +86,7 @@ export function useTrainingDraft({
   selectedRef.current = selectedExerciseByPeriod;
 
   /** Só permite escrita na store após hidratação para não sobrescrever draft com useState vazio. */
-  const draftEnabled = enabled && hasHydrated;
+  const draftEnabled = enabled && hasHydrated && isDraftCacheEnabled;
 
   useEffect(() => {
     if (!draftEnabled) return;
@@ -170,6 +179,7 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
   const location = useLocation();
   const clearDraft = useWorkoutDraftStore((s) => s.clearDraft);
   const hasHydrated = useWorkoutDraftHasHydrated();
+  const isDraftCacheEnabled = useIsDraftCacheEnabled();
   const [promptDraft, setPromptDraft] = useState<{
     draft: WorkoutDraft;
     contextKey: string;
@@ -181,6 +191,7 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
   // Prompt independente da rota: qualquer draft válido exibe o prompt (usuário deve finalizar ou descartar).
   useEffect(() => {
     const unsub = useWorkoutDraftStore.persist.onFinishHydration(() => {
+      if (!isDraftCacheEnabled) return;
       if (!isColdStart()) return;
       if (hasRestoreInStateRef.current) return;
       const currentDrafts = useWorkoutDraftStore.getState().drafts;
@@ -189,7 +200,7 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
     });
 
     if (useWorkoutDraftStore.persist.hasHydrated()) {
-      if (isColdStart() && hasRestoreInStateRef.current) {
+      if (isDraftCacheEnabled && isColdStart() && hasRestoreInStateRef.current) {
         const currentDrafts = useWorkoutDraftStore.getState().drafts;
         const result = getAnyValidDraft(currentDrafts);
         setPromptDraft(result);
@@ -199,6 +210,10 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
   }, []);
 
   useEffect(() => {
+    if (!isDraftCacheEnabled) {
+      setPromptDraft(null);
+      return;
+    }
     if (!hasHydrated) return;
     if (hasRestoreInStateRef.current) return;
     if (!isColdStart()) return;
@@ -210,7 +225,7 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
   // Visibility / bfcache: reavaliar qualquer draft válido.
   useEffect(() => {
     const onPageShow = (e: PageTransitionEvent) => {
-      console.log('bbbb');
+      if (!isDraftCacheEnabled) return;
       if (e.persisted && hasHydrated && isColdStart()) {
         // if (hasRestoreInStateRef.current) return;
         const currentDrafts = useWorkoutDraftStore.getState().drafts;
@@ -219,8 +234,8 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
       }
     };
     const onVisibilityChange = () => {
+      if (!isDraftCacheEnabled) return;
       if (document.visibilityState === "visible" && hasHydrated && isColdStart()) {
-        console.log('aaaa');
         // if (hasRestoreInStateRef.current) return;
         const currentDrafts = useWorkoutDraftStore.getState().drafts;
         const result = getAnyValidDraft(currentDrafts);
@@ -255,6 +270,7 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
 
   const onDiscard = () => {
     if (promptDraft) {
+      navigate(location.pathname, { replace: true, state: undefined });
       clearDraft(promptDraft.contextKey as DraftContextKey);
       setPromptDraft(null);
     }
@@ -263,7 +279,7 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
   return {
     draft: promptDraft?.draft ?? null,
     contextKey: promptDraft?.contextKey ?? null,
-    showPrompt: hasHydrated && promptDraft != null,
+    showPrompt: isDraftCacheEnabled && hasHydrated && promptDraft != null,
     hasHydrated,
     onContinue,
     onDiscard,

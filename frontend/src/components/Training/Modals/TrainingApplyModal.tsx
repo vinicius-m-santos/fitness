@@ -12,6 +12,8 @@ import { ClientTransferList, type ClientItem } from "@/components/ClientTransfer
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "@/api/Api";
 import toast from "react-hot-toast";
+import DueDateInput from "@/components/Inputs/DueDateInput";
+import { getEffectiveDueDateISO, isDueDateValid } from "@/utils/dateUtils";
 
 type Props = {
   open: boolean;
@@ -73,7 +75,10 @@ export default function TrainingApplyModal({
       await api.post("/training/apply", {
         trainingId: training.id,
         clientIds: selected.map((c) => c.id),
-        ...(dueDate ? { dueDate } : {}),
+        ...(() => {
+        const effectiveIso = getEffectiveDueDateISO(dueDate);
+        return effectiveIso && isDueDateValid(dueDate) ? { dueDate: effectiveIso } : {};
+      })(),
       });
     },
     onSuccess: () => {
@@ -107,6 +112,10 @@ export default function TrainingApplyModal({
       toast.error("Selecione pelo menos um aluno.");
       return;
     }
+    if (dueDate.trim() && !isDueDateValid(dueDate)) {
+      toast.error("Data de vencimento inválida ou deve ser no futuro.");
+      return;
+    }
     applyMutation.mutate();
   };
 
@@ -132,13 +141,16 @@ export default function TrainingApplyModal({
             <label htmlFor="dueDate" className="text-sm font-medium text-gray-700">
               Data de vencimento (opcional)
             </label>
-            <input
+            <DueDateInput
               id="dueDate"
-              type="date"
               value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              onChange={(v) => setDueDate(v ?? "")}
             />
+            {dueDate.trim() && !isDueDateValid(dueDate) && (
+              <p className="text-xs text-destructive">
+                Data de vencimento inválida ou deve ser no futuro.
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">
               Define quando o treino deve ser renovado para os alunos selecionados.
             </p>

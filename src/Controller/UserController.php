@@ -12,6 +12,8 @@ use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
@@ -103,6 +105,29 @@ class UserController extends AbstractController
 
         $url = $this->userService->saveUserProfileImage($file, $user);
         return new JsonResponse(['data' => $url]);
+    }
+
+    #[Route('/avatar/{id}', name: 'user_get_avatar', methods: ['GET'])]
+    public function getAvatar(User $user): StreamedResponse|NotFoundHttpException
+    {
+        $this->getUser();
+        $key = $user->getAvatarKey();
+        if (empty($key)) {
+            throw new NotFoundHttpException('Avatar não encontrado');
+        }
+        $body = $this->s3Service->getObjectBody($key);
+        if ($body === null) {
+            throw new NotFoundHttpException('Avatar não encontrado');
+        }
+        $contentType = $this->s3Service->getObjectContentType($key) ?? 'image/jpeg';
+        $response = new StreamedResponse(function () use ($body) {
+            while (!$body->eof()) {
+                echo $body->read(8192);
+            }
+        });
+        $response->headers->set('Content-Type', $contentType);
+        $response->headers->set('Cache-Control', 'private, max-age=3600');
+        return $response;
     }
 
     #[Route('/avatar/{id}', name: 'user_delete_avatar', methods: ['DELETE'])]
@@ -231,9 +256,20 @@ class UserController extends AbstractController
             $user->setAppNotifications((bool)$data['appNotifications']);
         }
 
+        $personal = $user->getPersonal();
+        if ($personal !== null && array_key_exists('showPlatformExercises', $data)) {
+            $personal->setShowPlatformExercises((bool)$data['showPlatformExercises']);
+        }
+
         $this->userService->add($user);
 
         $normalizedData = $this->normalizer->normalize($user, 'json', ['groups' => ['user_all']]);
+        if ($personal !== null) {
+            $normalizedData['personal'] = [
+                'id' => $personal->getId(),
+                'showPlatformExercises' => $personal->isShowPlatformExercises(),
+            ];
+        }
         return new JsonResponse(['data' => $normalizedData]);
     }
 

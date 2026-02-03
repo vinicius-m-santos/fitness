@@ -30,7 +30,7 @@ export default function ExerciseCard({
   const handleStarClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!onToggleFavorite || favoriteLoading || isStandard) return;
+    if (!onToggleFavorite || favoriteLoading) return;
     setFavoriteLoading(true);
     try {
       await onToggleFavorite(exercise.id);
@@ -189,22 +189,21 @@ export default function ExerciseCard({
             {exercise.name}
           </h3>
         </div>
-        {!isStandard && (
-          <button
-            type="button"
-            onClick={handleStarClick}
-            disabled={favoriteLoading}
-            className="p-1 rounded hover:bg-gray-200/50 disabled:opacity-50 shrink-0 mt-0.5"
-            aria-label={isFavorite ? "Remover dos favoritos" : "Marcar como favorito"}
-          >
-            <Star
-              className={`w-5 h-5 transition-colors ${isFavorite
-                ? "fill-yellow-400 text-yellow-500"
-                : "text-gray-400 hover:text-yellow-500/70"
-                }`}
-            />
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={handleStarClick}
+          disabled={favoriteLoading}
+          className="p-1 rounded hover:bg-gray-200/50 disabled:opacity-50 shrink-0 mt-0.5"
+          aria-label={isFavorite ? "Remover dos favoritos" : "Marcar como favorito"}
+        >
+          <Star
+            className={`w-5 h-5 transition-colors ${isFavorite
+              ? "fill-yellow-400 text-yellow-500"
+              : "text-gray-400 hover:text-yellow-500/70"
+              }`}
+          />
+        </button>
+
       </CardHeader>
 
       <CardContent className="flex flex-col items-start p-0 pl-6 gap-2 text-sm">

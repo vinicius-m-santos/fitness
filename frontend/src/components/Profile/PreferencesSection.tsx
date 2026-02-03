@@ -5,10 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import {
-  Palette,
+  Dumbbell,
   Bell,
   Globe,
-  Eye,
 } from "lucide-react";
 import { useRequest } from "@/api/request";
 import { useAuth } from "@/providers/AuthProvider";
@@ -18,7 +17,7 @@ export default function PreferencesSection() {
   const request = useRequest();
   const [isLoading, setIsLoading] = useState<string | null>(null);
 
-  const handleToggle = async (field: "emailNotifications" | "appNotifications", value: boolean) => {
+  const handleToggle = async (field: "emailNotifications" | "appNotifications" | "showPlatformExercises", value: boolean) => {
     if (!user) return;
 
     setIsLoading(field);
@@ -29,13 +28,16 @@ export default function PreferencesSection() {
         data: { [field]: value },
         showSuccess: false,
       });
-      updateUser(updatedUser);
+      updateUser({ ...user, ...updatedUser });
     } catch (error) {
       // Error is handled by useRequest
     } finally {
       setIsLoading(null);
     }
   };
+
+  const isPersonal = user?.roles?.includes("ROLE_PERSONAL");
+  const showPlatformExercises = user?.personal?.showPlatformExercises ?? true;
 
   return (
     <div className="space-y-6">
@@ -87,6 +89,25 @@ export default function PreferencesSection() {
           </div>
         </CardContent>
       </Card>
+
+      {isPersonal && (
+        <Card>
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <Dumbbell className="text-muted-foreground" />
+              <h3 className="text-lg font-semibold">Exercícios</h3>
+            </div>
+            <Separator />
+            <PreferenceItem
+              label="Exercícios da plataforma"
+              description="Exibir exercícios originais cadastrados pela plataforma na lista e no cadastro de treinos"
+              checked={showPlatformExercises}
+              onCheckedChange={(checked) => handleToggle("showPlatformExercises", checked)}
+              disabled={isLoading === "showPlatformExercises"}
+            />
+        </CardContent>
+      </Card>
+      )}
     </div>
   );
 }

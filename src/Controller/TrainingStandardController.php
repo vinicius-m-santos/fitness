@@ -110,8 +110,19 @@ final class TrainingStandardController extends AbstractController
 
         $trainingStandardId = (int) $data['trainingStandardId'];
         $clientIds = array_map('intval', array_values($data['clientIds']));
-        $dueDate = isset($data['dueDate']) && $data['dueDate'] !== ''
-            ? new \DateTimeImmutable($data['dueDate']) : null;
+        $dueDate = null;
+        if (isset($data['dueDate']) && $data['dueDate'] !== '') {
+            $dueDateParsed = \DateTimeImmutable::createFromFormat('Y-m-d', (string) $data['dueDate']);
+            if ($dueDateParsed === false) {
+                return $this->json(['error' => 'Data de vencimento inválida.'], 400);
+            }
+            $dueDateMidnight = $dueDateParsed->setTime(0, 0, 0);
+            $today = (new \DateTimeImmutable())->setTime(0, 0, 0);
+            if ($dueDateMidnight <= $today) {
+                return $this->json(['error' => 'A data de vencimento deve ser no futuro.'], 400);
+            }
+            $dueDate = $dueDateMidnight;
+        }
 
         try {
             $this->service->applyToClients($user, $trainingStandardId, $clientIds, $dueDate);

@@ -123,8 +123,8 @@ class TrainingStandardService
             $dueDate = new \DateTimeImmutable((string) $dueDateValue);
             $today = (new \DateTimeImmutable())->setTime(0, 0, 0);
             $dueDateMidnight = $dueDate->setTime(0, 0, 0);
-            if ($dueDateMidnight < $today) {
-                throw new UnprocessableEntityHttpException('A data de vencimento não pode ser no passado.');
+            if ($dueDateMidnight <= $today) {
+                throw new UnprocessableEntityHttpException('A data de vencimento deve ser no futuro.');
             }
             $training->setDueDate($dueDate);
         } catch (\Exception $e) {

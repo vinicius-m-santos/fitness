@@ -44,7 +44,9 @@ class TrainingRepository extends ServiceEntityRepository
             ->andWhere('t.personal = :personal')
             ->setParameter('client', $client)
             ->setParameter('personal', $personal)
-            ->orderBy('t.createdAt', 'DESC');
+            ->orderBy('t.createdAt', 'DESC')
+            ->addOrderBy('p.id', 'ASC')
+            ->addOrderBy('pe.id', 'ASC');
         
         return $qb->getQuery()->getResult();
     }
@@ -59,6 +61,8 @@ class TrainingRepository extends ServiceEntityRepository
             ->andWhere('t.id = :id')
             ->setParameter('personal', $personal)
             ->setParameter('id', $id)
+            ->addOrderBy('p.id', 'ASC')
+            ->addOrderBy('pe.id', 'ASC')
             ->getQuery()
             ->getOneOrNullResult();
     }

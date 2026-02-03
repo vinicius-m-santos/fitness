@@ -49,6 +49,7 @@ export default function EditHistoryLoadsModal({
 
   useEffect(() => {
     if (open && item) {
+      console.log(item.exerciseExecutions);
       setLocalExercises(
         item.exerciseExecutions.map((ee) => ({
           ...ee,

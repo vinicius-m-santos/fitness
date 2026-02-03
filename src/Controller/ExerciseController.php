@@ -64,15 +64,17 @@ final class ExerciseController extends AbstractController
         foreach ($exercises as $exercise) {
             $fav = $exercise->getFavorite();
             $isFavorite = $personalId !== null && in_array($personalId, $fav, true);
+            $exercisePersonalId = $exercise->getPersonal() ? $exercise->getPersonal()->getId() : null;
             $data[] = [
                 'id' => $exercise->getId(),
                 'name' => trim($exercise->getName()),
-                'personal' => $exercise->getPersonal() ? $exercise->getPersonal()->getId() : null,
+                'personal' => $exercisePersonalId,
                 'exerciseCategory' => $exercise->getExerciseCategory()->getName(),
                 'muscleGroup' => $exercise->getMuscleGroup()->getName(),
                 'createdAt' => $exercise->getCreatedAt()->format('Y-m-d H:i:s'),
                 'isStandard' => $exercise->isStandard(),
                 'isFavorite' => $isFavorite,
+                'isOwn' => $personalId !== null && $exercisePersonalId !== null && (int) $exercisePersonalId === (int) $personalId,
             ];
         }
 

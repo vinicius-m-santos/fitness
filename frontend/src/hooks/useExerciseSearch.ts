@@ -10,6 +10,8 @@ export type ExerciseSearchItem = {
   name: string;
   exerciseCategory?: string;
   muscleGroup?: string;
+  isFavorite?: boolean;
+  isOwn?: boolean;
 };
 
 export function useExerciseSearch(search: string, page: number, enabled: boolean) {
@@ -32,11 +34,13 @@ export function useExerciseSearch(search: string, page: number, enabled: boolean
       });
       return {
         exercises: (res.exercises ?? []).map(
-          (e: { id: number; name: string; exerciseCategory?: string; muscleGroup?: string }) => ({
+          (e: { id: number; name: string; exerciseCategory?: string; muscleGroup?: string; isFavorite?: boolean; isOwn?: boolean }) => ({
             id: e.id,
             name: e.name,
             exerciseCategory: e.exerciseCategory,
             muscleGroup: e.muscleGroup,
+            isFavorite: Boolean(e.isFavorite),
+            isOwn: Boolean(e.isOwn),
           })
         ),
         total: res.total ?? 0,
