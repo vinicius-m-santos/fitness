@@ -53,8 +53,19 @@ class TrainingService
             throw new UnprocessableEntityHttpException("Nome do treino não informado");
         }
 
-        $dueDate = isset($data['dueDate']) && $data['dueDate'] !== ''
-            ? new \DateTimeImmutable($data['dueDate']) : null;
+        $dueDate = null;
+        if (isset($data['dueDate']) && $data['dueDate'] !== '') {
+            $dueDateParsed = \DateTimeImmutable::createFromFormat('Y-m-d', (string) $data['dueDate']);
+            if ($dueDateParsed === false) {
+                throw new UnprocessableEntityHttpException('Data de vencimento inválida.');
+            }
+            $dueDateMidnight = $dueDateParsed->setTime(0, 0, 0);
+            $today = (new \DateTimeImmutable())->setTime(0, 0, 0);
+            if ($dueDateMidnight <= $today) {
+                throw new UnprocessableEntityHttpException('A data de vencimento deve ser no futuro.');
+            }
+            $dueDate = $dueDateMidnight;
+        }
 
         $training = new Training();
         $training->setName($data['name']);

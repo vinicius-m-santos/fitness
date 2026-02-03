@@ -159,10 +159,11 @@ const ExerciseUpdateModal = ({
           <Button
             variant="outline"
             size="sm"
-            className="h-8 w-8 p-0"
+            className="w-full flex items-center gap-2"
             onClick={() => setOpen(true)}
           >
             <Edit className="h-4 w-4" />
+            <span>Editar</span>
           </Button>
         </DialogTrigger>
       )}

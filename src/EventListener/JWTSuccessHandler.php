@@ -71,6 +71,13 @@ class JWTSuccessHandler
             ];
         }
 
+        if ($user->getPersonal()) {
+            $data['user']['personal'] = [
+                'id' => $user->getPersonal()->getId(),
+                'showPlatformExercises' => $user->getPersonal()->isShowPlatformExercises(),
+            ];
+        }
+
         $data['success'] = true;
 
         $event->setData($data);

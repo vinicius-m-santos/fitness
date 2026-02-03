@@ -1,9 +1,5 @@
 import z from "zod";
-
-function todayYMD(): string {
-  const d = new Date();
-  return d.toISOString().slice(0, 10);
-}
+import { getEffectiveDueDateISO, getTodayYMD, isValidISODate } from "@/utils/dateUtils";
 
 export const trainingCreateSchema = z
   .object({
@@ -41,11 +37,19 @@ export const trainingCreateSchema = z
   })
   .refine(
     (data) => {
-      const d = data.dueDate?.trim();
-      if (!d) return true;
-      return d >= todayYMD();
+      const iso = getEffectiveDueDateISO(data.dueDate);
+      if (!iso) return true;
+      return isValidISODate(iso);
     },
-    { message: "A data de vencimento não pode ser no passado.", path: ["dueDate"] }
+    { message: "Data de vencimento inválida.", path: ["dueDate"] }
+  )
+  .refine(
+    (data) => {
+      const iso = getEffectiveDueDateISO(data.dueDate);
+      if (!iso) return true;
+      return iso > getTodayYMD();
+    },
+    { message: "A data de vencimento deve ser no futuro.", path: ["dueDate"] }
   );
 
 export type TrainingCreateSchema = z.infer<typeof trainingCreateSchema>;

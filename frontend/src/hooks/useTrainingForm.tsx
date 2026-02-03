@@ -100,6 +100,14 @@ export function useTrainingForm({
     );
   };
 
+  const reorderPeriods = (oldIndex: number, newIndex: number) => {
+    if (oldIndex === newIndex || oldIndex < 0 || newIndex < 0 || oldIndex >= periods.length || newIndex >= periods.length) return;
+    const next = [...periods];
+    const [removed] = next.splice(oldIndex, 1);
+    next.splice(newIndex, 0, removed);
+    form.setValue("periods", next, { shouldDirty: true, shouldValidate: true });
+  };
+
   /* =====================
    * EXERCISE HELPERS
    * ===================== */
@@ -174,6 +182,19 @@ export function useTrainingForm({
     );
   };
 
+  const reorderExercises = (periodId: number, oldIndex: number, newIndex: number) => {
+    const period = periods.find((p) => p.id === periodId);
+    if (!period || oldIndex === newIndex || oldIndex < 0 || newIndex < 0 || oldIndex >= period.exercises.length || newIndex >= period.exercises.length) return;
+    const nextExercises = [...period.exercises];
+    const [removed] = nextExercises.splice(oldIndex, 1);
+    nextExercises.splice(newIndex, 0, removed);
+    form.setValue(
+      "periods",
+      periods.map((p) => (p.id === periodId ? { ...p, exercises: nextExercises } : p)),
+      { shouldDirty: true, shouldValidate: true }
+    );
+  };
+
   /* =====================
    * RESET
    * ===================== */
@@ -202,8 +223,10 @@ export function useTrainingForm({
     addPeriod,
     removePeriod,
     updatePeriodName,
+    reorderPeriods,
     addExercise,
     updateExercise,
     removeExercise,
+    reorderExercises,
   };
 }

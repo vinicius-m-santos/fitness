@@ -18,7 +18,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: "integer")]
-    #[Groups(['user_all'])]
+    #[Groups(['user_all', 'client_all'])]
     private int $id;
 
     #[ORM\Column(type: "uuid", unique: true)]

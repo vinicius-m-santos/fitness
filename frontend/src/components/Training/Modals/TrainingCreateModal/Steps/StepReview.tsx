@@ -1,29 +1,37 @@
-import { UseFormReturn } from "react-hook-form";
+import { Controller, UseFormReturn } from "react-hook-form";
 import { TrainingCreateSchema } from "@/schemas/training";
+import DueDateInput from "@/components/Inputs/DueDateInput";
 
 type Props = {
   periods: TrainingCreateSchema["periods"];
   form: UseFormReturn<TrainingCreateSchema>;
 };
 
-function getTodayYMD(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export default function StepReview({ periods, form }: Props) {
-  const minDate = getTodayYMD();
   return (
     <div className="space-y-4 text-sm">
       <div className="space-y-2">
         <label htmlFor="dueDate" className="text-sm font-medium text-gray-700">
           Data de vencimento (opcional)
         </label>
-        <input
-          id="dueDate"
-          type="date"
-          min={minDate}
-          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          {...form.register("dueDate")}
+        <Controller
+          name="dueDate"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <>
+              <DueDateInput
+                id="dueDate"
+                value={field.value ?? ""}
+                onChange={(v) => field.onChange(v ?? "")}
+                onBlur={field.onBlur}
+              />
+              {fieldState.error?.message && (
+                <p className="text-xs text-destructive mt-1">
+                  {fieldState.error.message}
+                </p>
+              )}
+            </>
+          )}
         />
         <p className="text-xs text-muted-foreground">
           Define quando o treino deve ser renovado para o aluno.

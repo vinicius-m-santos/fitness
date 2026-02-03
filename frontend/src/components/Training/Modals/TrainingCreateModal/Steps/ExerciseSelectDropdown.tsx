@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useLayoutEffect, useRef } from "react";
-import { Search, CheckIcon } from "lucide-react";
+import { Search, CheckIcon, Star, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -18,6 +18,8 @@ export type ExerciseOption = {
   name: string;
   exerciseCategory?: string;
   muscleGroup?: string;
+  isFavorite?: boolean;
+  isOwn?: boolean;
 };
 
 type Props = {
@@ -70,15 +72,26 @@ export function ExerciseSelectDropdown({
     if (ex) onSelect({ id: ex.id, name: ex.name });
   };
 
-  // Garantir que o item selecionado esteja na lista para o trigger mostrar o nome (ex.: após busca)
+  const sortPriority = (ex: ExerciseOption): number => {
+    if (Boolean(ex.isFavorite)) return 0;
+    if (Boolean(ex.isOwn)) return 1;
+    return 2;
+  };
+  const sortedExercises = [...exercises].sort((a, b) => {
+    const pa = sortPriority(a);
+    const pb = sortPriority(b);
+    if (pa !== pb) return pa - pb;
+    return (a.name ?? "").localeCompare(b.name ?? "", undefined, { sensitivity: "base" });
+  });
+
   const listItems =
     selectedExercise &&
-      !exercises.some((e) => e.id === selectedExercise.id)
+      !sortedExercises.some((e) => e.id === selectedExercise.id)
       ? [
-        { id: selectedExercise.id, name: selectedExercise.name },
-        ...exercises,
+        { id: selectedExercise.id, name: selectedExercise.name, isFavorite: false, isOwn: false },
+        ...sortedExercises,
       ]
-      : exercises;
+      : sortedExercises;
 
   const searchSlot = (
     <div className="flex items-center border-b px-2 py-2">
@@ -128,11 +141,22 @@ export function ExerciseSelectDropdown({
                   .filter(Boolean)
                   .join("")
                 : ex.name;
+            const isFavorite = "isFavorite" in ex && ex.isFavorite;
+            const isOwn = "isOwn" in ex && ex.isOwn;
             return (
               <SelectItem key={ex.id} value={String(ex.id)} hideIndicator>
-                <span className="flex flex-wrap items-start gap-2 min-w-0">
+                <span className="flex flex-wrap items-center gap-1.5 min-w-0">
                   {added && (
                     <CheckIcon className="h-4 w-4 shrink-0 text-green-600" />
+                  )}
+                  {isFavorite && (
+                    <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-500" />
+                  )}
+                  {isOwn && !isFavorite && (
+                    <>
+                      <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground shrink-0">Meu</span>
+                    </>
                   )}
                   <span className="min-w-0 whitespace-normal break-words">{label}</span>
                 </span>

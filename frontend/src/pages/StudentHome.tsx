@@ -14,10 +14,31 @@ import TrainingHistorySection from "@/components/Student/TrainingHistorySection"
 import { useActiveWorkoutCheck } from "@/hooks/useActiveWorkoutCheck";
 import { clearActiveSession } from "@/lib/activeSessionDb";
 
+type ExerciseWithSeriesAndRest = { series?: string; rest?: string };
+
+function parseSeries(series: string | undefined): number {
+  if (series == null || series === "") return 1;
+  const n = parseInt(series, 10);
+  return Number.isNaN(n) || n < 1 ? 1 : Math.min(n, 99);
+}
+
+function parseRestSeconds(rest: string | undefined): number {
+  if (rest == null || rest === "") return 0;
+  const n = parseInt(rest, 10);
+  return Number.isNaN(n) || n < 0 ? 0 : Math.min(n, 600);
+}
+
 function formatEstimatedDuration(exercises: unknown[]): string {
-  const count = exercises?.length ?? 0;
-  const minutes = Math.max(15, Math.min(120, count * 5 + 20));
-  return `${minutes} minutos`;
+  const list = (exercises ?? []) as ExerciseWithSeriesAndRest[];
+  const totalSeconds = list.reduce((acc, ex) => {
+    const series = parseSeries(ex.series);
+    const restSec = parseRestSeconds(ex.rest);
+    const exerciseSeconds = series * 60 + series * restSec;
+    return acc + exerciseSeconds;
+  }, 0);
+  const minutes = Math.round(totalSeconds / 60);
+  const displayMinutes = Math.max(1, Math.min(999, minutes));
+  return `${displayMinutes} minuto${displayMinutes !== 1 ? "s" : ""}`;
 }
 
 export default function StudentHome() {
@@ -27,7 +48,7 @@ export default function StudentHome() {
 
   const activeCheck = useActiveWorkoutCheck({
     request,
-    onFinished: () => {},
+    onFinished: () => { },
   });
 
   const handleFinishWorkout = async () => {

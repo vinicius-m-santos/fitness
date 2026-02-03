@@ -24,6 +24,7 @@ import { prepareTrainingPayload } from "@/utils/prepareTrainingPayload";
 import { useWorkoutDraftStore, getDraftContextKey } from "@/stores/workoutDraftStore";
 import type { TrainingDraft } from "@/types/trainingDraft";
 import { NormalizeTrainingData } from "@/utils/NormalizeTrainingData";
+import { useNavigate } from "react-router-dom";
 
 type Props = {
   open: boolean;
@@ -41,7 +42,7 @@ export default function TrainingStandardCreateModal({ open, onOpenChange, initia
   const [loading, setLoading] = useState(false);
   const training = useTrainingForm();
   const formData = training.form.watch();
-
+  const navigate = useNavigate();
   const draftEnabled = open;
 
   const { flushDraft } = useTrainingDraft({
@@ -89,6 +90,7 @@ export default function TrainingStandardCreateModal({ open, onOpenChange, initia
       toast.success("Treino padrão criado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["training-standards"] });
       useWorkoutDraftStore.getState().clearDraft(getDraftContextKey("training-standard-create"));
+      navigate(location.pathname, { replace: true, state: undefined });
       setLoading(false);
       onOpenChange(false);
     } catch {
@@ -100,10 +102,7 @@ export default function TrainingStandardCreateModal({ open, onOpenChange, initia
   return (
     <Dialog
       open={open}
-      onOpenChange={(v) => {
-        onOpenChange(v);
-        if (!v) onRestored?.();
-      }}
+      onOpenChange={onOpenChange}
     >
       <DialogContent
         className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl"
@@ -128,6 +127,10 @@ export default function TrainingStandardCreateModal({ open, onOpenChange, initia
                   training.updatePeriodName(id, name);
                   setTimeout(() => flushDraft(), 0);
                 }}
+                onReorderPeriods={(oldIndex, newIndex) => {
+                  training.reorderPeriods(oldIndex, newIndex);
+                  setTimeout(() => flushDraft(), 0);
+                }}
                 isMobile={isMobile}
               />
             )}
@@ -144,6 +147,10 @@ export default function TrainingStandardCreateModal({ open, onOpenChange, initia
                 onUpdateExercise={training.updateExercise}
                 onRemoveExercise={(periodId, instanceId) => {
                   training.removeExercise(periodId, instanceId);
+                  setTimeout(() => flushDraft(), 0);
+                }}
+                onReorderExercises={(periodId, oldIndex, newIndex) => {
+                  training.reorderExercises(periodId, oldIndex, newIndex);
                   setTimeout(() => flushDraft(), 0);
                 }}
               />

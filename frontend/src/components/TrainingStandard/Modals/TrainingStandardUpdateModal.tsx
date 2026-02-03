@@ -24,6 +24,7 @@ import { NormalizeTrainingData } from "@/utils/NormalizeTrainingData";
 import { prepareTrainingPayload } from "@/utils/prepareTrainingPayload";
 import { useWorkoutDraftStore, getDraftContextKey } from "@/stores/workoutDraftStore";
 import type { TrainingDraft } from "@/types/trainingDraft";
+import { useNavigate } from "react-router-dom";
 
 type Props = {
   open: boolean;
@@ -52,6 +53,7 @@ export default function TrainingStandardUpdateModal({
   const formData = training.form.watch();
   const normalized = useMemo(() => NormalizeTrainingData(initialData), [initialData]);
   const prevOpenRef = useRef(false);
+  const navigate = useNavigate();
 
   const draftEnabled = open;
 
@@ -124,6 +126,7 @@ export default function TrainingStandardUpdateModal({
       toast.success("Treino padrão atualizado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["training-standards"] });
       useWorkoutDraftStore.getState().clearDraft(getDraftContextKey("training-standard-update", { trainingId }));
+      navigate(location.pathname, { replace: true, state: undefined });
       onOpenChange(false);
     } catch {
       toast.error("Erro ao atualizar treino padrão");
@@ -136,12 +139,7 @@ export default function TrainingStandardUpdateModal({
   return (
     <Dialog
       open={open}
-      onOpenChange={(v) => {
-        if (!loading) {
-          onOpenChange(v);
-          if (!v) onRestored?.();
-        }
-      }}
+      onOpenChange={onOpenChange}
     >
       <DialogContent
         className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl"
@@ -166,6 +164,10 @@ export default function TrainingStandardUpdateModal({
                   training.updatePeriodName(id, name);
                   setTimeout(() => flushDraft(), 0);
                 }}
+                onReorderPeriods={(oldIndex, newIndex) => {
+                  training.reorderPeriods(oldIndex, newIndex);
+                  setTimeout(() => flushDraft(), 0);
+                }}
                 isMobile={isMobile}
               />
             )}
@@ -182,6 +184,10 @@ export default function TrainingStandardUpdateModal({
                 onUpdateExercise={training.updateExercise}
                 onRemoveExercise={(periodId, instanceId) => {
                   training.removeExercise(periodId, instanceId);
+                  setTimeout(() => flushDraft(), 0);
+                }}
+                onReorderExercises={(periodId, oldIndex, newIndex) => {
+                  training.reorderExercises(periodId, oldIndex, newIndex);
                   setTimeout(() => flushDraft(), 0);
                 }}
               />

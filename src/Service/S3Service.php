@@ -96,4 +96,31 @@ class S3Service
             ]
         );
     }
+
+    public function getObjectBody(string $key): ?\Psr\Http\Message\StreamInterface
+    {
+        try {
+            $result = $this->s3Client->getObject([
+                'Bucket' => $_ENV['AWS_BUCKET'],
+                'Key' => $key,
+            ]);
+            return $result['Body'] ?? null;
+        } catch (\Throwable $e) {
+            $this->logger->warning('S3 getObject failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getObjectContentType(string $key): ?string
+    {
+        try {
+            $result = $this->s3Client->headObject([
+                'Bucket' => $_ENV['AWS_BUCKET'],
+                'Key' => $key,
+            ]);
+            return $result['ContentType'] ?? null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
 }

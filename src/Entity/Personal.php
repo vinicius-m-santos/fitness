@@ -51,6 +51,10 @@ class Personal
     #[Groups(['personal_all'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[ORM\Column(type: "boolean", options: ["default" => true])]
+    #[Groups(['personal_all'])]
+    private bool $showPlatformExercises = true;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -136,6 +140,17 @@ class Personal
     public function setDefaultExercises(?array $deleted_default_exercises): self
     {
         $this->deleted_default_exercises = $deleted_default_exercises;
+        return $this;
+    }
+
+    public function isShowPlatformExercises(): bool
+    {
+        return $this->showPlatformExercises;
+    }
+
+    public function setShowPlatformExercises(bool $showPlatformExercises): self
+    {
+        $this->showPlatformExercises = $showPlatformExercises;
         return $this;
     }
 }

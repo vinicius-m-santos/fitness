@@ -27,6 +27,10 @@ type User = {
     id: number;
     name: string;
   };
+  personal?: {
+    id: number;
+    showPlatformExercises?: boolean;
+  };
 };
 
 type AuthContextType = {

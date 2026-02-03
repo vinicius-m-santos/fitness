@@ -36,6 +36,8 @@ class TrainingStandardRepository extends ServiceEntityRepository
             ->where('t.personal = :personal')
             ->setParameter('personal', $personal)
             ->orderBy('t.createdAt', 'DESC')
+            ->addOrderBy('p.id', 'ASC')
+            ->addOrderBy('pe.id', 'ASC')
             ->getQuery()
             ->getResult();
     }
@@ -50,6 +52,8 @@ class TrainingStandardRepository extends ServiceEntityRepository
             ->andWhere('t.id = :id')
             ->setParameter('personal', $personal)
             ->setParameter('id', $id)
+            ->addOrderBy('p.id', 'ASC')
+            ->addOrderBy('pe.id', 'ASC')
             ->getQuery()
             ->getOneOrNullResult();
     }

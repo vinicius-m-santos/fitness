@@ -477,6 +477,7 @@ export default function StudentExerciseSession() {
       setPendingFinishExecutionId(null);
       clearActiveSession();
       queryClient.invalidateQueries({ queryKey: ["trainings"] });
+      queryClient.invalidateQueries({ queryKey: ["training-execution-history"] });
       navigate("/student");
     },
   });
@@ -500,10 +501,33 @@ export default function StudentExerciseSession() {
       await finalizeTimedExercise(currentTimedPeriodExerciseId);
       setCurrentTimedPeriodExerciseId(null);
     }
+    for (const [periodExerciseId, exerciseExecutionId] of Object.entries(exerciseExecutionIds)) {
+      const saved = savedLoadsByExerciseExecution[exerciseExecutionId];
+      const hasSavedLoads = saved != null && saved.length > 0;
+      const lastLoads = lastLoadsByPeriodExercise[Number(periodExerciseId)];
+      const hasLastLoads = lastLoads != null && lastLoads.length > 0;
+      if (!hasSavedLoads && hasLastLoads) {
+        await request({
+          method: "PATCH",
+          url: `/training-execution/exercise-execution/${exerciseExecutionId}/sets`,
+          data: {
+            sets: lastLoads.map((s) => ({ setNumber: s.setNumber, loadKg: s.loadKg ?? null })),
+          },
+        });
+      }
+    }
     setShowFinishConfirm(false);
     setPendingFinishExecutionId(executionId ?? null);
     setShowRatingModal(true);
-  }, [currentTimedPeriodExerciseId, executionId, finalizeTimedExercise]);
+  }, [
+    currentTimedPeriodExerciseId,
+    executionId,
+    finalizeTimedExercise,
+    exerciseExecutionIds,
+    savedLoadsByExerciseExecution,
+    lastLoadsByPeriodExercise,
+    request,
+  ]);
 
   const handleRatingSelect = useCallback(
     (rating: WorkoutRating) => {

@@ -1,4 +1,5 @@
 import { TrainingCreateSchema } from "@/schemas/training";
+import { getEffectiveDueDateISO } from "@/utils/dateUtils";
 
 /** Converte null/undefined em string vazia para campos opcionais (schema zod). */
 function str(value: string | null | undefined): string {
@@ -13,7 +14,7 @@ export function NormalizeTrainingData(
     : [];
   return {
     name: typeof (data as TrainingCreateSchema).name === "string" ? (data as TrainingCreateSchema).name : "",
-    dueDate: (data as TrainingCreateSchema).dueDate ?? "",
+    dueDate: getEffectiveDueDateISO((data as TrainingCreateSchema).dueDate) ?? "",
     periods: periods.map((period) => ({
       id: period.id,
       name: period.name,
