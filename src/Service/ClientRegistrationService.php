@@ -8,7 +8,7 @@ use App\Entity\Personal;
 class ClientRegistrationService
 {
     public function __construct(
-        private readonly AwsSesService $awsSesService,
+        private readonly MailgunEmailService $mailgunEmailService,
         private readonly string $appUrl
     ) {}
 
@@ -28,7 +28,7 @@ class ClientRegistrationService
             $registrationUrl . "\n\n" .
             "Atenciosamente,\nEquipe Fitrise";
 
-        $this->awsSesService->sendEmail(
+        $this->mailgunEmailService->sendEmail(
             to: $clientUser->getEmail(),
             subject: 'Cadastro como Aluno - Fitrise',
             body: $emailBody

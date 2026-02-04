@@ -50,6 +50,12 @@ services:
                   method: onAuthenticationFailure,
               }
 
+    App\Service\MailgunEmailService:
+        arguments:
+            $domain: '%env(MAILGUN_DOMAIN)%'
+            $defaultFrom: '%env(MAILGUN_FROM)%'
+            $apiKey: '%env(MAILGUN_API_KEY)%'
+
     App\Service\EmailVerificationService:
         arguments:
             $appUrl: '%env(APP_URL)%'

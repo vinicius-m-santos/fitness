@@ -8,7 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 class PasswordResetService
 {
     public function __construct(
-        private readonly AwsSesService $awsSesService,
+        private readonly MailgunEmailService $mailgunEmailService,
         private readonly EntityManagerInterface $em,
         private readonly string $appUrl
     ) {}
@@ -32,7 +32,7 @@ class PasswordResetService
             "Se você não solicitou esta recuperação de senha, pode ignorar este email.\n\n" .
             "Atenciosamente,\nEquipe Fitrise";
 
-        $this->awsSesService->sendEmail(
+        $this->mailgunEmailService->sendEmail(
             to: $user->getEmail(),
             subject: 'Recuperação de Senha - Fitrise',
             body: $emailBody
