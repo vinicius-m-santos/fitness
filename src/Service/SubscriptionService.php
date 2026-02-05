@@ -58,6 +58,27 @@ class SubscriptionService
     }
 
     /**
+     * Cria uma assinatura Free para um personal recém-criado (sem flush).
+     * Deve ser chamado antes do flush para que user/personal já tenham sido persistidos.
+     */
+    public function createSubscriptionForNewPersonal(Personal $personal): Subscription
+    {
+        $plan = $this->planRepository->findByCode(Plan::CODE_FREE);
+        if ($plan === null) {
+            throw new \RuntimeException('Plano Free não configurado. Execute as migrations/fixtures.');
+        }
+        $subscription = new Subscription();
+        $subscription->setPersonal($personal);
+        $subscription->setPlan($plan);
+        $subscription->setStatus(Subscription::STATUS_ACTIVE);
+        $subscription->setStartedAt(new \DateTimeImmutable());
+        $subscription->setEndsAt(null);
+        $this->subscriptionRepository->add($subscription, false);
+        $personal->getSubscriptions()->add($subscription);
+        return $subscription;
+    }
+
+    /**
      * Garante assinatura ativa para o personal (cria Free se não existir).
      */
     public function ensureActiveSubscription(Personal $personal): \App\Entity\Subscription

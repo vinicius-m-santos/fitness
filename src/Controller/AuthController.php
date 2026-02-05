@@ -7,6 +7,7 @@ use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Service\EmailVerificationService;
 use App\Service\PasswordResetService;
+use App\Service\SubscriptionService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -25,7 +26,8 @@ class AuthController extends AbstractController
         private readonly ValidatorInterface $validator,
         private readonly EntityManagerInterface $em,
         private readonly EmailVerificationService $emailVerificationService,
-        private readonly PasswordResetService $passwordResetService
+        private readonly PasswordResetService $passwordResetService,
+        private readonly SubscriptionService $subscriptionService
     ) {}
 
     #[Route('/register', name: 'register', methods: ['POST'])]
@@ -87,6 +89,7 @@ class AuthController extends AbstractController
         }
 
         $this->em->persist($personal);
+        $this->subscriptionService->createSubscriptionForNewPersonal($personal);
         $this->em->flush();
 
         try {
