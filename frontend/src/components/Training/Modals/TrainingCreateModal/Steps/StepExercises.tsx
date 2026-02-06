@@ -11,9 +11,8 @@ import { TrashIcon, ChevronUpIcon, ChevronDownIcon, GripVertical } from "lucide-
 import { ExerciseSelectDropdown } from "./ExerciseSelectDropdown";
 import { EXERCISES_LABELS } from "@/utils/constants/Client/constants";
 import { TrainingCreateSchema } from "@/schemas/training";
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { useExerciseSearch, type ExerciseSearchItem } from "@/hooks/useExerciseSearch";
 import { Label } from "@/components/ui/label";
 import {
   DndContext,
@@ -31,9 +30,6 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-
-const DEBOUNCE_MS_DESKTOP = 350;
-const DEBOUNCE_MS_MOBILE = 700;
 
 const SERIES_OPTIONS = Array.from({ length: 30 }, (_, i) => ({
   value: String(i + 1),
@@ -98,70 +94,6 @@ export default function StepExercises({
 }: Props) {
   const [expandedExerciseId, setExpandedExerciseId] = useState<string | null>(null);
   const [addCount, setAddCount] = useState(0);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [accumulated, setAccumulated] = useState<ExerciseSearchItem[]>([]);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const debounceMs = isMobile ? DEBOUNCE_MS_MOBILE : DEBOUNCE_MS_DESKTOP;
-
-  const handleSearchInputChange = useCallback(
-    (value: string) => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      setSearch(value);
-      debounceRef.current = setTimeout(() => {
-        setDebouncedSearch(value);
-        setPage(1);
-        debounceRef.current = null;
-      }, debounceMs);
-    },
-    [debounceMs]
-  );
-
-  const prevDebouncedSearchRef = useRef(debouncedSearch);
-  useEffect(() => {
-    if (prevDebouncedSearchRef.current !== debouncedSearch) {
-      prevDebouncedSearchRef.current = debouncedSearch;
-      setAccumulated([]);
-    }
-  }, [debouncedSearch]);
-
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, []);
-
-  const { exercises: pageExercises, totalPages, isLoading } = useExerciseSearch(
-    debouncedSearch,
-    page,
-    true
-  );
-
-  useEffect(() => {
-    if (!Array.isArray(pageExercises) || isLoading) return;
-    if (page === 1) {
-      setAccumulated(pageExercises);
-    } else {
-      setAccumulated((prev) => {
-        const ids = new Set(prev.map((e) => e.id));
-        const newOnes = pageExercises.filter((e) => !ids.has(e.id));
-        return newOnes.length ? [...prev, ...newOnes] : prev;
-      });
-    }
-  }, [page, pageExercises, isLoading]);
-
-  const handleListScroll = useCallback(
-    (e: React.UIEvent<HTMLDivElement>) => {
-      const el = e.currentTarget;
-      if (isLoading || page >= totalPages) return;
-      if (el.scrollHeight - el.scrollTop - el.clientHeight < 80) {
-        setPage((p) => p + 1);
-      }
-    },
-    [isLoading, page, totalPages]
-  );
 
   const getExerciseId = (periodId: number, instanceId: string) =>
     `${periodId}-${instanceId}`;
@@ -181,7 +113,6 @@ export default function StepExercises({
               <div className="min-w-0 flex-1">
                 <ExerciseSelectDropdown
                   key={`exercise-select-${period.id}-${addCount}`}
-                  triggerLabel={selectedExerciseByPeriod[period.id]?.name ?? ""}
                   selectedExercise={selectedExerciseByPeriod[period.id] ?? null}
                   onSelect={(ex) =>
                     setSelectedExerciseByPeriod((prev) => ({
@@ -189,18 +120,12 @@ export default function StepExercises({
                       [period.id]: { id: ex.id, name: ex.name },
                     }))
                   }
-                  searchValue={search}
-                  onSearchChange={handleSearchInputChange}
-                  exercises={accumulated}
-                  isLoading={isLoading}
-                  isLoadingMore={isLoading && page > 1}
-                  onListScroll={handleListScroll}
                   isExerciseAdded={(exId) =>
                     period.exercises.some((periodEx) => periodEx.id === exId)
                   }
                   placeholder="Escolher exercício"
-                  searchPlaceholder="Buscar exercício..."
                   emptyMessage="Nenhum exercício encontrado."
+                  debounceMs={isMobile ? 700 : 350}
                 />
               </div>
 
@@ -214,11 +139,6 @@ export default function StepExercises({
                     ...prev,
                     [period.id]: null,
                   }));
-                  if (debounceRef.current) {
-                    clearTimeout(debounceRef.current);
-                    debounceRef.current = null;
-                  }
-                  setSearch("");
                   setAddCount((c) => c + 1);
                 }}
               >
