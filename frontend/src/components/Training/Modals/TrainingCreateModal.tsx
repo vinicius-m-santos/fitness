@@ -32,7 +32,6 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   client: number;
   initialDraft?: TrainingDraft | null;
-  onRestored?: () => void;
 };
 
 export default function TrainingCreateModal({
@@ -40,7 +39,6 @@ export default function TrainingCreateModal({
   onOpenChange,
   client,
   initialDraft,
-  onRestored,
 }: Props) {
   const api = useApi();
   const queryClient = useQueryClient();
@@ -111,10 +109,11 @@ export default function TrainingCreateModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(open) => {
-      onOpenChange(open);
-      if (!open) onRestored?.();
-    }}>
+    <Dialog
+      open={open}
+      modal={!isMobile}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent
         className="flex max-h-[85vh] max-w-[calc(100vw-1rem)] flex-col gap-4 overflow-hidden rounded-2xl sm:max-w-3xl"
         onInteractOutside={(e) => e.preventDefault()}

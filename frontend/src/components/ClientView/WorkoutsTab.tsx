@@ -226,7 +226,6 @@ export default function WorkoutsTab({ isActive = true }: WorkoutsTabProps) {
               onOpenChange={(open) => setOpenModal(open)}
               client={client?.id ?? 0}
               initialDraft={restoreDraft?.type === "training-create" ? restoreDraft : undefined}
-              onRestored={clearRestoreState}
             />
 
             <Button
@@ -325,7 +324,6 @@ export default function WorkoutsTab({ isActive = true }: WorkoutsTabProps) {
                               ? restoreDraft
                               : undefined
                           }
-                          onRestored={clearRestoreState}
                         />
                         <Button
                           size="sm"
