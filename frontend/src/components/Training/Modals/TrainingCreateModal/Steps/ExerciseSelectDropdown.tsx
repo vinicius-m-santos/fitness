@@ -101,11 +101,29 @@ export function ExerciseSelectDropdown({
       ]
       : sortedExercises;
 
+  const stopSelectInteraction = (e: React.SyntheticEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+  };
+
+  const stopPropagationOnly = (e: React.SyntheticEvent) => {
+    e.stopPropagation();
+  };
+
+  const onSearchAreaPointerDown = (e: React.PointerEvent) => {
+    e.stopPropagation();
+    if ((e.target as Node).nodeName !== "INPUT") {
+      e.preventDefault();
+    }
+  };
+
   const searchSlot = (
     <div
       className="flex items-center border-b px-2 py-2"
-      onPointerDown={(e) => e.stopPropagation()}
-      onTouchStart={(e) => e.stopPropagation()}
+      onPointerDownCapture={onSearchAreaPointerDown}
+      onTouchStartCapture={stopPropagationOnly}
+      onTouchEndCapture={stopSelectInteraction}
+      onClickCapture={stopSelectInteraction}
     >
       <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
       <Input
@@ -113,8 +131,10 @@ export function ExerciseSelectDropdown({
         placeholder={searchPlaceholder}
         value={searchValue}
         onChange={(e) => onSearchChange(e.target.value)}
-        onPointerDown={(e) => e.stopPropagation()}
-        onTouchStart={(e) => e.stopPropagation()}
+        onPointerDownCapture={stopPropagationOnly}
+        onTouchStartCapture={stopPropagationOnly}
+        onTouchEndCapture={stopSelectInteraction}
+        onClickCapture={stopSelectInteraction}
         onKeyDown={(e) => e.stopPropagation()}
         className="h-8 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
       />
