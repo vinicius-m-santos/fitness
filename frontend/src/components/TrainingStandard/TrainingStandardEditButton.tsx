@@ -9,12 +9,10 @@ export function TrainingStandardEditButton({
   trainingId,
   initialData,
   restoreDraft,
-  onRestored,
 }: {
   trainingId: number;
   initialData: TrainingCreateSchema;
   restoreDraft?: TrainingDraft | null;
-  onRestored?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -36,7 +34,6 @@ export function TrainingStandardEditButton({
         trainingId={trainingId}
         initialData={initialData}
         initialDraft={restoreDraft?.trainingId === trainingId ? restoreDraft : undefined}
-        onRestored={onRestored}
       />
     </>
   );

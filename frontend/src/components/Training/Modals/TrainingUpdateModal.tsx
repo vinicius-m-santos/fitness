@@ -32,7 +32,6 @@ type Props = {
   initialData: TrainingCreateSchema;
   clientId?: number;
   initialDraft?: TrainingDraft | null;
-  onRestored?: () => void;
 };
 
 export default function TrainingUpdateModal({
@@ -42,7 +41,6 @@ export default function TrainingUpdateModal({
   initialData,
   clientId,
   initialDraft,
-  onRestored,
 }: Props) {
   const api = useApi();
   const queryClient = useQueryClient();

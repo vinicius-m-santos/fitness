@@ -54,17 +54,25 @@ export function ExerciseSelectDropdown({
   emptyMessage = "Nenhum exercício encontrado.",
 }: Props) {
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const hasInitialFocusedRef = useRef(false);
   const value = selectedExercise?.id != null ? String(selectedExercise.id) : "";
 
   useLayoutEffect(() => {
     const input = searchInputRef.current;
-    if (!input || document.activeElement === input) return;
-    const id = setTimeout(() => {
-      if (document.contains(input) && document.activeElement !== input) {
-        input.focus({ preventScroll: true });
-      }
-    }, 0);
-    return () => clearTimeout(id);
+    if (!input || hasInitialFocusedRef.current) return;
+    if (document.activeElement === input) {
+      hasInitialFocusedRef.current = true;
+      return;
+    }
+    if (!isLoading && exercises.length > 0) {
+      hasInitialFocusedRef.current = true;
+      const id = setTimeout(() => {
+        if (document.contains(input) && document.activeElement !== input) {
+          input.focus({ preventScroll: true });
+        }
+      }, 0);
+      return () => clearTimeout(id);
+    }
   }, [exercises, isLoading]);
 
   const handleValueChange = (val: string) => {
@@ -94,7 +102,11 @@ export function ExerciseSelectDropdown({
       : sortedExercises;
 
   const searchSlot = (
-    <div className="flex items-center border-b px-2 py-2">
+    <div
+      className="flex items-center border-b px-2 py-2"
+      onPointerDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+    >
       <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
       <Input
         ref={searchInputRef}
@@ -102,6 +114,7 @@ export function ExerciseSelectDropdown({
         value={searchValue}
         onChange={(e) => onSearchChange(e.target.value)}
         onPointerDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
         className="h-8 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
       />
@@ -145,20 +158,20 @@ export function ExerciseSelectDropdown({
             const isOwn = "isOwn" in ex && ex.isOwn;
             return (
               <SelectItem key={ex.id} value={String(ex.id)} hideIndicator>
-                <span className="flex flex-wrap items-center gap-1.5 min-w-0">
+                <span className="inline-block gap-1.5 min-w-0">
                   {added && (
-                    <CheckIcon className="h-4 w-4 shrink-0 text-green-600" />
+                    <CheckIcon className="h-4 w-4 shrink-0 text-green-600 inline" />
                   )}
                   {isFavorite && (
-                    <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-500" />
+                    <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-500 inline mx-1" />
                   )}
                   {isOwn && !isFavorite && (
-                    <>
-                      <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground shrink-0">Meu</span>
-                    </>
+                    <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground inline mx-1" />
                   )}
-                  <span className="min-w-0 whitespace-normal break-words">{label}</span>
+                  {isOwn && !isFavorite && (
+                    <span className="align-middle w-auto inline-block text-xs text-muted-foreground shrink-0 mx-1">Meu</span>
+                  )}
+                  <span className="h-full align-middle min-w-0 whitespace-normal break-words mx-1">{label}</span>
                 </span>
               </SelectItem>
             );

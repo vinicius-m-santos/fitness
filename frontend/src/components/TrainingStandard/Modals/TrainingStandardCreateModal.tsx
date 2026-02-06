@@ -30,10 +30,9 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialDraft?: TrainingDraft | null;
-  onRestored?: () => void;
 };
 
-export default function TrainingStandardCreateModal({ open, onOpenChange, initialDraft, onRestored }: Props) {
+export default function TrainingStandardCreateModal({ open, onOpenChange, initialDraft }: Props) {
   const api = useApi();
   const queryClient = useQueryClient();
   const isMobile = useMediaQuery({ maxWidth: 768 });
@@ -78,7 +77,6 @@ export default function TrainingStandardCreateModal({ open, onOpenChange, initia
         step: initialDraft.step,
         selectedExerciseByPeriod: initialDraft.selectedExerciseByPeriod ?? {},
       });
-      // Não chamar onRestored aqui: só ao fechar o modal (evita abrir e fechar na hora).
     }
   }, [open, initialDraft]);
 

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import {
   Accordion,
   AccordionContent,
@@ -44,7 +44,6 @@ type SortOption =
 
 export default function StandardTrainings() {
   const location = useLocation();
-  const navigate = useNavigate();
   const restoreDraft = (location.state as { restoreTrainingDraft?: TrainingDraft } | null)?.restoreTrainingDraft;
   const prevRestoreDraftRef = useRef(restoreDraft);
 
@@ -79,10 +78,6 @@ export default function StandardTrainings() {
       setAccordionValue(String(restoreDraft.trainingId));
     }
   }, [restoreDraft]);
-
-  const clearRestoreState = () => {
-    navigate("/standard-trainings", { replace: true, state: {} });
-  };
 
   const { data: workouts = [], isFetching } = useQuery({
     queryKey: ["training-standards"],
@@ -161,7 +156,6 @@ export default function StandardTrainings() {
             open={openCreate}
             onOpenChange={setOpenCreate}
             initialDraft={restoreDraft?.type === "training-standard-create" ? restoreDraft : undefined}
-            onRestored={clearRestoreState}
           />
           <Button size="sm" className="cursor-pointer" onClick={() => setOpenCreate(true)}>
             <PlusIcon /> Novo treino
@@ -250,7 +244,6 @@ export default function StandardTrainings() {
                             ? restoreDraft
                             : undefined
                         }
-                        onRestored={clearRestoreState}
                       />
                       <Button
                         size="sm"
