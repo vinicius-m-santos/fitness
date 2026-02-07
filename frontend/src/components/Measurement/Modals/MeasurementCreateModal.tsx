@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -25,32 +25,118 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useRequest } from "@/api/request";
+import { IMaskInput } from "react-imask";
+import {
+  calculatePollock3Male,
+  calculatePollock3Female,
+  getAgeForCalculation,
+} from "@/utils/measurement/pollock3";
+
+interface ClientForMeasurement {
+  gender?: string | null;
+  user?: { birthDate?: string | null } | null;
+}
 
 interface MeasurementCreateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   clientId: number;
+  client?: ClientForMeasurement | null;
 }
+
+const initialForm = {
+  rightArm: "",
+  leftArm: "",
+  waist: "",
+  rightLeg: "",
+  leftLeg: "",
+  chest: "",
+  weight: "",
+  pectoral: "",
+  abdominal: "",
+  thigh: "",
+  triceps: "",
+  suprailiac: "",
+  fatPercentage: "",
+  fatMass: "",
+  leanMass: "",
+};
 
 export default function MeasurementCreateModal({
   open,
   onOpenChange,
   clientId,
+  client,
 }: MeasurementCreateModalProps) {
   const request = useRequest();
   const queryClient = useQueryClient();
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [form, setForm] = useState({
-    rightArm: "",
-    leftArm: "",
-    waist: "",
-    rightLeg: "",
-    leftLeg: "",
-    chest: "",
-    weight: "",
-    fatPercentage: "",
-    leanMass: "",
-  });
+  const [form, setForm] = useState(initialForm);
+
+  const gender = client?.gender?.trim() || null;
+  const birthDate = client?.user?.birthDate ?? null;
+  const age = getAgeForCalculation(birthDate ?? undefined);
+  const hasGender = !!gender;
+  const hasBirthDate = !!birthDate?.trim();
+  const canShowDobras = hasGender && hasBirthDate;
+  const canCalculate = hasGender && hasBirthDate && age != null && age >= 0;
+  const isMale = gender?.toLowerCase() === "m";
+
+  useEffect(() => {
+    const clearCalculated = () =>
+      setForm((prev) => ({
+        ...prev,
+        fatPercentage: "",
+        fatMass: "",
+        leanMass: "",
+      }));
+
+    if (!canCalculate || !form.weight) return;
+    const weight = parseFloat(form.weight);
+    if (Number.isNaN(weight) || weight <= 0) return;
+
+    if (isMale) {
+      const p = parseFloat(form.pectoral) || 0;
+      const a = parseFloat(form.abdominal) || 0;
+      const t = parseFloat(form.thigh) || 0;
+      if (p > 0 && a > 0 && t > 0) {
+        const result = calculatePollock3Male(p, a, t, age!, weight);
+        setForm((prev) => ({
+          ...prev,
+          fatPercentage: String(result.fatPercentage),
+          fatMass: String(result.fatMass),
+          leanMass: String(result.leanMass),
+        }));
+      } else {
+        clearCalculated();
+      }
+    } else {
+      const tr = parseFloat(form.triceps) || 0;
+      const s = parseFloat(form.suprailiac) || 0;
+      const th = parseFloat(form.thigh) || 0;
+      if (tr > 0 && s > 0 && th > 0) {
+        const result = calculatePollock3Female(tr, s, th, age!, weight);
+        setForm((prev) => ({
+          ...prev,
+          fatPercentage: String(result.fatPercentage),
+          fatMass: String(result.fatMass),
+          leanMass: String(result.leanMass),
+        }));
+      } else {
+        clearCalculated();
+      }
+    }
+  }, [
+    canCalculate,
+    form.weight,
+    form.pectoral,
+    form.abdominal,
+    form.thigh,
+    form.triceps,
+    form.suprailiac,
+    isMale,
+    age,
+  ]);
 
   const createMeasurementMutation = useMutation({
     mutationFn: async (payload: {
@@ -62,7 +148,14 @@ export default function MeasurementCreateModal({
       leftLeg: number;
       chest: number;
       weight?: number | null;
+      method?: string;
+      pectoral?: number | null;
+      abdominal?: number | null;
+      thigh?: number | null;
+      triceps?: number | null;
+      suprailiac?: number | null;
       fatPercentage?: number | null;
+      fatMass?: number | null;
       leanMass?: number | null;
     }) => {
       const res = await request({
@@ -75,17 +168,7 @@ export default function MeasurementCreateModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["measurements"] });
       toast.success("Medição adicionada com sucesso!");
-      setForm({
-        rightArm: "",
-        leftArm: "",
-        waist: "",
-        rightLeg: "",
-        leftLeg: "",
-        chest: "",
-        weight: "",
-        fatPercentage: "",
-        leanMass: "",
-      });
+      setForm(initialForm);
       setDate(new Date());
       onOpenChange(false);
     },
@@ -123,14 +206,34 @@ export default function MeasurementCreateModal({
       leftLeg: parseFloat(form.leftLeg),
       chest: parseFloat(form.chest),
       weight: form.weight ? parseFloat(form.weight) : null,
+      method: "pollock_3",
+      pectoral: form.pectoral ? parseFloat(form.pectoral) : null,
+      abdominal: form.abdominal ? parseFloat(form.abdominal) : null,
+      thigh: form.thigh ? parseFloat(form.thigh) : null,
+      triceps: form.triceps ? parseFloat(form.triceps) : null,
+      suprailiac: form.suprailiac ? parseFloat(form.suprailiac) : null,
       fatPercentage: form.fatPercentage ? parseFloat(form.fatPercentage) : null,
+      fatMass: form.fatMass ? parseFloat(form.fatMass) : null,
       leanMass: form.leanMass ? parseFloat(form.leanMass) : null,
     });
   };
 
+  const baseFields = [
+    { key: "rightArm", label: "Braço Direito", placeholder: "cm" },
+    { key: "leftArm", label: "Braço Esquerdo", placeholder: "cm" },
+    { key: "waist", label: "Cintura", placeholder: "cm" },
+    { key: "rightLeg", label: "Perna Direita", placeholder: "cm" },
+    { key: "leftLeg", label: "Perna Esquerda", placeholder: "cm" },
+    { key: "chest", label: "Tórax", placeholder: "cm" },
+    { key: "weight", label: "Peso", placeholder: "kg" },
+  ] as const;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md rounded-2xl">
+      <DialogContent
+        className="flex max-h-[85vh] max-w-[calc(100vw-1rem)] flex-col gap-4 overflow-hidden rounded-2xl sm:max-w-3xl"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Adicionar nova medição</DialogTitle>
           <DialogDescription>
@@ -138,7 +241,7 @@ export default function MeasurementCreateModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-2 overflow-y-auto">
+        <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto py-2">
           <div className="grid grid-cols-4 items-center gap-2">
             <Label htmlFor="date" className="col-span-1">
               Data
@@ -168,40 +271,211 @@ export default function MeasurementCreateModal({
               </PopoverContent>
             </Popover>
           </div>
-          {[
-            { key: "rightArm", label: "Braço Direito" },
-            { key: "leftArm", label: "Braço Esquerdo" },
-            { key: "waist", label: "Cintura" },
-            { key: "rightLeg", label: "Perna Direita" },
-            { key: "leftLeg", label: "Perna Esquerda" },
-            { key: "chest", label: "Tórax" },
-            { key: "weight", label: "Peso" },
-            { key: "fatPercentage", label: "% Gordura" },
-            { key: "leanMass", label: "Massa Magra" },
-          ].map(({ key, label }) => (
+
+          {baseFields.map(({ key, label, placeholder }) => (
             <div key={key} className="grid grid-cols-4 items-center gap-2">
               <Label htmlFor={key}>{label}</Label>
               <Input
                 id={key}
                 type="number"
                 className="col-span-3"
-                value={form[key as keyof typeof form]}
+                value={form[key]}
                 onChange={(e) =>
                   setForm({
                     ...form,
                     [key]: e.target.value,
                   })
                 }
-                placeholder={
-                  key === "weight" || key === "leanMass"
-                    ? "kg"
-                    : key === "fatPercentage"
-                      ? "%"
-                      : "cm"
-                }
+                placeholder={placeholder}
               />
             </div>
           ))}
+
+          <div className="border-t pt-4 mt-2">
+            <h4 className="text-sm font-medium mb-3">Dobras</h4>
+            {!canShowDobras && (
+              <p className="text-sm text-muted-foreground mb-3">
+                Para calcular % de gordura e massa magra são necessários
+                gênero e data de nascimento do aluno. A medição pode ser
+                salva; atualize os dados do aluno para habilitar o cálculo.
+              </p>
+            )}
+            {canShowDobras && (
+              <>
+                {isMale && (
+                  <>
+                    <div className="grid grid-cols-4 items-center gap-2 mb-2">
+                      <Label htmlFor="pectoral">Peitoral</Label>
+                      <div className="col-span-3">
+                        <IMaskInput
+                          id="pectoral"
+                          mask={Number}
+                          scale={0}
+                          min={0}
+                          max={999}
+                          value={form.pectoral}
+                          onAccept={(_, m) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              pectoral: m?.unmaskedValue ?? "",
+                            }))
+                          }
+                          placeholder="mm"
+                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-2 mb-2">
+                      <Label htmlFor="abdominal">Abdominal</Label>
+                      <div className="col-span-3">
+                        <IMaskInput
+                          id="abdominal"
+                          mask={Number}
+                          scale={0}
+                          min={0}
+                          max={999}
+                          value={form.abdominal}
+                          onAccept={(_, m) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              abdominal: m?.unmaskedValue ?? "",
+                            }))
+                          }
+                          placeholder="mm"
+                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-2 mb-2">
+                      <Label htmlFor="thigh">Coxa</Label>
+                      <div className="col-span-3">
+                        <IMaskInput
+                          id="thigh"
+                          mask={Number}
+                          scale={0}
+                          min={0}
+                          max={999}
+                          value={form.thigh}
+                          onAccept={(_, m) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              thigh: m?.unmaskedValue ?? "",
+                            }))
+                          }
+                          placeholder="mm"
+                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+                {!isMale && (
+                  <>
+                    <div className="grid grid-cols-4 items-center gap-2 mb-2">
+                      <Label htmlFor="triceps">Tríceps</Label>
+                      <div className="col-span-3">
+                        <IMaskInput
+                          id="triceps"
+                          mask={Number}
+                          scale={0}
+                          min={0}
+                          max={999}
+                          value={form.triceps}
+                          onAccept={(_, m) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              triceps: m?.unmaskedValue ?? "",
+                            }))
+                          }
+                          placeholder="mm"
+                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-2 mb-2">
+                      <Label htmlFor="suprailiac">Supra-ilíaca</Label>
+                      <div className="col-span-3">
+                        <IMaskInput
+                          id="suprailiac"
+                          mask={Number}
+                          scale={0}
+                          min={0}
+                          max={999}
+                          value={form.suprailiac}
+                          onAccept={(_, m) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              suprailiac: m?.unmaskedValue ?? "",
+                            }))
+                          }
+                          placeholder="mm"
+                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-2 mb-2">
+                      <Label htmlFor="thigh">Coxa</Label>
+                      <div className="col-span-3">
+                        <IMaskInput
+                          id="thigh"
+                          mask={Number}
+                          scale={0}
+                          min={0}
+                          max={999}
+                          value={form.thigh}
+                          onAccept={(_, m) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              thigh: m?.unmaskedValue ?? "",
+                            }))
+                          }
+                          placeholder="mm"
+                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+                {(form.fatPercentage || form.fatMass || form.leanMass) && (
+                  <>
+                    <div className="grid grid-cols-4 items-center gap-2 mb-2">
+                      <Label htmlFor="fatPercentage">% Gordura</Label>
+                      <Input
+                        id="fatPercentage"
+                        type="number"
+                        className="col-span-3"
+                        value={form.fatPercentage}
+                        readOnly
+                        placeholder="%"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-2 mb-2">
+                      <Label htmlFor="fatMass">Massa Gorda</Label>
+                      <Input
+                        id="fatMass"
+                        type="number"
+                        className="col-span-3"
+                        value={form.fatMass}
+                        readOnly
+                        placeholder="kg"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-2">
+                      <Label htmlFor="leanMass">Massa Magra</Label>
+                      <Input
+                        id="leanMass"
+                        type="number"
+                        className="col-span-3"
+                        value={form.leanMass}
+                        readOnly
+                        placeholder="kg"
+                      />
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
         <DialogFooter>

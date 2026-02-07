@@ -18,6 +18,7 @@ type ClientUser = {
   avatarKey: string | null;
   avatarUrl: string | null;
   birthDate?: string | null;
+  age?: number | null;
 };
 
 export type Client = {
@@ -26,7 +27,6 @@ export type Client = {
   lastName: string;
   user?: ClientUser;
   gender: string;
-  age?: number | null;
   weight: number;
   height: number;
   bloodPressure: string;
@@ -43,7 +43,6 @@ export type ClientAllData = {
   lastName: string;
   user?: ClientUser;
   gender: string;
-  age?: number | null;
   weight: number;
   height: number;
   bloodPressure: BloodPressureKey;

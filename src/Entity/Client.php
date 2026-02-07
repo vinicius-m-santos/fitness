@@ -25,7 +25,7 @@ class Client
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
     private ?Uuid $uuid = null;
 
-    /** @var array{name?: string, lastName?: string, gender?: string, birthDate?: string, active?: bool}|null Dados pendentes quando User ainda não existe (fluxo de criação) */
+    /** @var array{name?: string, lastName?: string, gender?: string, active?: bool}|null Dados pendentes quando User ainda não existe (fluxo de criação) */
     private ?array $pendingUserData = null;
 
     #[ORM\Column(type: "float", nullable: true)]
@@ -144,17 +144,6 @@ class Client
         $this->pendingUserData = $this->pendingUserData ?? [];
         $this->pendingUserData['lastName'] = $lastName ?? '';
         return $this;
-    }
-
-    /** Idade calculada a partir de birthDate do User */
-    #[Groups(['client_all', 'anamnese_all', 'client_list'])]
-    public function getAge(): ?int
-    {
-        $birthDate = $this->user?->getBirthDate();
-        if ($birthDate === null) {
-            return null;
-        }
-        return $birthDate->diff(new \DateTimeImmutable())->y;
     }
 
     #[Groups(['client_all', 'anamnese_all', 'client_list'])]
@@ -406,12 +395,6 @@ class Client
                 $birthDate = \DateTimeImmutable::createFromFormat('Y-m-d', $data['birthDate']);
                 if ($birthDate) {
                     $user->setBirthDate($birthDate);
-                }
-            } elseif (isset($data['age']) && $data['age'] !== '' && $data['age'] !== null) {
-                $age = (int) $data['age'];
-                if ($age > 0 && $age <= 150) {
-                    $year = (new \DateTimeImmutable())->format('Y') - $age;
-                    $user->setBirthDate(new \DateTimeImmutable("{$year}-01-01"));
                 }
             }
             if (isset($data['active'])) {

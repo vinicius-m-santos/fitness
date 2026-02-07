@@ -1,0 +1,12 @@
+---
+description: Idioma do código vs texto para o usuário
+globs: "**/*"
+---
+
+# Idioma: código vs interface
+
+- **Código (frontend e backend):** sempre em inglês. Variáveis, propriedades, funções, chaves de API, nomes de arquivos e identificadores devem ser em inglês.
+
+- **Texto visto pelo usuário:** em português. Labels, mensagens, placeholders, títulos, descrições e qualquer string exibida na interface devem ser em português.
+
+Exemplos: propriedade `pectoral` (código) com label "Peitoral" (UI); chave de API `suprailiac` com label "Supra-ilíaca".

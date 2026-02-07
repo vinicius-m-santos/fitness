@@ -82,7 +82,7 @@ export default function AnamneseUpdateModal({
     if (!client) return;
 
     form.reset({
-      age: client.age ? String(client.age) : "",
+      age: client.user?.age != null ? String(client.user.age) : "",
       gender: client.gender ?? "",
       bloodPressure: client.bloodPressure ?? "",
       ocupation: client.anamnese?.ocupation ?? "",

@@ -222,7 +222,7 @@ export const PdfExercise: React.FC<PdfExerciseProps> = ({
           <View style={styles.clientRow}>
             <Text style={styles.label}>Idade:</Text>
             <Text style={styles.value}>
-              {client.age ? `${client.age} anos` : "-"}
+              {client.user?.age != null ? `${client.user.age} anos` : "-"}
             </Text>
           </View>
           <View style={styles.clientRow}>

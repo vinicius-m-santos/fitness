@@ -16,17 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-
-import { OBJECTIVES } from "@/utils/constants/Client/constants";
 import SaveButton from "@/components/ui/Buttons/components/SaveButton";
 import OutlineButton from "@/components/ui/Buttons/components/OutlineButton";
 import GenderSelect from "@/components/ui/Select/GenderSelect";
@@ -69,9 +59,6 @@ export default function ClientCreateModal({ canAddStudent = true }: ClientCreate
       phone: null,
       gender: "",
       birthDate: null,
-      height: null,
-      weight: null,
-      objective: null,
       observation: "",
       sendAccessEmail: false,
     },
@@ -80,7 +67,14 @@ export default function ClientCreateModal({ canAddStudent = true }: ClientCreate
   const onSubmit = async (data: ClientFormSchema) => {
     setLoading(true);
     const birthDateISO = birthDateToISO(data.birthDate ?? null);
-    const payload = { ...data, birthDate: birthDateISO };
+    const payload = {
+      ...data,
+      birthDate: birthDateISO,
+      height: data.height ?? null,
+      weight: data.weight ?? null,
+      objective: data.objective ?? null,
+      observation: data.observation ?? "",
+    };
 
     await request({
       method: "POST",
@@ -237,76 +231,6 @@ export default function ClientCreateModal({ canAddStudent = true }: ClientCreate
                 {errors.birthDate && (
                   <p className="text-xs text-destructive">
                     {errors.birthDate.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Altura */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-              <Label className="sm:text-right">Altura (cm)</Label>
-              <Input
-                type="number"
-                className="sm:col-span-3"
-                {...register("height")}
-              />
-            </div>
-
-            {/* Peso */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-              <Label className="sm:text-right">Peso (kg)</Label>
-              <Input
-                type="number"
-                className="sm:col-span-3"
-                {...register("weight")}
-              />
-            </div>
-
-            {/* Objetivo */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-              <Label className="sm:text-right">Objetivo</Label>
-              <div className="sm:col-span-3 space-y-1">
-                <Controller
-                  control={control}
-                  name="objective"
-                  render={({ field }) => (
-                    <Select
-                      value={field.value ?? ""}
-                      onValueChange={(value) => field.onChange(value || null)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(OBJECTIVES).map(([key, label]) => (
-                          <SelectItem key={key} value={key}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.objective && (
-                  <p className="text-xs text-destructive">
-                    {errors.objective.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Observações */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-              <Label className="sm:text-right mt-2">Observações</Label>
-              <div className="sm:col-span-3 space-y-1">
-                <Textarea
-                  rows={3}
-                  maxLength={255}
-                  {...register("observation")}
-                />
-                {errors.observation && (
-                  <p className="text-xs text-destructive">
-                    {errors.observation.message}
                   </p>
                 )}
               </div>
