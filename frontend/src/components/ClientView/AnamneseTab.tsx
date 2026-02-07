@@ -76,9 +76,9 @@ export default function AnamneseTab() {
           <div>
             <span className="text-muted-foreground">Idade:</span>
             <p className="font-medium">
-              {client?.age ??
-              calculateAgeFromBirthDate(client?.user?.birthDate)
-                ? `${client?.age ?? calculateAgeFromBirthDate(client?.user?.birthDate)} anos`
+              {client?.user?.age ??
+                calculateAgeFromBirthDate(client?.user?.birthDate)
+                ? `${client?.user?.age ?? calculateAgeFromBirthDate(client?.user?.birthDate)} anos`
                 : "-"}
             </p>
           </div>

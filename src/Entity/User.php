@@ -233,6 +233,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->birthDate;
     }
 
+    #[Groups(['user_all', 'client_all', 'anamnese_all', 'client_list'])]
+    public function getAge(): ?int
+    {
+        if ($this->birthDate === null) {
+            return null;
+        }
+        return $this->birthDate->diff(new \DateTimeImmutable())->y;
+    }
+
     public function setGender(?string $gender): self
     {
         $this->gender = $gender;

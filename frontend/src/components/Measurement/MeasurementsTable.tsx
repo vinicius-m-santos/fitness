@@ -20,15 +20,24 @@ interface Measurement {
   chest: number;
   weight?: number | null;
   fatPercentage?: number | null;
+  fatMass?: number | null;
   leanMass?: number | null;
+}
+
+interface ClientForMeasurement {
+  id?: number;
+  gender?: string | null;
+  user?: { birthDate?: string | null } | null;
 }
 
 interface MeasurementsTableProps {
   measurements: Measurement[];
+  client?: ClientForMeasurement | null;
 }
 
 export default function MeasurementsTable({
   measurements,
+  client,
 }: MeasurementsTableProps) {
   const [updateOpen, setUpdateOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -93,15 +102,15 @@ export default function MeasurementsTable({
                   measurements.map((m) => (
                     <tr key={m.id} className="border-t">
                       <td className="py-2">{formatDate(m.date)}</td>
-                      <td>{m.rightArm}</td>
-                      <td>{m.leftArm}</td>
-                      <td>{m.waist}</td>
-                      <td>{m.rightLeg}</td>
-                      <td>{m.leftLeg}</td>
-                      <td>{m.chest}</td>
-                      <td>{m.weight ?? "-"}</td>
-                      <td>{m.fatPercentage ?? "-"}</td>
-                      <td>{m.leanMass ?? "-"}</td>
+                      <td>{m.rightArm} cm</td>
+                      <td>{m.leftArm} cm</td>
+                      <td>{m.waist} cm</td>
+                      <td>{m.rightLeg} cm</td>
+                      <td>{m.leftLeg} cm</td>
+                      <td>{m.chest} cm</td>
+                      <td>{m.weight != null ? `${m.weight} kg` : "-"}</td>
+                      <td>{m.fatPercentage != null ? `${m.fatPercentage} %` : "-"}</td>
+                      <td>{m.leanMass != null ? `${m.leanMass} kg` : "-"}</td>
                       <td className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -215,6 +224,7 @@ export default function MeasurementsTable({
             }}
             measurementId={selectedMeasurement.id}
             initialData={selectedMeasurement}
+            client={client}
           />
           <MeasurementDeleteModal
             open={deleteOpen}

@@ -62,6 +62,34 @@ class Measurement
     #[Groups(['measurement_all', 'client_all'])]
     private ?float $leanMass = null;
 
+    #[ORM\Column(type: "string", length: 50, options: ['default' => 'pollock_3'])]
+    #[Groups(['measurement_all', 'client_all'])]
+    private string $method = 'pollock_3';
+
+    #[ORM\Column(type: "float", nullable: true)]
+    #[Groups(['measurement_all', 'client_all'])]
+    private ?float $pectoral = null;
+
+    #[ORM\Column(type: "float", nullable: true)]
+    #[Groups(['measurement_all', 'client_all'])]
+    private ?float $abdominal = null;
+
+    #[ORM\Column(type: "float", nullable: true)]
+    #[Groups(['measurement_all', 'client_all'])]
+    private ?float $thigh = null;
+
+    #[ORM\Column(type: "float", nullable: true)]
+    #[Groups(['measurement_all', 'client_all'])]
+    private ?float $triceps = null;
+
+    #[ORM\Column(type: "float", nullable: true)]
+    #[Groups(['measurement_all', 'client_all'])]
+    private ?float $suprailiac = null;
+
+    #[ORM\Column(type: "float", nullable: true)]
+    #[Groups(['measurement_all', 'client_all'])]
+    private ?float $fatMass = null;
+
     #[ORM\Column(type: "datetime_immutable")]
     #[Groups(['measurement_all', 'client_all'])]
     private \DateTimeImmutable $createdAt;
@@ -209,6 +237,83 @@ class Measurement
         return $this;
     }
 
+    public function getMethod(): string
+    {
+        return $this->method;
+    }
+
+    public function setMethod(string $method): self
+    {
+        $this->method = $method;
+        return $this;
+    }
+
+    public function getPectoral(): ?float
+    {
+        return $this->pectoral;
+    }
+
+    public function setPectoral(?float $pectoral): self
+    {
+        $this->pectoral = $pectoral;
+        return $this;
+    }
+
+    public function getAbdominal(): ?float
+    {
+        return $this->abdominal;
+    }
+
+    public function setAbdominal(?float $abdominal): self
+    {
+        $this->abdominal = $abdominal;
+        return $this;
+    }
+
+    public function getThigh(): ?float
+    {
+        return $this->thigh;
+    }
+
+    public function setThigh(?float $thigh): self
+    {
+        $this->thigh = $thigh;
+        return $this;
+    }
+
+    public function getTriceps(): ?float
+    {
+        return $this->triceps;
+    }
+
+    public function setTriceps(?float $triceps): self
+    {
+        $this->triceps = $triceps;
+        return $this;
+    }
+
+    public function getSuprailiac(): ?float
+    {
+        return $this->suprailiac;
+    }
+
+    public function setSuprailiac(?float $suprailiac): self
+    {
+        $this->suprailiac = $suprailiac;
+        return $this;
+    }
+
+    public function getFatMass(): ?float
+    {
+        return $this->fatMass;
+    }
+
+    public function setFatMass(?float $fatMass): self
+    {
+        $this->fatMass = $fatMass;
+        return $this;
+    }
+
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
@@ -269,6 +374,34 @@ class Measurement
 
         if (isset($data['leanMass'])) {
             $this->leanMass = $data['leanMass'] !== null && $data['leanMass'] !== '' ? (float) $data['leanMass'] : null;
+        }
+
+        if (isset($data['method']) && $data['method'] !== null && $data['method'] !== '') {
+            $this->method = (string) $data['method'];
+        }
+
+        if (isset($data['pectoral'])) {
+            $this->pectoral = $data['pectoral'] !== null && $data['pectoral'] !== '' ? (float) $data['pectoral'] : null;
+        }
+
+        if (isset($data['abdominal'])) {
+            $this->abdominal = $data['abdominal'] !== null && $data['abdominal'] !== '' ? (float) $data['abdominal'] : null;
+        }
+
+        if (isset($data['thigh'])) {
+            $this->thigh = $data['thigh'] !== null && $data['thigh'] !== '' ? (float) $data['thigh'] : null;
+        }
+
+        if (isset($data['triceps'])) {
+            $this->triceps = $data['triceps'] !== null && $data['triceps'] !== '' ? (float) $data['triceps'] : null;
+        }
+
+        if (isset($data['suprailiac'])) {
+            $this->suprailiac = $data['suprailiac'] !== null && $data['suprailiac'] !== '' ? (float) $data['suprailiac'] : null;
+        }
+
+        if (isset($data['fatMass'])) {
+            $this->fatMass = $data['fatMass'] !== null && $data['fatMass'] !== '' ? (float) $data['fatMass'] : null;
         }
 
         return $this;

@@ -10,6 +10,8 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import Loader from "@/components/ui/loader";
+import { useAuthStore, type AuthUser } from "@/stores/authStore";
+import { getPersistedAuth } from "@/utils/Auth/getPersistedAuth";
 
 type User = {
   id: number;
@@ -52,7 +54,9 @@ const refreshAccessToken = async (): Promise<{
   user?: User;
   refresh_token?: string;
 }> => {
-  const refreshToken = localStorage.getItem("refresh_token");
+  const refreshToken =
+    useAuthStore.getState().refreshToken ??
+    localStorage.getItem("refresh_token");
   if (!refreshToken) {
     throw new Error("No refresh token");
   }
@@ -88,6 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const logout = useCallback(() => {
     setAccessToken(null);
     setUser(null);
+    useAuthStore.getState().clearAuth();
     localStorage.removeItem("refresh_token");
     navigate("/login");
   }, [navigate]);
@@ -95,6 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const login = (token: string, userData: User, refresh_token: string) => {
     setAccessToken(token);
     setUser(userData);
+    useAuthStore.getState().setAuth(token, refresh_token, userData as AuthUser);
     localStorage.setItem("refresh_token", refresh_token);
     if (userData.roles.includes("ROLE_CLIENT")) {
       navigate("/student");
@@ -143,7 +149,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           return Promise.reject(error);
         }
 
-        const refreshToken = localStorage.getItem("refresh_token");
+        const refreshToken =
+          useAuthStore.getState().refreshToken ??
+          localStorage.getItem("refresh_token");
         if (!refreshToken) {
           logout();
           return Promise.reject(error);
@@ -155,10 +163,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             refreshPromiseRef.current = refreshAccessToken()
               .then((data) => {
                 setAccessToken(data.token);
+                accessTokenRef.current = data.token;
                 if (data.user != null) setUser(data.user);
                 if (data.refresh_token != null) {
                   localStorage.setItem("refresh_token", data.refresh_token);
                 }
+                useAuthStore.getState().updateAuth(
+                  data.token,
+                  data.refresh_token ?? undefined,
+                  data.user ?? undefined
+                );
                 return data.token;
               })
               .finally(() => {
@@ -167,6 +181,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           }
 
           const newToken = await refreshPromiseRef.current;
+          accessTokenRef.current = newToken;
           const retryConfig = {
             ...originalRequest,
             headers: {
@@ -186,8 +201,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [logout]);
 
   useEffect(() => {
-    const fetchAccessToken = async () => {
-      const refreshToken = localStorage.getItem("refresh_token");
+    const initAuth = async () => {
+      const persisted = getPersistedAuth();
+      const hasToken = !!(
+        persisted?.accessToken ||
+        persisted?.refreshToken ||
+        localStorage.getItem("refresh_token")
+      );
+      const hasUserWithRoles =
+        persisted?.user?.roles &&
+        Array.isArray(persisted.user.roles) &&
+        persisted.user.roles.length > 0;
+
+      if (hasToken && hasUserWithRoles && persisted?.user) {
+        setAccessToken(persisted.accessToken ?? null);
+        setUser(persisted.user as User);
+        setLoading(false);
+        return;
+      }
+
+      const refreshToken =
+        persisted?.refreshToken ?? localStorage.getItem("refresh_token");
 
       if (!refreshToken) {
         setLoading(false);
@@ -201,6 +235,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         if (data.refresh_token != null) {
           localStorage.setItem("refresh_token", data.refresh_token);
         }
+        useAuthStore.getState().updateAuth(
+          data.token,
+          data.refresh_token ?? refreshToken,
+          (data.user ?? useAuthStore.getState().user) ?? undefined
+        );
       } catch {
         const currentPath = window.location.pathname;
         if (!PUBLIC_PATHS.includes(currentPath)) {
@@ -211,7 +250,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     };
 
-    fetchAccessToken();
+    initAuth();
   }, [logout]);
 
   if (loading) {

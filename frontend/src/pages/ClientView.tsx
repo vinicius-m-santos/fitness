@@ -19,6 +19,7 @@ import { calculateAgeFromBirthDate } from "@/utils/dateUtils";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/providers/AuthProvider";
+import { useMediaQuery } from "react-responsive";
 
 export default function ClientView() {
   // const [loading, setLoading] = useState<boolean>(true);
@@ -27,6 +28,7 @@ export default function ClientView() {
   const location = useLocation();
   const locationState = location.state as { restoreTrainingDraft?: TrainingDraft } | null;
   const restoreDraft = locationState?.restoreTrainingDraft;
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
   useEffect(() => {
     if (
@@ -102,14 +104,14 @@ export default function ClientView() {
         )}
         {client && <EditableAvatar variant="client" data={client} />}
         <div className="flex-1 space-y-2">
-          <h2 className="text-2xl font-semibold text-center">
+          <h2 className={`text-2xl font-semibold ${isMobile ? "text-center" : ""}`}>
             {getClientNameFormatted(client?.name, client?.lastName)}
           </h2>
-          <p className="text-sm text-muted-foreground">
-            {(client?.age ?? calculateAgeFromBirthDate(client?.user?.birthDate))
-              ? `Idade: ${client?.age ?? calculateAgeFromBirthDate(client?.user?.birthDate)} anos`
+          <p className={`text-sm text-muted-foreground ${isMobile ? "text-center" : ""}`}>
+            {(client?.user?.age ?? calculateAgeFromBirthDate(client?.user?.birthDate))
+              ? `Idade: ${client?.user?.age ?? calculateAgeFromBirthDate(client?.user?.birthDate)} anos`
               : ""}
-            {(client?.age ?? calculateAgeFromBirthDate(client?.user?.birthDate)) &&
+            {(client?.user?.age ?? calculateAgeFromBirthDate(client?.user?.birthDate)) &&
               client?.objective &&
               " • "}
             {client?.objective
@@ -180,7 +182,7 @@ export default function ClientView() {
           <TabsContent value="medidas">
             <Card>
               <CardContent className="p-6 text-sm text-muted-foreground">
-                <MeasurementsTab />
+                <MeasurementsTab client={client} />
               </CardContent>
             </Card>
           </TabsContent>

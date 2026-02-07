@@ -11,6 +11,7 @@ import PrivateRoute, {
     ROLE_PERSONAL,
 } from "./utils/Auth/PrivateRoute";
 import ClientViewGuard from "./utils/Auth/ClientViewGuard";
+import PublicRouteGuard from "./utils/Auth/PublicRouteGuard";
 import AdminLayout from "./layout/AdminLayout";
 import Home from "./pages/Home";
 import NoAuthLayout from "./layout/NoAuthLayout";
@@ -97,7 +98,9 @@ export default function App() {
                 path="/"
                 element={
                     <NoAuthLayout>
-                        <Home />
+                        <PublicRouteGuard>
+                            <Home />
+                        </PublicRouteGuard>
                     </NoAuthLayout>
                 }
             />
@@ -105,7 +108,9 @@ export default function App() {
                 path="/login"
                 element={
                     <NoAuthLayout>
-                        <Login />
+                        <PublicRouteGuard>
+                            <Login />
+                        </PublicRouteGuard>
                     </NoAuthLayout>
                 }
             />
@@ -113,7 +118,9 @@ export default function App() {
                 path="/register"
                 element={
                     <NoAuthLayout>
-                        <Register />
+                        <PublicRouteGuard>
+                            <Register />
+                        </PublicRouteGuard>
                     </NoAuthLayout>
                 }
             />
@@ -121,7 +128,9 @@ export default function App() {
                 path="/register-success"
                 element={
                     <NoAuthLayout>
-                        <RegisterSuccess />
+                        <PublicRouteGuard>
+                            <RegisterSuccess />
+                        </PublicRouteGuard>
                     </NoAuthLayout>
                 }
             />
@@ -129,7 +138,9 @@ export default function App() {
                 path="/verify-email/:token"
                 element={
                     <NoAuthLayout>
-                        <EmailVerification />
+                        <PublicRouteGuard>
+                            <EmailVerification />
+                        </PublicRouteGuard>
                     </NoAuthLayout>
                 }
             />
@@ -137,7 +148,9 @@ export default function App() {
                 path="/email-not-verified"
                 element={
                     <NoAuthLayout>
-                        <EmailVerification />
+                        <PublicRouteGuard>
+                            <EmailVerification />
+                        </PublicRouteGuard>
                     </NoAuthLayout>
                 }
             />
@@ -145,7 +158,9 @@ export default function App() {
                 path="/forgot-password"
                 element={
                     <NoAuthLayout>
-                        <ForgotPassword />
+                        <PublicRouteGuard>
+                            <ForgotPassword />
+                        </PublicRouteGuard>
                     </NoAuthLayout>
                 }
             />
@@ -153,7 +168,9 @@ export default function App() {
                 path="/reset-password/:token"
                 element={
                     <NoAuthLayout>
-                        <ResetPassword />
+                        <PublicRouteGuard>
+                            <ResetPassword />
+                        </PublicRouteGuard>
                     </NoAuthLayout>
                 }
             />
@@ -161,7 +178,9 @@ export default function App() {
                 path="/client-register/:token/:clientUuid"
                 element={
                     <NoAuthLayout>
-                        <ClientRegister />
+                        <PublicRouteGuard>
+                            <ClientRegister />
+                        </PublicRouteGuard>
                     </NoAuthLayout>
                 }
             />
@@ -207,7 +226,6 @@ export default function App() {
                     </PrivateRoute>
                 }
             />
-            <Route path="/login" element={<Login />} />
             <Route path="/logout" element={<Logout />} />
         </Routes>
     );
