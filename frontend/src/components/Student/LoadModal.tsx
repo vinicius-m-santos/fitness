@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -65,10 +65,13 @@ export default function LoadModal({
     buildLoadsArray(seriesCount, savedSets, lastLoadsPerSet)
   );
 
+  const prevOpenRef = useRef(false);
+
   useEffect(() => {
-    if (open) {
+    if (open && !prevOpenRef.current) {
       setLoads(buildLoadsArray(seriesCount, savedSets, lastLoadsPerSet));
     }
+    prevOpenRef.current = open;
   }, [open, seriesCount, savedSets, lastLoadsPerSet]);
 
   const handleSetLoad = (setIndex: number, value: string) => {

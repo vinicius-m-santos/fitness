@@ -15,6 +15,7 @@ import { getPersistedAuth } from "@/utils/Auth/getPersistedAuth";
 
 type User = {
   id: number;
+  uuid?: string;
   firstName: string;
   lastName: string;
   email: string;

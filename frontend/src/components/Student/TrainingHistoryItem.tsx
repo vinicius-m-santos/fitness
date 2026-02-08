@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, Pencil, Trash2, Clock } from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil, Trash2, Clock, RotateCcw } from "lucide-react";
 import { useEditDeadlineTimer, formatRemainingTime } from "@/hooks/useEditDeadlineTimer";
 import {
   AlertDialog,
@@ -30,7 +30,8 @@ export type HistoryItem = {
     periodExerciseId: number;
     exerciseName: string;
     durationSeconds: number | null;
-    sets: { setNumber: number; loadKg: number | null }[];
+    executed: boolean;
+    sets: { setNumber: number; loadKg: number | null; restSeconds?: number | null }[];
   }[];
 };
 
@@ -38,6 +39,7 @@ type TrainingHistoryItemProps = {
   item: HistoryItem;
   onEdit: (item: HistoryItem) => void;
   onDelete: (item: HistoryItem) => void;
+  onRestart: (item: HistoryItem) => void;
 };
 
 function formatDuration(seconds: number): string {
@@ -92,9 +94,11 @@ export default function TrainingHistoryItem({
   item,
   onEdit,
   onDelete,
+  onRestart,
 }: TrainingHistoryItemProps) {
   const [expanded, setExpanded] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const { remainingSeconds, canEdit } = useEditDeadlineTimer({
     executionId: item.id,
     finishedAtIso: item.finishedAt,
@@ -152,48 +156,88 @@ export default function TrainingHistoryItem({
                   className="text-sm flex flex-wrap items-baseline gap-x-2 gap-y-1"
                 >
                   <span className="font-medium text-foreground">{ee.exerciseName}</span>
-                  {ee.durationSeconds != null && ee.durationSeconds > 0 && (
-                    <span className="text-muted-foreground">
-                      {formatDuration(ee.durationSeconds)}
-                    </span>
-                  )}
-                  {ee.sets.some((s) => s.loadKg != null && s.loadKg > 0) && (
-                    <span className="text-muted-foreground text-xs">
-                      {ee.sets
-                        .filter((s) => s.loadKg != null && s.loadKg > 0)
-                        .map((s) => `S${s.setNumber}: ${s.loadKg} kg`)
-                        .join(", ")}
-                    </span>
+                  {!ee.executed ? (
+                    <span className="text-muted-foreground text-xs italic">Não executado</span>
+                  ) : (
+                    <>
+                      {ee.durationSeconds != null && ee.durationSeconds > 0 && (
+                        <span className="text-muted-foreground">
+                          {formatDuration(ee.durationSeconds)}
+                        </span>
+                      )}
+                      {ee.sets.some((s) => s.loadKg != null && s.loadKg > 0) && (
+                        <span className="text-muted-foreground text-xs">
+                          {ee.sets
+                            .filter((s) => s.loadKg != null && s.loadKg > 0)
+                            .map((s) => `S${s.setNumber}: ${s.loadKg} kg`)
+                            .join(", ")}
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
               ))}
             </div>
           )}
 
-          {canEdit && (
-            <div className="flex flex-wrap gap-2 pt-1">
+          <div className="flex flex-col lg:flex-row gap-2 pt-1">
+            {item.periodId != null && (
               <Button
                 variant="outline"
-                size="sm"
+                size="default"
                 className="gap-1.5 flex-1 sm:flex-initial min-w-0"
-                onClick={() => onEdit(item)}
+                onClick={() => setShowRestartConfirm(true)}
               >
-                <Pencil className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">Editar cargas</span>
+                <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Reiniciar</span>
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-destructive hover:text-destructive flex-1 sm:flex-initial min-w-0"
-                onClick={() => setShowDeleteConfirm(true)}
-              >
-                <Trash2 className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">Excluir</span>
-              </Button>
-            </div>
-          )}
+            )}
+            {canEdit && (
+              <>
+                <Button
+                  variant="outline"
+                  size="default"
+                  className="gap-1.5 flex-1 sm:flex-initial min-w-0"
+                  onClick={() => onEdit(item)}
+                >
+                  <Pencil className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Editar cargas</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="default"
+                  className="gap-1.5 text-destructive hover:text-destructive flex-1 sm:flex-initial min-w-0"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Excluir</span>
+                </Button>
+              </>
+            )}
+          </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={showRestartConfirm} onOpenChange={setShowRestartConfirm}>
+        <AlertDialogContent className="rounded-md w-[90vw] max-w-[420px]">
+          <AlertDialogTitle>Reiniciar treino?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Você será direcionado para a execução deste treino de onde parou, com os mesmos dados de exercícios
+            concluídos, cargas e descansos. Deseja continuar?
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onRestart(item);
+                setShowRestartConfirm(false);
+              }}
+            >
+              Sim, reiniciar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent className="rounded-md w-[90vw] max-w-[420px]">

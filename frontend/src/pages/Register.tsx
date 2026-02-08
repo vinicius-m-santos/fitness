@@ -135,11 +135,18 @@ const Register = () => {
                 phone: data.phone || null,
                 birthDate: birthDateString,
             },
-            successMessage: "Cadastro realizado com sucesso! Verifique seu email para ativar sua conta.",
-            showSuccess: true,
-            onAccept: () => {
-                navigate("/register-success");
+            showSuccess: false,
+            onAccept: (payload: { message?: string }) => {
                 setLoading(false);
+                if (payload?.message?.includes("Senha definida")) {
+                    toast.success(payload.message);
+                    navigate("/login");
+                    return;
+                }
+                toast.success(
+                    "Cadastro realizado com sucesso! Verifique seu email para ativar sua conta."
+                );
+                navigate("/register-success");
             },
             onReject: () => {
                 setLoading(false);

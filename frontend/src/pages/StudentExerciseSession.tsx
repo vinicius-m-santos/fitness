@@ -12,7 +12,6 @@ import Loader from "@/components/ui/loader";
 import RestModal from "@/components/Student/RestModal";
 import LoadModal, { type SetLoadInput } from "@/components/Student/LoadModal";
 import WorkoutRatingModal, { type WorkoutRating } from "@/components/Student/WorkoutRatingModal";
-import ContinueWorkoutPrompt from "@/components/Student/ContinueWorkoutPrompt";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,8 +22,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { setActiveSession, clearActiveSession, type ActiveSessionData } from "@/lib/activeSessionDb";
 import { useActiveWorkoutCheck } from "@/hooks/useActiveWorkoutCheck";
+import { useWorkoutSessionStore, type SetExecutionLocal } from "@/stores/workoutSessionStore";
 
 type FlatExercise = {
   periodExerciseId: number;
@@ -50,22 +49,15 @@ export default function StudentExerciseSession() {
   const hasRestoredFromContinueRef = useRef(false);
   const request = useRequest();
   const queryClient = useQueryClient();
-  const [executionId, setExecutionId] = useState<number | null>(null);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
   /** ID do exercício cujo timer está rodando (um único por vez). Continua rodando ao clicar Próximo. */
   const [currentTimedPeriodExerciseId, setCurrentTimedPeriodExerciseId] = useState<number | null>(null);
   const [restModalOpen, setRestModalOpen] = useState(false);
   const [loadModalOpen, setLoadModalOpen] = useState(false);
-  const [exerciseExecutionIds, setExerciseExecutionIds] = useState<Record<number, number>>({});
-  const [executionOrderCounter, setExecutionOrderCounter] = useState(1);
-  const [exerciseFinalized, setExerciseFinalized] = useState<Record<number, boolean>>({});
-  const [exerciseElapsedSeconds, setExerciseElapsedSeconds] = useState<Record<number, number>>({});
-  const [lastRestSeconds, setLastRestSeconds] = useState<number | null>(null);
+  /** Tick para forçar re-render do timer (duração calculada a partir de exerciseStartedAt) */
+  const [timerTick, setTimerTick] = useState(0);
   const [lastLoadsByPeriodExercise, setLastLoadsByPeriodExercise] = useState<
-    Record<number, SetLoadInput[]>
-  >({});
-  const [savedLoadsByExerciseExecution, setSavedLoadsByExerciseExecution] = useState<
     Record<number, SetLoadInput[]>
   >({});
   // Rest timer: estado no pai; usa timestamp para continuar ao voltar do background
@@ -76,65 +68,77 @@ export default function StudentExerciseSession() {
   const [restJustCompleted, setRestJustCompleted] = useState(false);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
-  const [pendingFinishExecutionId, setPendingFinishExecutionId] = useState<number | null>(null);
   const [exerciseStartedAt, setExerciseStartedAt] = useState<number | null>(null);
   const restRemainingRef = useRef(0);
   restRemainingRef.current = restRemainingSeconds;
   const restDurationRef = useRef(60);
   restDurationRef.current = restDuration;
-  const restContextRef = useRef<{ exerciseExecutionId: number; setNumber: number } | null>(null);
+  const restContextRef = useRef<{ periodExerciseId: number; setNumber: number } | null>(null);
+  const restJustCompletedRef = useRef(false);
+  restJustCompletedRef.current = restJustCompleted;
   const startRequestedRef = useRef(false);
   const hasRestoredSessionRef = useRef(false);
   const handleRestCompleteRef = useRef<
     (payload: {
       seconds: number;
-      ctx?: { exerciseExecutionId: number; setNumber: number } | null;
+      ctx?: { periodExerciseId: number; setNumber: number } | null;
     }) => void
   >(() => { });
   const prevExerciseIndexRef = useRef<number | null>(null);
 
   const { data: training, isLoading: trainingLoading } = useQuery({
-    queryKey: ["training-detail", trainingId],
+    queryKey: ["training-detail", trainingId, periodId],
     queryFn: async () => {
-      const res = await request({ method: "GET", url: `/training/detail/${trainingId}` });
+      const url = periodId
+        ? `/training/detail/${trainingId}?periodId=${periodId}`
+        : `/training/detail/${trainingId}`;
+      const res = await request({ method: "GET", url });
       return res;
     },
     enabled: !!trainingId,
   });
 
-  const { data: executionContext } = useQuery({
-    queryKey: ["execution-context", trainingId, periodId],
-    queryFn: async () => {
-      const res = await request({
-        method: "GET",
-        url: `/training-execution/execution-context?trainingId=${trainingId}&periodId=${periodId}`,
-      });
-      return res;
-    },
-    enabled: !!trainingId && !!periodId,
-  });
+  const activeCheck = useActiveWorkoutCheck({ trainingId, periodId });
 
-  const activeCheck = useActiveWorkoutCheck({
-    trainingId,
-    periodId,
-    request,
-    onFinished: () => {
-      clearActiveSession();
-      navigate("/student");
-    },
-  });
+  const initSession = useWorkoutSessionStore((s) => s.initSession);
+  const addExerciseExecution = useWorkoutSessionStore((s) => s.addExerciseExecution);
+  const removeExerciseExecution = useWorkoutSessionStore((s) => s.removeExerciseExecution);
+  const updateLoads = useWorkoutSessionStore((s) => s.updateLoads);
+  const updateSetRest = useWorkoutSessionStore((s) => s.updateSetRest);
+  const setDuration = useWorkoutSessionStore((s) => s.setDuration);
+  const setFinalized = useWorkoutSessionStore((s) => s.setFinalized);
+  const setRestDurationValue = useWorkoutSessionStore((s) => s.setRestDurationValue);
+  const session = useWorkoutSessionStore((s) => s.session);
+  const setCurrentExerciseIndexStore = useWorkoutSessionStore((s) => s.setCurrentExerciseIndex);
+  const setCurrentSetIndexStore = useWorkoutSessionStore((s) => s.setCurrentSetIndex);
+  const setRestTimer = useWorkoutSessionStore((s) => s.setRestTimer);
+  const setTimedExercise = useWorkoutSessionStore((s) => s.setTimedExercise);
+  const getPayloadForFinish = useWorkoutSessionStore((s) => s.getPayloadForFinish);
+  const setShowWorkoutPrompt = useWorkoutSessionStore((s) => s.setShowWorkoutPrompt);
+
+  // Se há sessão ativa para outro treino, mostrar prompt para decidir antes
+  useEffect(() => {
+    if (!session || !trainingId || !periodId || !activeCheck.checkDone) return;
+    const fromContinue = (location.state as { fromContinue?: boolean } | null)?.fromContinue === true;
+    if (fromContinue) return;
+    const tid = Number(trainingId);
+    const pid = Number(periodId);
+    if (session.trainingId !== tid || session.periodId !== pid) {
+      setShowWorkoutPrompt(true);
+    }
+  }, [session, trainingId, periodId, activeCheck.checkDone, location.state, setShowWorkoutPrompt]);
 
   useEffect(() => {
-    if (hasRestoredSessionRef.current || !executionContext) return;
-    if (executionContext.lastRestSeconds != null) {
-      setLastRestSeconds(executionContext.lastRestSeconds);
-      const rounded = Math.min(300, Math.round(executionContext.lastRestSeconds / 10) * 10);
-      setRestDuration(rounded);
+    if (!training || !periodId) return;
+    const lastRest = (training as { lastRestSeconds?: number }).lastRestSeconds;
+    const lastLoads = (training as { lastLoadsByPeriodExercise?: Record<number, SetLoadInput[]> }).lastLoadsByPeriodExercise;
+    if (lastRest != null) {
+      setRestDuration(Math.min(300, Math.round(lastRest / 10) * 10));
     }
-    if (executionContext.lastLoadsByPeriodExercise && typeof executionContext.lastLoadsByPeriodExercise === "object") {
-      setLastLoadsByPeriodExercise(executionContext.lastLoadsByPeriodExercise);
+    if (lastLoads && typeof lastLoads === "object") {
+      setLastLoadsByPeriodExercise(lastLoads);
     }
-  }, [executionContext]);
+  }, [training, periodId]);
 
   const periodIdNum = periodId ? parseInt(periodId, 10) : null;
   const selectedPeriod = training?.periods?.find((p: { id: number }) => p.id === periodIdNum);
@@ -161,23 +165,9 @@ export default function StudentExerciseSession() {
   const currentExercise = flatExercises[currentExerciseIndex];
   const seriesCount = currentExercise ? parseSeries(currentExercise.series ?? null) : 4;
   const currentSetNumber = currentSetIndex + 1;
-  const exerciseExecutionId = currentExercise ? exerciseExecutionIds[currentExercise.periodExerciseId] : null;
-  const isCurrentFinalized = currentExercise ? !!exerciseFinalized[currentExercise.periodExerciseId] : false;
-  const hasCurrentStarted = currentExercise ? exerciseExecutionIds[currentExercise.periodExerciseId] != null : false;
-
-  const startExecutionMutation = useMutation({
-    mutationFn: async () => {
-      const res = await request({
-        method: "POST",
-        url: "/training-execution/start",
-        data: { trainingId: Number(trainingId) },
-      });
-      return res;
-    },
-    onSuccess: (data: { id: number }) => {
-      setExecutionId(data.id);
-    },
-  });
+  const currentExerciseExecution = currentExercise && session?.exerciseExecutions[currentExercise.periodExerciseId];
+  const isCurrentFinalized = currentExercise ? !!(session?.exerciseFinalized[currentExercise.periodExerciseId]) : false;
+  const hasCurrentStarted = currentExercise ? !!session?.exerciseExecutions[currentExercise.periodExerciseId] : false;
 
   useEffect(() => {
     if (
@@ -185,20 +175,55 @@ export default function StudentExerciseSession() {
       !activeCheck.showPrompt &&
       training &&
       flatExercises.length > 0 &&
-      !executionId &&
-      !startExecutionMutation.isPending &&
-      !startRequestedRef.current
+      !session &&
+      selectedPeriod &&
+      startRequestedRef.current === false
     ) {
       startRequestedRef.current = true;
-      startExecutionMutation.mutate();
+      const lastRest = (training as { lastRestSeconds?: number }).lastRestSeconds ?? null;
+      let restVal = 60;
+      if (lastRest != null) {
+        restVal = Math.min(300, Math.round(lastRest / 10) * 10);
+      }
+      initSession({
+        trainingId: Number(trainingId),
+        periodId: Number(periodId),
+        periodName: selectedPeriod.name,
+        lastRestSeconds: lastRest ?? null,
+        restDurationValue: restVal,
+      });
     }
-  }, [activeCheck.checkDone, activeCheck.showPrompt, training?.id, flatExercises.length, executionId, startExecutionMutation, startExecutionMutation.isPending, training]);
+  }, [activeCheck.checkDone, activeCheck.showPrompt, training, flatExercises.length, session, selectedPeriod, trainingId, periodId, initSession]);
 
   // Um único intervalo: incrementa o tempo do exercício que está “em execução” (currentTimedPeriodExerciseId)
-  // Recalcula rest e exercise a partir de timestamps (funciona com app em background)
+  // Recalcula rest ao voltar da aba
   const recalcFromTimestamps = useCallback(() => {
     const now = Date.now();
-    if (restTimerRunning && restStartedAt != null && restDurationRef.current > 0) {
+    const s = session;
+    const restEndsAt = s ? (s as { restEndsAt?: number | null }).restEndsAt ?? null : null;
+    const restHasEndedFromSession = restEndsAt != null && now > restEndsAt;
+    if (restHasEndedFromSession) {
+      const ctx =
+        s
+          ? (s as { restContext?: { periodExerciseId: number; setNumber: number } | null }).restContext ??
+            (flatExercises[s.currentExerciseIndex]
+              ? {
+                  periodExerciseId: flatExercises[s.currentExerciseIndex].periodExerciseId,
+                  setNumber: s.currentSetIndex + 1,
+                }
+              : null)
+          : null;
+      handleRestCompleteRef.current({
+        seconds: s?.restDuration ?? restDurationRef.current,
+        ctx: ctx ?? restContextRef.current ?? undefined,
+      });
+      restContextRef.current = null;
+      setRestTimer({ restStartedAt: null, restDuration: null });
+      setRestTimerRunning(false);
+      setRestStartedAt(null);
+      setRestModalOpen(true);
+      setRestJustCompleted(true);
+    } else if (restTimerRunning && restStartedAt != null && restDurationRef.current > 0) {
       const elapsed = Math.floor((now - restStartedAt) / 1000);
       const remaining = Math.max(0, restDurationRef.current - elapsed);
       setRestRemainingSeconds(remaining);
@@ -211,28 +236,17 @@ export default function StudentExerciseSession() {
           ctx: restContextRef.current ?? undefined,
         });
         restContextRef.current = null;
+        setRestTimer({ restStartedAt: null, restDuration: null });
+        setRestModalOpen(true);
         setRestJustCompleted(true);
       }
     }
-    if (currentTimedPeriodExerciseId != null && exerciseStartedAt != null) {
-      const elapsed = Math.floor((now - exerciseStartedAt) / 1000);
-      setExerciseElapsedSeconds((prev) => ({
-        ...prev,
-        [currentTimedPeriodExerciseId]: elapsed,
-      }));
-    }
-  }, [restTimerRunning, restStartedAt, currentTimedPeriodExerciseId, exerciseStartedAt]);
+  }, [restTimerRunning, restStartedAt, setRestTimer, session, flatExercises]);
 
-  // Exercício: tempo baseado em timestamp (continua ao voltar do background)
+  // Tick para re-render do timer (duração calculada em tempo real a partir de exerciseStartedAt)
   useEffect(() => {
     if (currentTimedPeriodExerciseId == null || exerciseStartedAt == null) return;
-    const t = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - exerciseStartedAt) / 1000);
-      setExerciseElapsedSeconds((prev) => ({
-        ...prev,
-        [currentTimedPeriodExerciseId]: elapsed,
-      }));
-    }, 1000);
+    const t = setInterval(() => setTimerTick((x) => x + 1), 1000);
     return () => clearInterval(t);
   }, [currentTimedPeriodExerciseId, exerciseStartedAt]);
 
@@ -251,24 +265,43 @@ export default function StudentExerciseSession() {
         const ctx = restContextRef.current;
         handleRestCompleteRef.current({ seconds: restDurationRef.current, ctx: ctx ?? undefined });
         restContextRef.current = null;
+        setRestTimer({ restStartedAt: null, restDuration: null });
+        setRestModalOpen(true);
         setRestJustCompleted(true);
       }
     }, 1000);
     return () => clearInterval(t);
-  }, [restTimerRunning, restStartedAt]);
+  }, [restTimerRunning, restStartedAt, setRestTimer]);
 
-  // Ao voltar para a aba, recalcula tempos a partir dos timestamps
+  const restModalCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Ao voltar para a aba: recalcula rest e, se descanso concluído sem usuário ver, mostra modal e agenda fechamento
   useEffect(() => {
     const onVisibility = () => {
-      if (document.visibilityState === "visible") recalcFromTimestamps();
+      if (document.visibilityState !== "visible") return;
+      recalcFromTimestamps();
+      if (restJustCompletedRef.current) {
+        if (restModalCloseTimeoutRef.current) clearTimeout(restModalCloseTimeoutRef.current);
+        restModalCloseTimeoutRef.current = setTimeout(() => {
+          setRestModalOpen(false);
+          setRestJustCompleted(false);
+          restModalCloseTimeoutRef.current = null;
+        }, 1500);
+      }
     };
     document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pageshow", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pageshow", onVisibility);
+      if (restModalCloseTimeoutRef.current) clearTimeout(restModalCloseTimeoutRef.current);
+    };
   }, [recalcFromTimestamps]);
 
-  // Após conclusão do descanso: mostra check 1s e fecha o modal
+  // Após conclusão do descanso: agenda fechamento do modal apenas quando visível (senão fecha em background)
   useEffect(() => {
     if (!restJustCompleted) return;
+    if (document.visibilityState !== "visible") return;
     const t = setTimeout(() => {
       setRestModalOpen(false);
       setRestJustCompleted(false);
@@ -276,136 +309,74 @@ export default function StudentExerciseSession() {
     return () => clearTimeout(t);
   }, [restJustCompleted]);
 
-  // Persiste sessão no IndexedDB para sobreviver a reload e background
-  useEffect(() => {
-    if (
-      executionId == null ||
-      trainingId == null ||
-      periodId == null ||
-      typeof trainingId !== "string" ||
-      typeof periodId !== "string"
-    )
-      return;
-    const payload: ActiveSessionData = {
-      executionId,
-      trainingId: Number(trainingId),
-      periodId: Number(periodId),
-      periodName: selectedPeriod?.name ?? (training as { name?: string })?.name ?? `Período ${periodId}`,
-      currentExerciseIndex,
-      currentSetIndex,
-      restStartedAt,
-      restDuration: restDurationRef.current,
-      currentTimedPeriodExerciseId,
-      exerciseStartedAt,
-      exerciseElapsedSeconds: { ...exerciseElapsedSeconds },
-      exerciseExecutionIds: { ...exerciseExecutionIds },
-      exerciseFinalized: { ...exerciseFinalized },
-      executionOrderCounter,
-      lastRestSeconds,
-      restDurationValue: restDuration,
-    };
-    setActiveSession(payload).catch(() => { });
-  }, [
-    executionId,
-    trainingId,
-    periodId,
-    selectedPeriod?.name,
-    (training as { name?: string })?.name,
-    currentExerciseIndex,
-    currentSetIndex,
-    restStartedAt,
-    currentTimedPeriodExerciseId,
-    exerciseStartedAt,
-    exerciseElapsedSeconds,
-    exerciseExecutionIds,
-    exerciseFinalized,
-    executionOrderCounter,
-    lastRestSeconds,
-    restDuration,
-  ]);
+  const addExerciseExecutionOnPlay = useCallback(() => {
+    if (!currentExercise || !session) return;
+    const existing = session.exerciseExecutions[currentExercise.periodExerciseId];
+    if (existing) return;
+    const lastLoads = lastLoadsByPeriodExercise[currentExercise.periodExerciseId] ?? [];
+    addExerciseExecution(currentExercise.periodExerciseId, seriesCount, lastLoads);
+  }, [currentExercise, session, addExerciseExecution, seriesCount, lastLoadsByPeriodExercise]);
 
-  const addExerciseExecutionOnPlay = useCallback(async () => {
-    if (!currentExercise || !executionId) return;
-    const existing = exerciseExecutionIds[currentExercise.periodExerciseId];
-    if (existing) return existing;
-    const order = executionOrderCounter;
-    const res = await request({
-      method: "POST",
-      url: `/training-execution/${executionId}/exercises`,
-      data: {
-        periodExerciseId: currentExercise.periodExerciseId,
-        executionOrder: order,
-      },
-    });
-    setExerciseExecutionIds((prev) => ({
-      ...prev,
-      [currentExercise.periodExerciseId]: res.id,
-    }));
-    setExecutionOrderCounter((c) => c + 1);
-    return res.id;
-  }, [currentExercise, executionId, executionOrderCounter, exerciseExecutionIds, request]);
-
-  /** Finaliza o exercício que estava com timer rodando: salva duração no backend e marca como finalizado. */
   const finalizeTimedExercise = useCallback(
-    async (periodExerciseId: number) => {
-      const exId = exerciseExecutionIds[periodExerciseId];
-      const duration = exerciseElapsedSeconds[periodExerciseId] ?? 0;
-      if (exId != null) {
-        await request({
-          method: "PATCH",
-          url: `/training-execution/exercise-execution/${exId}/duration`,
-          data: { durationSeconds: duration },
-        });
-      }
-      setExerciseFinalized((prev) => ({ ...prev, [periodExerciseId]: true }));
+    (periodExerciseId: number) => {
+      const startedAt = periodExerciseId === currentTimedPeriodExerciseId ? exerciseStartedAt : null;
+      const duration =
+        startedAt != null ? Math.floor((Date.now() - startedAt) / 1000) : 0;
+      setDuration(periodExerciseId, duration);
+      setFinalized(periodExerciseId, true);
     },
-    [exerciseExecutionIds, exerciseElapsedSeconds, request]
+    [currentTimedPeriodExerciseId, exerciseStartedAt, setDuration, setFinalized]
   );
 
-  const handlePlayPauseClick = useCallback(async () => {
-    if (!currentExercise || !executionId) return;
+  const handlePlayPauseClick = useCallback(() => {
+    if (!currentExercise || !session) return;
     const peId = currentExercise.periodExerciseId;
-    // Se já é o exercício em execução, pausar
     if (currentTimedPeriodExerciseId === peId) {
+      // Pausar: salvar duração atual e parar o timer
+      const duration = exerciseStartedAt != null
+        ? Math.floor((Date.now() - exerciseStartedAt) / 1000)
+        : 0;
+      setDuration(peId, duration);
       setCurrentTimedPeriodExerciseId(null);
       setExerciseStartedAt(null);
+      setTimedExercise({ periodExerciseId: null, exerciseStartedAt: null });
       return;
     }
-    // Finaliza o exercício que estava com timer rodando (salva duração e marca finalizado)
     if (currentTimedPeriodExerciseId != null) {
-      await finalizeTimedExercise(currentTimedPeriodExerciseId);
+      finalizeTimedExercise(currentTimedPeriodExerciseId);
     }
-    const existingElapsed = exerciseElapsedSeconds[peId] ?? 0;
-    setExerciseStartedAt(Date.now() - existingElapsed * 1000);
+    // Play: retomar de onde parou (durationSeconds salvo) ou iniciar do zero
+    const existingDuration = session.exerciseExecutions[peId]?.durationSeconds ?? 0;
+    const startAt = Date.now() - existingDuration * 1000;
+    setExerciseStartedAt(startAt);
     setCurrentTimedPeriodExerciseId(peId);
-    setExerciseFinalized((prev) => {
-      const next = { ...prev };
-      flatExercises.forEach((ex) => {
-        const id = ex.periodExerciseId;
-        if (id !== peId && exerciseExecutionIds[id] != null && !prev[id]) {
-          next[id] = true;
-        }
-      });
-      return next;
+    setTimedExercise({ periodExerciseId: peId, exerciseStartedAt: startAt });
+    flatExercises.forEach((ex) => {
+      const id = ex.periodExerciseId;
+      if (id !== peId && session.exerciseExecutions[id] != null && !session.exerciseFinalized[id]) {
+        setFinalized(id, true);
+      }
     });
-    await addExerciseExecutionOnPlay();
+    addExerciseExecutionOnPlay();
   }, [
     currentExercise,
-    executionId,
+    session,
     flatExercises,
-    exerciseExecutionIds,
-    exerciseElapsedSeconds,
     currentTimedPeriodExerciseId,
+    exerciseStartedAt,
     finalizeTimedExercise,
     addExerciseExecutionOnPlay,
+    setDuration,
+    setTimedExercise,
+    setFinalized,
   ]);
 
   useEffect(() => {
     prevExerciseIndexRef.current = currentExerciseIndex;
   }, [currentExerciseIndex]);
 
-  const savedSetsForModal = currentExercise && exerciseExecutionId
-    ? (savedLoadsByExerciseExecution[exerciseExecutionId] ?? null)
+  const savedSetsForModal = currentExercise && currentExerciseExecution?.sets
+    ? currentExerciseExecution.sets.map((s) => ({ setNumber: s.setNumber, loadKg: s.loadKg }))
     : null;
   const lastLoadsPerSet =
     currentExercise && lastLoadsByPeriodExercise[currentExercise.periodExerciseId]?.length
@@ -413,69 +384,57 @@ export default function StudentExerciseSession() {
       : null;
 
   const handleRestSave = useCallback(
-    async (seconds: number) => {
-      if (!exerciseExecutionId) return;
-      await request({
-        method: "PATCH",
-        url: `/training-execution/exercise-execution/${exerciseExecutionId}/set-rest`,
-        data: { setNumber: currentSetNumber, restSeconds: seconds },
-      });
-      setLastRestSeconds(seconds);
+    (seconds: number) => {
+      if (!currentExercise) return;
+      updateSetRest(currentExercise.periodExerciseId, currentSetNumber, seconds);
+      setRestDurationValue(seconds);
     },
-    [exerciseExecutionId, currentSetNumber, request]
+    [currentExercise, currentSetNumber, updateSetRest, setRestDurationValue]
   );
 
   const handleRestComplete = useCallback(
-    async (payload: {
+    (payload: {
       seconds: number;
-      ctx?: { exerciseExecutionId: number; setNumber: number } | null;
+      ctx?: { periodExerciseId: number; setNumber: number } | null;
     }) => {
       const { seconds, ctx } = payload;
       const useCtx =
-        ctx ?? (exerciseExecutionId != null ? { exerciseExecutionId, setNumber: currentSetNumber } : null);
+        ctx ?? (currentExercise != null ? { periodExerciseId: currentExercise.periodExerciseId, setNumber: currentSetNumber } : null);
       if (!useCtx) return;
-      await request({
-        method: "PATCH",
-        url: `/training-execution/exercise-execution/${useCtx.exerciseExecutionId}/set-rest`,
-        data: { setNumber: useCtx.setNumber, restSeconds: seconds },
-      });
-      setLastRestSeconds(seconds);
-      // Modal fecha após 1s via useEffect quando restJustCompleted é true
+      updateSetRest(useCtx.periodExerciseId, useCtx.setNumber, seconds);
+      setRestDurationValue(seconds);
     },
-    [exerciseExecutionId, currentSetNumber, request]
+    [currentExercise, currentSetNumber, updateSetRest, setRestDurationValue]
   );
   handleRestCompleteRef.current = handleRestComplete;
 
   const handleLoadSave = useCallback(
-    async (sets: SetLoadInput[]) => {
-      if (!exerciseExecutionId) return;
-      await request({
-        method: "PATCH",
-        url: `/training-execution/exercise-execution/${exerciseExecutionId}/sets`,
-        data: {
-          sets: sets.map((s) => ({ setNumber: s.setNumber, loadKg: s.loadKg ?? null })),
-        },
-      });
-      setSavedLoadsByExerciseExecution((prev) => ({ ...prev, [exerciseExecutionId]: sets }));
+    (sets: SetLoadInput[]) => {
+      if (!currentExercise) return;
+      const setsWithRest: SetExecutionLocal[] = sets.map((s) => ({
+        setNumber: s.setNumber,
+        loadKg: s.loadKg,
+        restSeconds: currentExerciseExecution?.sets.find((e) => e.setNumber === s.setNumber)?.restSeconds ?? null,
+      }));
+      updateLoads(currentExercise.periodExerciseId, setsWithRest);
       setLoadModalOpen(false);
     },
-    [exerciseExecutionId, request]
+    [currentExercise, currentExerciseExecution, updateLoads]
   );
 
   const finishMutation = useMutation({
-    mutationFn: async (payload: { executionId: number; rating?: WorkoutRating }) => {
-      const { executionId: id, rating } = payload;
-      if (id == null) return;
+    mutationFn: async (payload: { rating?: WorkoutRating }) => {
+      const payloadData = getPayloadForFinish();
+      if (!payloadData) return;
       await request({
-        method: "PATCH",
-        url: `/training-execution/${id}/finish`,
-        data: rating != null ? { rating } : undefined,
+        method: "POST",
+        url: "/training-execution/finish-with-session",
+        data: { ...payloadData, rating: payload.rating },
       });
     },
     onSuccess: () => {
-      setShowRatingModal(false);
-      setPendingFinishExecutionId(null);
-      clearActiveSession();
+    setShowRatingModal(false);
+    activeCheck.clearSession();
       queryClient.invalidateQueries({ queryKey: ["trainings"] });
       queryClient.invalidateQueries({ queryKey: ["training-execution-history"] });
       navigate("/student");
@@ -484,152 +443,112 @@ export default function StudentExerciseSession() {
 
   const goPrev = () => {
     if (currentExerciseIndex > 0) {
-      setCurrentExerciseIndex((i) => i - 1);
+      const next = currentExerciseIndex - 1;
+      setCurrentExerciseIndex(next);
       setCurrentSetIndex(0);
+      setCurrentExerciseIndexStore(next);
+      setCurrentSetIndexStore(0);
     }
   };
 
   const goNext = () => {
     if (currentExerciseIndex < flatExercises.length - 1) {
-      setCurrentExerciseIndex((i) => i + 1);
+      const next = currentExerciseIndex + 1;
+      setCurrentExerciseIndex(next);
       setCurrentSetIndex(0);
+      setCurrentExerciseIndexStore(next);
+      setCurrentSetIndexStore(0);
     }
   };
 
-  const handleFinishWorkout = useCallback(async () => {
+  const handleFinishWorkout = useCallback(() => {
     if (currentTimedPeriodExerciseId != null) {
-      await finalizeTimedExercise(currentTimedPeriodExerciseId);
+      finalizeTimedExercise(currentTimedPeriodExerciseId);
       setCurrentTimedPeriodExerciseId(null);
     }
-    for (const [periodExerciseId, exerciseExecutionId] of Object.entries(exerciseExecutionIds)) {
-      const saved = savedLoadsByExerciseExecution[exerciseExecutionId];
-      const hasSavedLoads = saved != null && saved.length > 0;
-      const lastLoads = lastLoadsByPeriodExercise[Number(periodExerciseId)];
-      const hasLastLoads = lastLoads != null && lastLoads.length > 0;
-      if (!hasSavedLoads && hasLastLoads) {
-        await request({
-          method: "PATCH",
-          url: `/training-execution/exercise-execution/${exerciseExecutionId}/sets`,
-          data: {
-            sets: lastLoads.map((s) => ({ setNumber: s.setNumber, loadKg: s.loadKg ?? null })),
-          },
-        });
-      }
-    }
     setShowFinishConfirm(false);
-    setPendingFinishExecutionId(executionId ?? null);
     setShowRatingModal(true);
   }, [
     currentTimedPeriodExerciseId,
-    executionId,
     finalizeTimedExercise,
-    exerciseExecutionIds,
-    savedLoadsByExerciseExecution,
-    lastLoadsByPeriodExercise,
-    request,
   ]);
 
   const handleRatingSelect = useCallback(
     (rating: WorkoutRating) => {
-      const id = pendingFinishExecutionId ?? executionId;
-      if (id != null) {
-        finishMutation.mutate({ executionId: id, rating });
-      }
+      finishMutation.mutate({ rating });
     },
-    [pendingFinishExecutionId, executionId, finishMutation]
+    [finishMutation]
   );
 
-  const handleResumeContinue = useCallback(() => {
-    const session = activeCheck.session;
-    const api = activeCheck.execution;
-    if (!session || !api) return;
-    hasRestoredSessionRef.current = true;
-    const execId = session.executionId;
-    setExecutionId(execId);
-    setCurrentExerciseIndex(session.currentExerciseIndex);
-    setCurrentSetIndex(session.currentSetIndex);
-    const ids: Record<number, number> = {};
-    const finalized: Record<number, boolean> = {};
-    const elapsed: Record<number, number> = {};
-    let maxOrder = 0;
-    for (const ee of api.exerciseExecutions) {
-      ids[ee.periodExerciseId] = ee.id;
-      if (ee.durationSeconds != null) {
-        finalized[ee.periodExerciseId] = true;
-        elapsed[ee.periodExerciseId] = ee.durationSeconds;
-      }
-      if (ee.executionOrder > maxOrder) maxOrder = ee.executionOrder;
-    }
-    if (session.currentTimedPeriodExerciseId != null && session.exerciseStartedAt != null) {
-      const peId = session.currentTimedPeriodExerciseId;
-      elapsed[peId] = Math.floor((Date.now() - session.exerciseStartedAt) / 1000);
-    }
-    setExerciseExecutionIds(ids);
-    setExerciseFinalized(finalized);
-    setExerciseElapsedSeconds({ ...session.exerciseElapsedSeconds, ...elapsed });
-    setExecutionOrderCounter(maxOrder + 1);
-    setLastRestSeconds(session.lastRestSeconds);
-    setRestDuration(session.restDurationValue);
-    restDurationRef.current = session.restDurationValue;
-    if (session.restStartedAt != null && session.restDuration != null) {
-      const remaining = Math.max(
-        0,
-        session.restDuration - Math.floor((Date.now() - session.restStartedAt) / 1000)
-      );
-      setRestRemainingSeconds(remaining);
-      restRemainingRef.current = remaining;
-      setRestStartedAt(remaining > 0 ? session.restStartedAt : null);
-      setRestTimerRunning(remaining > 0);
-      if (remaining > 0) {
-        setRestModalOpen(true);
-        const currentEx = flatExercises[session.currentExerciseIndex];
-        const currentPeId = currentEx?.periodExerciseId;
-        if (currentPeId != null && ids[currentPeId] != null) {
-          restContextRef.current = {
-            exerciseExecutionId: ids[currentPeId],
-            setNumber: session.currentSetIndex + 1,
-          };
-        }
-      } else {
+  const restoreLocalStateFromSession = useCallback((s: typeof session) => {
+    if (!s) return;
+    setCurrentExerciseIndex(s.currentExerciseIndex);
+    setCurrentSetIndex(s.currentSetIndex);
+    setRestDuration(s.restDurationValue);
+    restDurationRef.current = s.restDurationValue;
+    const restEndsAt =
+      (s as { restEndsAt?: number | null }).restEndsAt ??
+      (s.restStartedAt != null && s.restDuration != null
+        ? s.restStartedAt + s.restDuration * 1000
+        : null);
+    const restHasEnded = restEndsAt != null && Date.now() > restEndsAt;
+    if (s.restStartedAt != null && s.restDuration != null) {
+      if (restHasEnded) {
+        const ctx =
+          (s as { restContext?: { periodExerciseId: number; setNumber: number } | null }).restContext ??
+          (flatExercises[s.currentExerciseIndex]
+            ? {
+                periodExerciseId: flatExercises[s.currentExerciseIndex].periodExerciseId,
+                setNumber: s.currentSetIndex + 1,
+              }
+            : null);
+        handleRestCompleteRef.current({
+          seconds: s.restDuration,
+          ctx: ctx ?? undefined,
+        });
+        setRestTimer({ restStartedAt: null, restDuration: null });
         setRestModalOpen(true);
         setRestJustCompleted(true);
+      } else {
+        const remaining = Math.max(
+          0,
+          s.restDuration - Math.floor((Date.now() - s.restStartedAt) / 1000)
+        );
+        setRestRemainingSeconds(remaining);
+        restRemainingRef.current = remaining;
+        setRestStartedAt(s.restStartedAt);
+        setRestTimerRunning(true);
+        setRestModalOpen(true);
+        const currentEx = flatExercises[s.currentExerciseIndex];
+        if (currentEx) {
+          restContextRef.current = {
+            periodExerciseId: currentEx.periodExerciseId,
+            setNumber: s.currentSetIndex + 1,
+          };
+        }
       }
     }
-    if (session.currentTimedPeriodExerciseId != null) {
-      setCurrentTimedPeriodExerciseId(session.currentTimedPeriodExerciseId);
-      setExerciseStartedAt(session.exerciseStartedAt);
+    if (s.currentTimedPeriodExerciseId != null && s.exerciseStartedAt != null) {
+      setCurrentTimedPeriodExerciseId(s.currentTimedPeriodExerciseId);
+      setExerciseStartedAt(s.exerciseStartedAt);
     }
     startRequestedRef.current = true;
+  }, [flatExercises, setRestTimer]);
+
+  const handleResumeContinue = useCallback(() => {
+    const s = activeCheck.session;
+    if (!s) return;
+    hasRestoredSessionRef.current = true;
+    restoreLocalStateFromSession(s);
     activeCheck.setShowPrompt(false);
-    activeCheck.clearSession();
-  }, [activeCheck, flatExercises]);
+  }, [activeCheck, restoreLocalStateFromSession]);
 
-  const handleResumeFinish = useCallback(async () => {
-    const session = activeCheck.session;
-    if (!session) return;
-    if (session.currentTimedPeriodExerciseId != null) {
-      const exId = session.exerciseExecutionIds[session.currentTimedPeriodExerciseId];
-      const duration = session.exerciseElapsedSeconds[session.currentTimedPeriodExerciseId] ?? 0;
-      if (exId != null) {
-        await request({
-          method: "PATCH",
-          url: `/training-execution/exercise-execution/${exId}/duration`,
-          data: { durationSeconds: duration },
-        });
-      }
-    }
-    setPendingFinishExecutionId(session.executionId);
-    setShowRatingModal(true);
-  }, [activeCheck.session, request]);
-
-  // Ao vir de "Continuar treino" (outra página), restaura direto sem mostrar o prompt de novo
   useEffect(() => {
     const fromContinue = (location.state as { fromContinue?: boolean } | null)?.fromContinue === true;
     if (
       !fromContinue ||
       !activeCheck.checkDone ||
       !activeCheck.session ||
-      !activeCheck.execution ||
       hasRestoredFromContinueRef.current
     )
       return;
@@ -642,8 +561,32 @@ export default function StudentExerciseSession() {
     navigate,
     activeCheck.checkDone,
     activeCheck.session,
-    activeCheck.execution,
     handleResumeContinue,
+  ]);
+
+  useEffect(() => {
+    const fromContinue = (location.state as { fromContinue?: boolean } | null)?.fromContinue === true;
+    if (
+      fromContinue ||
+      !activeCheck.checkDone ||
+      !activeCheck.session ||
+      hasRestoredFromContinueRef.current ||
+      !trainingId ||
+      !periodId
+    )
+      return;
+    const matchUrl =
+      activeCheck.session.trainingId === Number(trainingId) &&
+      activeCheck.session.periodId === Number(periodId);
+    if (!matchUrl) return;
+    hasRestoredFromContinueRef.current = true;
+    restoreLocalStateFromSession(activeCheck.session);
+  }, [
+    activeCheck.checkDone,
+    activeCheck.session,
+    trainingId,
+    periodId,
+    restoreLocalStateFromSession,
   ]);
 
   const handleRefazer = () => {
@@ -652,14 +595,9 @@ export default function StudentExerciseSession() {
     if (currentTimedPeriodExerciseId === peId) {
       setCurrentTimedPeriodExerciseId(null);
       setExerciseStartedAt(null);
+      setTimedExercise({ periodExerciseId: null, exerciseStartedAt: null });
     }
-    setExerciseFinalized((prev) => ({ ...prev, [peId]: false }));
-    setExerciseElapsedSeconds((prev) => ({ ...prev, [peId]: 0 }));
-    setExerciseExecutionIds((prev) => {
-      const next = { ...prev };
-      delete next[peId];
-      return next;
-    });
+    removeExerciseExecution(peId);
   };
 
   const isLastExercise = currentExerciseIndex === flatExercises.length - 1;
@@ -671,34 +609,10 @@ export default function StudentExerciseSession() {
 
   const fromContinue = (location.state as { fromContinue?: boolean } | null)?.fromContinue === true;
   const shouldRestoreFromContinue =
-    fromContinue && activeCheck.checkDone && activeCheck.session && activeCheck.execution && !hasRestoredFromContinueRef.current;
+    fromContinue && activeCheck.checkDone && activeCheck.session && !hasRestoredFromContinueRef.current;
 
   if (!activeCheck.checkDone || shouldRestoreFromContinue) {
     return <Loader loading={true} />;
-  }
-
-  if (
-    activeCheck.showPrompt &&
-    activeCheck.session &&
-    activeCheck.execution &&
-    !fromContinue
-  ) {
-    return (
-      <>
-        <ContinueWorkoutPrompt
-          periodName={selectedPeriod?.name ?? activeCheck.periodName}
-          onContinue={handleResumeContinue}
-          onFinish={() => void handleResumeFinish()}
-          isFinishing={finishMutation.isPending}
-        />
-        <WorkoutRatingModal
-          open={showRatingModal}
-          onOpenChange={setShowRatingModal}
-          onSelect={handleRatingSelect}
-          disabled={finishMutation.isPending}
-        />
-      </>
-    );
   }
 
   if (!periodIdNum || !selectedPeriod) {
@@ -724,7 +638,9 @@ export default function StudentExerciseSession() {
   }
 
   const displayTimer =
-    currentExercise ? (exerciseElapsedSeconds[currentExercise.periodExerciseId] ?? 0) : 0;
+    currentExercise && currentTimedPeriodExerciseId === currentExercise.periodExerciseId && exerciseStartedAt != null
+      ? Math.floor((Date.now() - exerciseStartedAt) / 1000)
+      : (currentExercise ? (session?.exerciseExecutions[currentExercise.periodExerciseId]?.durationSeconds ?? 0) : 0);
   const isTimerRunning =
     currentExercise != null && currentTimedPeriodExerciseId === currentExercise.periodExerciseId;
 
@@ -843,19 +759,23 @@ export default function StudentExerciseSession() {
         restTimerRunning={restTimerRunning}
         restJustCompleted={restJustCompleted}
         onRestStart={() => {
-          if (exerciseExecutionId != null) {
-            restContextRef.current = { exerciseExecutionId, setNumber: currentSetNumber };
-          }
+          const ctx = currentExercise
+            ? { periodExerciseId: currentExercise.periodExerciseId, setNumber: currentSetNumber }
+            : null;
+          restContextRef.current = ctx ?? null;
           const duration = restRemainingSeconds > 0 ? restRemainingSeconds : restDuration;
           restDurationRef.current = duration;
           restRemainingRef.current = duration;
           setRestRemainingSeconds(duration);
-          setRestStartedAt(Date.now());
+          const now = Date.now();
+          setRestStartedAt(now);
           setRestTimerRunning(true);
+          setRestTimer({ restStartedAt: now, restDuration: duration, restContext: ctx ?? null });
         }}
         onRestPause={() => {
           setRestTimerRunning(false);
           setRestStartedAt(null);
+          setRestTimer({ restStartedAt: null, restDuration: null });
         }}
         onRestSave={handleRestSave}
       />

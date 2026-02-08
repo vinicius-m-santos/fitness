@@ -42,6 +42,47 @@ export const clientFormSchema = z.object({
 
 export type ClientFormSchema = z.infer<typeof clientFormSchema>;
 
+export const clientPersonalLinkSchema = z
+  .object({
+    name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+    lastName: z.string().min(2, "Sobrenome deve ter pelo menos 2 caracteres"),
+    email: z.string().email("Email inválido"),
+    password: z
+      .string()
+      .min(8, "A senha deve ter pelo menos 8 caracteres")
+      .regex(/[a-z]/, "A senha deve conter letras minúsculas")
+      .regex(/[A-Z]/, "A senha deve conter letras maiúsculas")
+      .regex(/[0-9]/, "A senha deve conter números"),
+    confirmPassword: z.string().min(1, "Confirme a senha"),
+    phone: z
+      .string()
+      .optional()
+      .nullable()
+      .refine(
+        (val) => {
+          if (!val?.trim()) return true;
+          const digits = val.replace(/\D/g, "");
+          return digits.length === 10 || digits.length === 11;
+        },
+        { message: "WhatsApp inválido" }
+      ),
+    gender: z.string().optional(),
+    birthDate: z
+      .string()
+      .nullable()
+      .optional()
+      .refine(birthDateRefine, {
+        message: "Data inválida. Use o formato dd/mm/aaaa",
+      }),
+    observation: z.string().optional(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "As senhas não coincidem",
+    path: ["confirmPassword"],
+  });
+
+export type ClientPersonalLinkSchema = z.infer<typeof clientPersonalLinkSchema>;
+
 export const clientAnamneseSchema = z.object({
   age: z.string().min(1, "Preencha a Idade"),
   gender: z.string().min(1, "Preencha o Sexo"),

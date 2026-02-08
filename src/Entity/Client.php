@@ -319,7 +319,11 @@ class Client
 
     public function getHasRegistered(): bool
     {
-        return $this->hasRegistered;
+        if ($this->hasRegistered) {
+            return true;
+        }
+        $user = $this->getUser();
+        return $user !== null && $user->isVerified();
     }
 
     public function setHasRegistered(bool $hasRegistered): self

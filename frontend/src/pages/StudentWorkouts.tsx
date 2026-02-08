@@ -9,9 +9,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useRequest } from "@/api/request";
 import { Link, useNavigate } from "react-router-dom";
 import Loader from "@/components/ui/loader";
-import ContinueWorkoutPrompt from "@/components/Student/ContinueWorkoutPrompt";
 import { useActiveWorkoutCheck } from "@/hooks/useActiveWorkoutCheck";
-import { clearActiveSession } from "@/lib/activeSessionDb";
+import { useWorkoutSessionStore } from "@/stores/workoutSessionStore";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -28,27 +27,18 @@ function formatLastDone(lastFinishedAt: string | null | undefined): string {
 export default function StudentWorkouts() {
   const request = useRequest();
   const navigate = useNavigate();
-  const [isFinishing, setIsFinishing] = useState(false);
+  const activeCheck = useActiveWorkoutCheck({});
+  const session = useWorkoutSessionStore((s) => s.session);
+  const setShowWorkoutPrompt = useWorkoutSessionStore((s) => s.setShowWorkoutPrompt);
 
-  const activeCheck = useActiveWorkoutCheck({
-    request,
-    onFinished: () => { },
-  });
-
-  const handleFinishWorkout = async () => {
-    const session = activeCheck.session;
-    if (!session) return;
-    setIsFinishing(true);
-    try {
-      await request({
-        method: "PATCH",
-        url: `/training-execution/${session.executionId}/finish`,
-      });
-      clearActiveSession();
-      activeCheck.clearSession();
-    } finally {
-      setIsFinishing(false);
+  const handleStartWorkout = (trainingId: number, periodId: number) => {
+    if (session && (session.trainingId !== trainingId || session.periodId !== periodId)) {
+      setShowWorkoutPrompt(true);
+      return;
     }
+    navigate(`/student/training/${trainingId}/period/${periodId}/execute`, {
+      state: session ? { fromContinue: true } : undefined,
+    });
   };
 
   const { data: context, isFetching } = useQuery({
@@ -66,22 +56,6 @@ export default function StudentWorkouts() {
 
   if (!activeCheck.checkDone) {
     return <Loader loading={true} />;
-  }
-
-  if (activeCheck.showPrompt && activeCheck.session) {
-    return (
-      <ContinueWorkoutPrompt
-        periodName={activeCheck.periodName}
-        onContinue={() =>
-          navigate(
-            `/student/training/${activeCheck.session!.trainingId}/period/${activeCheck.session!.periodId}/execute`,
-            { state: { fromContinue: true } }
-          )
-        }
-        onFinish={handleFinishWorkout}
-        isFinishing={isFinishing}
-      />
-    );
   }
 
   return (
@@ -127,15 +101,16 @@ export default function StudentWorkouts() {
                     <p className="font-medium text-base">{period.name}</p>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="w-4 h-4 shrink-0" />
-                      Última vez: {formatLastDone(lastTraining.lastFinishedAt)}
+                      Última vez: {formatLastDone((period as { lastFinishedAt?: string | null }).lastFinishedAt)}
                     </div>
                   </div>
 
-                  <Button asChild className="w-full gap-2">
-                    <Link to={`/student/training/${lastTraining.id}/period/${period.id}/execute`}>
-                      <Play className="w-4 h-4" />
-                      Iniciar treino
-                    </Link>
+                  <Button
+                    className="w-full gap-2"
+                    onClick={() => handleStartWorkout(lastTraining.id, period.id)}
+                  >
+                    <Play className="w-4 h-4" />
+                    Iniciar treino
                   </Button>
                 </CardContent>
               </Card>

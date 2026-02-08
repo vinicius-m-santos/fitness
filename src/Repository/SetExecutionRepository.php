@@ -33,7 +33,7 @@ class SetExecutionRepository extends ServiceEntityRepository
     {
         $conn = $this->em->getConnection();
         $sql = 'SELECT se.load_kg FROM set_executions se
-            INNER JOIN exercise_executions ee ON ee.id = se.exercise_execution_id
+            INNER JOIN exercise_executions ee ON ee.id = se.exercise_execution_id AND ee.executed = true
             INNER JOIN training_executions te ON te.id = ee.training_execution_id
             WHERE te.client_id = :clientId AND ee.period_exercise_id = :periodExerciseId AND se.load_kg IS NOT NULL
             ORDER BY te.started_at DESC, se.set_number DESC LIMIT 1';
@@ -53,7 +53,7 @@ class SetExecutionRepository extends ServiceEntityRepository
         $sql = 'SELECT ee.id as ee_id FROM exercise_executions ee
             INNER JOIN training_executions te ON te.id = ee.training_execution_id
             INNER JOIN set_executions se ON se.exercise_execution_id = ee.id AND se.load_kg IS NOT NULL
-            WHERE te.client_id = :clientId AND ee.period_exercise_id = :periodExerciseId
+            WHERE te.client_id = :clientId AND ee.period_exercise_id = :periodExerciseId AND ee.executed = true
             ORDER BY te.started_at DESC LIMIT 1';
         $row = $conn->executeQuery($sql, [
             'clientId' => $client->getId(),

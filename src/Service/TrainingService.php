@@ -30,6 +30,7 @@ class TrainingService
         private EntityManagerInterface $em,
         private ClientService $clientService,
         private TrainingExecutionRepository $trainingExecutionRepository,
+        private NewTrainingNotificationService $newTrainingNotificationService,
     ) {}
 
     public function createTraining(User $user, array $data): Training
@@ -95,6 +96,12 @@ class TrainingService
                     $exerciseData
                 );
             }
+        }
+
+        try {
+            $this->newTrainingNotificationService->sendNewTrainingEmail($training);
+        } catch (\Throwable $e) {
+            error_log('Erro ao enviar email de novo treino: ' . $e->getMessage());
         }
 
         return $training;
@@ -251,7 +258,7 @@ class TrainingService
         $periodsOrdered = $training->getPeriods()->toArray();
         usort($periodsOrdered, static fn(TrainingPeriod $a, TrainingPeriod $b) => $a->getId() <=> $b->getId());
 
-        $lastTraining = $this->buildTrainingArray($training);
+        $lastTraining = $this->buildTrainingArray($training, $client);
         $lastExecution = $this->trainingExecutionRepository->findLastByClientAndTraining($client, $training);
 
         $lastExecutedPeriodId = null;
@@ -279,16 +286,16 @@ class TrainingService
         }
 
         $nextPeriodEntity = $periodsOrdered[$nextPeriodIndex] ?? null;
-        $nextPeriod = $nextPeriodEntity ? $this->buildPeriodArray($nextPeriodEntity) : null;
+        $nextPeriod = $nextPeriodEntity ? $this->buildPeriodArray($nextPeriodEntity, $client, $training) : null;
 
         return ['lastTraining' => $lastTraining, 'nextPeriod' => $nextPeriod];
     }
 
-    private function buildTrainingArray(Training $training): array
+    private function buildTrainingArray(Training $training, ?Client $client = null): array
     {
         $periods = [];
         foreach ($training->getPeriods() as $period) {
-            $periods[] = $this->buildPeriodArray($period);
+            $periods[] = $this->buildPeriodArray($period, $client, $training);
         }
         usort($periods, static fn(array $a, array $b) => $a['id'] <=> $b['id']);
         $lastFinishedAt = $this->trainingExecutionRepository->findLastFinishedAtByTraining($training);
@@ -302,7 +309,7 @@ class TrainingService
         ];
     }
 
-    private function buildPeriodArray(TrainingPeriod $period): array
+    private function buildPeriodArray(TrainingPeriod $period, ?Client $client = null, ?Training $training = null): array
     {
         $exercises = [];
         foreach ($period->getPeriodExercises() as $pe) {
@@ -316,10 +323,19 @@ class TrainingService
                 'obs' => strlen(trim($pe->getObservation() ?? '')) ? trim($pe->getObservation()) : '',
             ];
         }
+        $lastFinishedAt = null;
+        if ($client !== null && $training !== null) {
+            $lastFinishedAt = $this->trainingExecutionRepository->findLastFinishedAtByTrainingAndPeriod(
+                $client,
+                $training,
+                $period->getId()
+            );
+        }
         return [
             'id' => $period->getId(),
             'name' => $period->getName(),
             'exercises' => $exercises,
+            'lastFinishedAt' => $lastFinishedAt?->format(\DateTimeInterface::ATOM),
         ];
     }
 

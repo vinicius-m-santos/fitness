@@ -24,6 +24,8 @@ class JWTAuthenticationFailureHandler
             $user = $this->userRepository->findOneBy(['email' => $email]);
             if ($user === null) {
                 $errorMessage = 'Email não encontrado. Cadastre-se em nossa plataforma para criar sua conta.';
+            } elseif (!$user->hasPassword()) {
+                $errorMessage = 'Esta conta foi criada com Google. Use o botão "Entrar com Google" para acessar.';
             }
         }
 

@@ -3,7 +3,7 @@ import ClientTable from "./ClientTable";
 import ClientCards from "./ClientCards";
 
 export const ClientList = ({ clientTableData, loading }) => {
-    const isMobile = useMediaQuery({ maxWidth: 768 });
+    const isMobile = useMediaQuery({ maxWidth: 1025 });
 
     return isMobile ? (
         <ClientCards clientTableData={clientTableData} loading={loading} />

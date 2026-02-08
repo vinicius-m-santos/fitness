@@ -68,5 +68,13 @@ services:
         arguments:
             $appUrl: '%env(APP_URL)%'
 
+    App\Service\NewTrainingNotificationService:
+        arguments:
+            $appUrl: '%env(APP_URL)%'
+
+    App\Service\GoogleAuthService:
+        arguments:
+            $googleClientId: '%env(GOOGLE_CLIENT_ID)%'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
