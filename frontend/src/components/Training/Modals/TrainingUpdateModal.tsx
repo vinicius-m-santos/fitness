@@ -141,7 +141,7 @@ export default function TrainingUpdateModal({
       onOpenChange={onOpenChange}
     >
       <DialogContent
-        className="flex max-h-[85vh] max-w-[calc(100vw-1rem)] flex-col gap-4 overflow-hidden rounded-2xl sm:max-w-3xl"
+        className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl"
         onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogHeader className="shrink-0">
@@ -153,7 +153,7 @@ export default function TrainingUpdateModal({
           <Form {...training.form}>
             <form
               onSubmit={training.form.handleSubmit(onSubmit)}
-              className="space-y-6"
+              className="space-y-6 overflow-hidden"
             >
               {training.currentStep === 1 && <StepName form={training.form} />}
 

@@ -113,7 +113,6 @@ export default function StudentExerciseSession() {
   const setCurrentSetIndexStore = useWorkoutSessionStore((s) => s.setCurrentSetIndex);
   const setRestTimer = useWorkoutSessionStore((s) => s.setRestTimer);
   const setTimedExercise = useWorkoutSessionStore((s) => s.setTimedExercise);
-  const getPayloadForFinish = useWorkoutSessionStore((s) => s.getPayloadForFinish);
   const setShowWorkoutPrompt = useWorkoutSessionStore((s) => s.setShowWorkoutPrompt);
 
   // Se há sessão ativa para outro treino, mostrar prompt para decidir antes
@@ -130,6 +129,8 @@ export default function StudentExerciseSession() {
 
   useEffect(() => {
     if (!training || !periodId) return;
+    if (session?.restStartedAt != null && session?.restDuration != null) return;
+    if (session != null) return;
     const lastRest = (training as { lastRestSeconds?: number }).lastRestSeconds;
     const lastLoads = (training as { lastLoadsByPeriodExercise?: Record<number, SetLoadInput[]> }).lastLoadsByPeriodExercise;
     if (lastRest != null) {
@@ -138,7 +139,7 @@ export default function StudentExerciseSession() {
     if (lastLoads && typeof lastLoads === "object") {
       setLastLoadsByPeriodExercise(lastLoads);
     }
-  }, [training, periodId]);
+  }, [training, periodId, session]);
 
   const periodIdNum = periodId ? parseInt(periodId, 10) : null;
   const selectedPeriod = training?.periods?.find((p: { id: number }) => p.id === periodIdNum);
@@ -206,12 +207,12 @@ export default function StudentExerciseSession() {
       const ctx =
         s
           ? (s as { restContext?: { periodExerciseId: number; setNumber: number } | null }).restContext ??
-            (flatExercises[s.currentExerciseIndex]
-              ? {
-                  periodExerciseId: flatExercises[s.currentExerciseIndex].periodExerciseId,
-                  setNumber: s.currentSetIndex + 1,
-                }
-              : null)
+          (flatExercises[s.currentExerciseIndex]
+            ? {
+              periodExerciseId: flatExercises[s.currentExerciseIndex].periodExerciseId,
+              setNumber: s.currentSetIndex + 1,
+            }
+            : null)
           : null;
       handleRestCompleteRef.current({
         seconds: s?.restDuration ?? restDurationRef.current,
@@ -424,7 +425,13 @@ export default function StudentExerciseSession() {
 
   const finishMutation = useMutation({
     mutationFn: async (payload: { rating?: WorkoutRating }) => {
-      const payloadData = getPayloadForFinish();
+      const store = useWorkoutSessionStore.getState();
+      const s = store.session;
+      if (s?.restContext != null && s.restDuration != null) {
+        store.updateSetRest(s.restContext.periodExerciseId, s.restContext.setNumber, s.restDuration);
+        store.setRestTimer({ restStartedAt: null, restDuration: null });
+      }
+      const payloadData = store.getPayloadForFinish();
       if (!payloadData) return;
       await request({
         method: "POST",
@@ -433,9 +440,10 @@ export default function StudentExerciseSession() {
       });
     },
     onSuccess: () => {
-    setShowRatingModal(false);
-    activeCheck.clearSession();
+      setShowRatingModal(false);
+      activeCheck.clearSession();
       queryClient.invalidateQueries({ queryKey: ["trainings"] });
+      queryClient.invalidateQueries({ queryKey: ["training-detail"] });
       queryClient.invalidateQueries({ queryKey: ["training-execution-history"] });
       navigate("/student");
     },
@@ -462,6 +470,11 @@ export default function StudentExerciseSession() {
   };
 
   const handleFinishWorkout = useCallback(() => {
+    const s = session;
+    if (s?.restContext != null && s.restDuration != null) {
+      updateSetRest(s.restContext.periodExerciseId, s.restContext.setNumber, s.restDuration);
+      setRestTimer({ restStartedAt: null, restDuration: null });
+    }
     if (currentTimedPeriodExerciseId != null) {
       finalizeTimedExercise(currentTimedPeriodExerciseId);
       setCurrentTimedPeriodExerciseId(null);
@@ -469,8 +482,11 @@ export default function StudentExerciseSession() {
     setShowFinishConfirm(false);
     setShowRatingModal(true);
   }, [
+    session,
     currentTimedPeriodExerciseId,
     finalizeTimedExercise,
+    updateSetRest,
+    setRestTimer,
   ]);
 
   const handleRatingSelect = useCallback(
@@ -484,8 +500,6 @@ export default function StudentExerciseSession() {
     if (!s) return;
     setCurrentExerciseIndex(s.currentExerciseIndex);
     setCurrentSetIndex(s.currentSetIndex);
-    setRestDuration(s.restDurationValue);
-    restDurationRef.current = s.restDurationValue;
     const restEndsAt =
       (s as { restEndsAt?: number | null }).restEndsAt ??
       (s.restStartedAt != null && s.restDuration != null
@@ -493,14 +507,16 @@ export default function StudentExerciseSession() {
         : null);
     const restHasEnded = restEndsAt != null && Date.now() > restEndsAt;
     if (s.restStartedAt != null && s.restDuration != null) {
+      setRestDuration(s.restDuration);
+      restDurationRef.current = s.restDuration;
       if (restHasEnded) {
         const ctx =
           (s as { restContext?: { periodExerciseId: number; setNumber: number } | null }).restContext ??
           (flatExercises[s.currentExerciseIndex]
             ? {
-                periodExerciseId: flatExercises[s.currentExerciseIndex].periodExerciseId,
-                setNumber: s.currentSetIndex + 1,
-              }
+              periodExerciseId: flatExercises[s.currentExerciseIndex].periodExerciseId,
+              setNumber: s.currentSetIndex + 1,
+            }
             : null);
         handleRestCompleteRef.current({
           seconds: s.restDuration,
@@ -510,10 +526,10 @@ export default function StudentExerciseSession() {
         setRestModalOpen(true);
         setRestJustCompleted(true);
       } else {
-        const remaining = Math.max(
-          0,
-          s.restDuration - Math.floor((Date.now() - s.restStartedAt) / 1000)
-        );
+        const remaining =
+          restEndsAt != null
+            ? Math.max(0, Math.floor((restEndsAt - Date.now()) / 1000))
+            : Math.max(0, s.restDuration - Math.floor((Date.now() - s.restStartedAt) / 1000));
         setRestRemainingSeconds(remaining);
         restRemainingRef.current = remaining;
         setRestStartedAt(s.restStartedAt);
@@ -527,6 +543,9 @@ export default function StudentExerciseSession() {
           };
         }
       }
+    } else {
+      setRestDuration(s.restDurationValue);
+      restDurationRef.current = s.restDurationValue;
     }
     if (s.currentTimedPeriodExerciseId != null && s.exerciseStartedAt != null) {
       setCurrentTimedPeriodExerciseId(s.currentTimedPeriodExerciseId);
@@ -763,14 +782,14 @@ export default function StudentExerciseSession() {
             ? { periodExerciseId: currentExercise.periodExerciseId, setNumber: currentSetNumber }
             : null;
           restContextRef.current = ctx ?? null;
-          const duration = restRemainingSeconds > 0 ? restRemainingSeconds : restDuration;
-          restDurationRef.current = duration;
-          restRemainingRef.current = duration;
-          setRestRemainingSeconds(duration);
+          setRestDurationValue(restDuration);
+          restDurationRef.current = restDuration;
+          restRemainingRef.current = restDuration;
+          setRestRemainingSeconds(restDuration);
           const now = Date.now();
           setRestStartedAt(now);
           setRestTimerRunning(true);
-          setRestTimer({ restStartedAt: now, restDuration: duration, restContext: ctx ?? null });
+          setRestTimer({ restStartedAt: now, restDuration: restDuration, restContext: ctx ?? null });
         }}
         onRestPause={() => {
           setRestTimerRunning(false);

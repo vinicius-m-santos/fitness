@@ -77,7 +77,7 @@ class TrainingExecutionService
                 'durationSeconds' => $ee->getDurationSeconds(),
             ];
         }
-        usort($exerciseExecutions, fn ($a, $b) => $a['executionOrder'] <=> $b['executionOrder']);
+        usort($exerciseExecutions, fn($a, $b) => $a['executionOrder'] <=> $b['executionOrder']);
         return [
             'id' => $execution->getId(),
             'finishedAt' => $execution->getFinishedAt()?->format(\DateTimeInterface::ATOM),
@@ -143,6 +143,8 @@ class TrainingExecutionService
         $finishedAtStr = $payload['finishedAt'] ?? null;
         $rating = isset($payload['rating']) && \is_string($payload['rating']) ? $payload['rating'] : null;
         $exerciseExecutionsData = $payload['exerciseExecutions'] ?? [];
+        $lastRestSecondsFromPayload = isset($payload['lastRestSeconds']) && $payload['lastRestSeconds'] !== null
+            ? (int) $payload['lastRestSeconds'] : null;
         if (!$trainingId || !$periodId || !$startedAtStr || !$finishedAtStr) {
             throw new UnprocessableEntityHttpException('trainingId, periodId, startedAt e finishedAt são obrigatórios');
         }
@@ -236,8 +238,11 @@ class TrainingExecutionService
                 $setExecution->setExerciseExecution($exerciseExecution);
                 $setExecution->setSetNumber($n);
                 $setExecution->setLoadKg($loadBySet[$n] ?? 0.0);
-                if (isset($restBySet[$n]) && $restBySet[$n] !== null) {
-                    $setExecution->setRestSeconds($restBySet[$n]);
+                $restSeconds = (isset($restBySet[$n]) && $restBySet[$n] !== null)
+                    ? $restBySet[$n]
+                    : $lastRestSecondsFromPayload;
+                if ($restSeconds !== null) {
+                    $setExecution->setRestSeconds($restSeconds);
                 }
                 $exerciseExecution->addSetExecution($setExecution);
                 $this->setExecutionRepo->add($setExecution, false);
@@ -428,7 +433,7 @@ class TrainingExecutionService
             $periodName = null;
             $exerciseExecutions = [];
             $ees = $execution->getExerciseExecutions()->toArray();
-            usort($ees, fn ($a, $b) => $a->getExecutionOrder() <=> $b->getExecutionOrder());
+            usort($ees, fn($a, $b) => $a->getExecutionOrder() <=> $b->getExecutionOrder());
             foreach ($ees as $ee) {
                 $pe = $ee->getPeriodExercise();
                 if ($periodId === null && $pe !== null) {

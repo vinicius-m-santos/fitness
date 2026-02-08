@@ -148,7 +148,7 @@ export default function TrainingStandardUpdateModal({
           <DialogDescription>Atualize os dados do treino</DialogDescription>
         </DialogHeader>
         <Form {...training.form}>
-          <form onSubmit={training.form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={training.form.handleSubmit(onSubmit)} className="space-y-6 overflow-hidden">
             {training.currentStep === 1 && <StepName form={training.form} />}
             {training.currentStep === 2 && (
               <StepPeriods
