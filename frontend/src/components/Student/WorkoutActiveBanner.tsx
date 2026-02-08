@@ -133,12 +133,12 @@ export default function WorkoutActiveBanner() {
           open={restModalOpen}
           onOpenChange={setRestModalOpen}
           restDuration={restDuration || 60}
-          onRestDurationChange={() => {}}
+          onRestDurationChange={() => { }}
           restRemainingSeconds={0}
           restTimerRunning={false}
           restJustCompleted={restJustCompleted}
-          onRestStart={() => {}}
-          onRestPause={() => {}}
+          onRestStart={() => { }}
+          onRestPause={() => { }}
         />
       )}
     </>

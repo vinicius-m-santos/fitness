@@ -365,6 +365,7 @@ export const useWorkoutSessionStore = create<WorkoutSessionStore>()(
           periodId: number;
           startedAt: string;
           finishedAt: string;
+          lastRestSeconds?: number | null;
           exerciseExecutions: { periodExerciseId: number; executionOrder: number; durationSeconds: number | null; sets: { setNumber: number; loadKg: number | null; restSeconds: number | null }[] }[];
         } = {
           trainingId: s.trainingId,
@@ -374,6 +375,7 @@ export const useWorkoutSessionStore = create<WorkoutSessionStore>()(
           exerciseExecutions,
         };
         if (executionId != null) payload.executionId = executionId;
+        if (s.lastRestSeconds != null) payload.lastRestSeconds = s.lastRestSeconds;
         return payload;
       },
 
@@ -448,8 +450,8 @@ export const useWorkoutSessionStore = create<WorkoutSessionStore>()(
           const str = await idbStorage.getItem();
           return str ? { state: { session: JSON.parse(str) }, version: 0 } : { state: { session: null }, version: 0 };
         },
-        setItem: async (_, value) => {
-          const session = (value as { state?: { session?: WorkoutSessionState } }).state?.session;
+        setItem: async () => {
+          const session = useWorkoutSessionStore.getState().session;
           if (session != null) {
             await idbStorage.setItem("", JSON.stringify(session));
           } else {

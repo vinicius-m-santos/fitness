@@ -188,7 +188,17 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
   const hasRestoreInStateRef = useRef(!!locationState?.restoreTrainingDraft);
   hasRestoreInStateRef.current = !!locationState?.restoreTrainingDraft;
 
-  // Prompt independente da rota: qualquer draft válido exibe o prompt (usuário deve finalizar ou descartar).
+  const pathname = location.pathname;
+
+  const recheckDraftForPrompt = useCallback(() => {
+    if (!isDraftCacheEnabled) return;
+    if (!hasHydrated) return;
+    if (hasRestoreInStateRef.current) return;
+    const currentDrafts = useWorkoutDraftStore.getState().drafts;
+    const result = getAnyValidDraft(currentDrafts);
+    setPromptDraft(result);
+  }, [isDraftCacheEnabled, hasHydrated]);
+
   useEffect(() => {
     const unsub = useWorkoutDraftStore.persist.onFinishHydration(() => {
       if (!isDraftCacheEnabled) return;
@@ -221,6 +231,12 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
     const result = getAnyValidDraft(currentDrafts);
     setPromptDraft(result);
   }, [hasHydrated]);
+
+  useEffect(() => {
+    if (!isDraftCacheEnabled || !hasHydrated) return;
+    if (hasRestoreInStateRef.current) return;
+    recheckDraftForPrompt();
+  }, [pathname, isDraftCacheEnabled, hasHydrated, recheckDraftForPrompt]);
 
   // Visibility / bfcache: reavaliar qualquer draft válido.
   useEffect(() => {
@@ -276,10 +292,16 @@ export function useContinueTrainingDraft(): UseContinueTrainingDraftResult {
     }
   };
 
+  const hasRestoreInState = !!locationState?.restoreTrainingDraft;
+
   return {
     draft: promptDraft?.draft ?? null,
     contextKey: promptDraft?.contextKey ?? null,
-    showPrompt: isDraftCacheEnabled && hasHydrated && promptDraft != null,
+    showPrompt:
+      isDraftCacheEnabled &&
+      hasHydrated &&
+      promptDraft != null &&
+      !hasRestoreInState,
     hasHydrated,
     onContinue,
     onDiscard,

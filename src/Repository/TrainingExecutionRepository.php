@@ -35,10 +35,10 @@ class TrainingExecutionRepository extends ServiceEntityRepository
     {
         $conn = $this->em->getConnection();
         $sql = 'SELECT se.rest_seconds FROM set_executions se
-            INNER JOIN exercise_executions ee ON ee.id = se.exercise_execution_id AND ee.executed = true
+            INNER JOIN exercise_executions ee ON ee.id = se.exercise_execution_id
             INNER JOIN training_executions te ON te.id = ee.training_execution_id
-            WHERE te.client_id = :clientId AND se.rest_seconds IS NOT NULL
-            ORDER BY te.started_at DESC LIMIT 1';
+            WHERE te.client_id = :clientId AND te.finished_at IS NOT NULL AND se.rest_seconds IS NOT NULL
+            ORDER BY te.finished_at DESC LIMIT 1';
         $result = $conn->executeQuery($sql, ['clientId' => $client->getId()])->fetchOne();
         return $result !== false ? (int) $result : null;
     }
