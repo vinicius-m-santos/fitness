@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 
 export type AuthUser = {
   id: number;
+  uuid?: string;
   firstName: string;
   lastName: string;
   email: string;

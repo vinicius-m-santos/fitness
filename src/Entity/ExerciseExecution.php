@@ -30,6 +30,10 @@ class ExerciseExecution
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $durationSeconds = null;
 
+    /** Se false: exercício não foi iniciado ou teve duração < 1 min. Não conta em métricas. */
+    #[ORM\Column(type: 'boolean', options: ['default' => true])]
+    private bool $executed = true;
+
     /**
      * @var Collection<int, SetExecution>
      */
@@ -88,6 +92,17 @@ class ExerciseExecution
     public function setDurationSeconds(?int $durationSeconds): self
     {
         $this->durationSeconds = $durationSeconds;
+        return $this;
+    }
+
+    public function isExecuted(): bool
+    {
+        return $this->executed;
+    }
+
+    public function setExecuted(bool $executed): self
+    {
+        $this->executed = $executed;
         return $this;
     }
 

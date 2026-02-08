@@ -38,6 +38,8 @@ export default function FeedbackButton() {
     const [message, setMessage] = useState("");
     const { user } = useAuth();
 
+    if (!user) return null;
+
     const handleSubmit = () => {
         Sentry.captureFeedback(
             {

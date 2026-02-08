@@ -6,6 +6,7 @@ use App\Entity\Client;
 use App\Repository\ExerciseRepository;
 use App\Repository\PersonalRepository;
 use App\Repository\TrainingRepository;
+use App\Service\TrainingExecutionService;
 use App\Service\TrainingService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -20,6 +21,7 @@ final class TrainingController extends AbstractController
         private readonly PersonalRepository $personalRepository,
         private readonly ExerciseRepository $exerciseRepository,
         private readonly TrainingService $trainingService,
+        private readonly TrainingExecutionService $trainingExecutionService,
         private readonly NormalizerInterface $normalizer,
         private readonly TrainingRepository $trainingRepository,
     ) {}
@@ -125,7 +127,7 @@ final class TrainingController extends AbstractController
     }
 
     #[Route('/detail/{id}', name: 'get_training_detail', methods: ['GET'])]
-    public function getTrainingDetail(int $id): JsonResponse
+    public function getTrainingDetail(int $id, Request $request): JsonResponse
     {
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
@@ -143,6 +145,12 @@ final class TrainingController extends AbstractController
         $training = $this->trainingService->getTrainingByIdForClient($client, $personal, $id);
         if (!$training) {
             return new JsonResponse(['error' => 'Treino não encontrado'], 404);
+        }
+        $periodId = $request->query->getInt('periodId');
+        if ($periodId > 0) {
+            $context = $this->trainingExecutionService->getExecutionContext($client, $id, $periodId);
+            $training['lastRestSeconds'] = $context['lastRestSeconds'];
+            $training['lastLoadsByPeriodExercise'] = $context['lastLoadsByPeriodExercise'];
         }
         return $this->json($training);
     }

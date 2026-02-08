@@ -4,8 +4,13 @@ import { useApi } from "@/api/Api";
 import toast from "react-hot-toast";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 import { Button } from "@/components/ui/button";
 import ButtonLoader from "@/components/ui/buttonLoader";
+
+const googleClientId =
+    (import.meta as unknown as { env?: { VITE_GOOGLE_CLIENT_ID?: string } }).env
+        ?.VITE_GOOGLE_CLIENT_ID ?? "";
 
 const Login = () => {
     const { login } = useAuth();
@@ -13,8 +18,28 @@ const Login = () => {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
     const api = useApi();
     const navigate = useNavigate();
+
+    const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
+        const credential = credentialResponse.credential;
+        if (!credential) return;
+        setGoogleLoading(true);
+        try {
+            const res = await api.post("/auth/google", { credential });
+            if (res.data?.success && res.data?.token && res.data?.user) {
+                login(res.data.token, res.data.user, res.data.refresh_token);
+            } else {
+                toast.error("Falha ao entrar com Google");
+            }
+        } catch (e: unknown) {
+            const data = (e as { response?: { data?: { message?: string } } })?.response?.data;
+            toast.error(data?.message ?? "Falha ao entrar com Google");
+        } finally {
+            setGoogleLoading(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -123,12 +148,49 @@ const Login = () => {
 
                     <Button
                         type="submit"
-                        className="w-full bg-blue-600 cursor-pointer text-white font-semibold rounded-lg py-2 hover:bg-blue-700 transition-colors disabled:opacity-80"
+                        className="w-full bg-blue-600 cursor-pointer text-white font-semibold rounded-lg py-2 hover:bg-blue-700 transition-colors disabled:opacity-80 mb-0"
                         disabled={loading}
                     >
                         {!loading && "Entrar"}
                         {loading && <ButtonLoader />}
                     </Button>
+
+                    {googleClientId && (
+                        <>
+                            <div className="relative my-6">
+                                <div className="absolute inset-0 flex items-center">
+                                    <span className="w-full border-t border-gray-300" />
+                                </div>
+                                <div className="relative flex justify-center text-sm">
+                                    <span className="bg-white px-2 text-gray-500">ou</span>
+                                </div>
+                            </div>
+                            <div className="flex justify-center">
+                                {googleLoading ? (
+                                    <Button
+                                        type="button"
+                                        disabled
+                                        className="w-full rounded-lg py-2"
+                                    >
+                                        <ButtonLoader />
+                                    </Button>
+                                ) : (
+                                    <GoogleLogin
+                                        onSuccess={handleGoogleSuccess}
+                                        onError={() => {
+                                            toast.error("Falha ao entrar com Google");
+                                        }}
+                                        useOneTap={false}
+                                        theme="outline"
+                                        size="large"
+                                        width={320}
+                                        shape="rectangular"
+                                        text="signin_with"
+                                    />
+                                )}
+                            </div>
+                        </>
+                    )}
                 </form>
 
                 <div className="text-center mt-4">

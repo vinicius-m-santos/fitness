@@ -32,8 +32,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user_all'])]
     private array $roles = [];
 
-    #[ORM\Column]
-    private string $password;
+    #[ORM\Column(nullable: true)]
+    private ?string $password = null;
+
+    #[ORM\Column(length: 255, unique: true, nullable: true)]
+    private ?string $googleId = null;
 
     #[ORM\Column]
     #[Groups(['user_all', 'client_all'])]
@@ -154,14 +157,29 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->email;
     }
 
-    public function setPassword(string $password): void
+    public function setPassword(?string $password): void
     {
         $this->password = $password;
     }
 
     public function getPassword(): string
     {
-        return $this->password;
+        return $this->password ?? '';
+    }
+
+    public function hasPassword(): bool
+    {
+        return $this->password !== null && $this->password !== '';
+    }
+
+    public function getGoogleId(): ?string
+    {
+        return $this->googleId;
+    }
+
+    public function setGoogleId(?string $googleId): void
+    {
+        $this->googleId = $googleId;
     }
 
     public function getUuid(): string

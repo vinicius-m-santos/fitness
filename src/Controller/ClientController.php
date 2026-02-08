@@ -12,6 +12,7 @@ use App\Repository\UserRepository;
 use App\Service\AnamneseService;
 use App\Service\S3Service;
 use App\Service\ClientRegistrationService;
+use App\Service\EmailVerificationService;
 use App\Service\SubscriptionService;
 use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -40,8 +41,85 @@ class ClientController extends AbstractController
         private readonly S3Service $s3Service,
         private readonly ClientRegistrationService $clientRegistrationService,
         private readonly UserPasswordHasherInterface $passwordHasher,
-        private readonly SubscriptionService $subscriptionService
+        private readonly SubscriptionService $subscriptionService,
+        private readonly EmailVerificationService $emailVerificationService
     ) {}
+
+    #[Route('/personal-link-info/{personalUuid}', name: 'client_personal_link_info', methods: ['GET'])]
+    public function personalLinkInfo(string $personalUuid): JsonResponse
+    {
+        $personalUuid = trim($personalUuid);
+        if ($personalUuid === '') {
+            throw new UnprocessableEntityHttpException('Link inválido');
+        }
+
+        $personal = $this->personalRepository->findOneByUserUuid($personalUuid);
+        if ($personal === null) {
+            throw new UnprocessableEntityHttpException('Personal não encontrado');
+        }
+
+        $user = $personal->getUser();
+        return new JsonResponse([
+            'firstName' => $user->getFirstName(),
+            'lastName' => $user->getLastName(),
+        ]);
+    }
+
+    #[Route('/register-by-personal-link/{personalUuid}', name: 'client_register_by_personal_link', methods: ['POST'])]
+    public function registerByPersonalLink(Request $request, string $personalUuid): JsonResponse
+    {
+        $personalUuid = trim($personalUuid);
+        if ($personalUuid === '') {
+            throw new UnprocessableEntityHttpException('Link inválido');
+        }
+
+        $personal = $this->personalRepository->findOneByUserUuid($personalUuid);
+        if ($personal === null) {
+            throw new UnprocessableEntityHttpException('Personal não encontrado');
+        }
+
+        $this->subscriptionService->ensureActiveSubscription($personal);
+        if (!$this->subscriptionService->canAddStudent($personal)) {
+            throw new UnprocessableEntityHttpException(
+                'O personal atingiu o limite de alunos do plano. Tente novamente mais tarde.'
+            );
+        }
+
+        $data = json_decode($request->getContent(), true);
+        if (!is_array($data)) {
+            throw new UnprocessableEntityHttpException('Dados inválidos');
+        }
+
+        if (isset($data['password']) && isset($data['confirmPassword']) && $data['password'] !== $data['confirmPassword']) {
+            throw new UnprocessableEntityHttpException('As senhas não coincidem');
+        }
+
+        if (strlen($data['password'] ?? '') < 8) {
+            throw new UnprocessableEntityHttpException('A senha deve ter pelo menos 8 caracteres');
+        }
+        if (!preg_match('/[a-z]/', $data['password'] ?? '')) {
+            throw new UnprocessableEntityHttpException('A senha deve conter letras minúsculas');
+        }
+        if (!preg_match('/[A-Z]/', $data['password'] ?? '')) {
+            throw new UnprocessableEntityHttpException('A senha deve conter letras maiúsculas');
+        }
+        if (!preg_match('/[0-9]/', $data['password'] ?? '')) {
+            throw new UnprocessableEntityHttpException('A senha deve conter números');
+        }
+
+        $client = $this->clientService->createClientFromPersonalLink($personal, $data);
+
+        try {
+            $this->emailVerificationService->sendVerificationEmail($client->getUser());
+        } catch (\Exception $e) {
+            error_log('Erro ao enviar email de verificação (cadastro por link): ' . $e->getMessage());
+        }
+
+        return new JsonResponse([
+            'success' => true,
+            'message' => 'Cadastro realizado. Verifique seu email para ativar sua conta.',
+        ], 201);
+    }
 
     #[Route('/send-registration-link/{clientId}', name: 'client_send_registration_link', methods: ['POST'])]
     public function sendRegistrationLink(int $clientId): JsonResponse

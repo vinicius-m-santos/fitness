@@ -121,6 +121,50 @@ class ClientService
         return $client;
     }
 
+    public function createClientFromPersonalLink(Personal $personal, array $data): Client
+    {
+        if (empty($data['email'] ?? null) || empty($data['name'] ?? null) || empty($data['lastName'] ?? null) || empty($data['password'] ?? null)) {
+            throw new UnprocessableEntityHttpException('Nome, sobrenome, email e senha são obrigatórios');
+        }
+
+        $existingUser = $this->userRepository->findOneBy(['email' => $data['email']]);
+        if ($existingUser) {
+            throw new UnprocessableEntityHttpException('Este email já está cadastrado');
+        }
+
+        $user = new User();
+        $user->setEmail($data['email']);
+        $user->setFirstName($data['name']);
+        $user->setLastName($data['lastName']);
+        $user->setRoles(['ROLE_CLIENT']);
+        $user->setIsVerified(false);
+        $user->setPassword($this->passwordHasher->hashPassword($user, $data['password']));
+
+        if (!empty($data['phone'])) {
+            $user->setPhone($data['phone']);
+        }
+        if (isset($data['gender'])) {
+            $user->setGender($data['gender'] ?: null);
+        }
+        if (!empty($data['birthDate'])) {
+            $birthDate = \DateTimeImmutable::createFromFormat('Y-m-d', $data['birthDate']);
+            if ($birthDate) {
+                $user->setBirthDate($birthDate);
+            }
+        }
+
+        $this->userRepository->add($user, false);
+
+        $client = new Client();
+        $client->setUser($user);
+        $client->setPersonal($personal);
+        $client->setObservation($data['observation'] ?? '');
+        $this->add($client);
+        $personal->addClient($client);
+
+        return $client;
+    }
+
     public function find(int $clientId): ?Client
     {
         return $this->clientRepository->find($clientId);

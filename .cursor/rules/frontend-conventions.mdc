@@ -5,6 +5,8 @@ globs: frontend/**/*.tsx, frontend/**/*.ts
 
 # Frontend – convenções
 
+- **Requisições HTTP:** Sempre usar o hook `useRequest()` de `@/api/request` para chamadas à API (GET, POST, etc.). Não usar `axios` ou `fetch` diretamente nas telas ou componentes; o `request` centraliza baseURL, tratamento de erro, toast e callbacks.
+
 - **Componentes:** Prefira criar novos componentes em vez de amontoar toda a lógica em uma tela só. Isso facilita manutenção, testes e reuso (ex.: telas de “continuar treino”, modais, cards reutilizáveis).
 
 - **Modais em telas pequenas:** Use o layout responsivo `rounded-md w-[90vw] max-w-[420px]` no conteúdo do modal (ex.: AlertDialogContent, DialogContent) para evitar corte nas laterais em mobile.

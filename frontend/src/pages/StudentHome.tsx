@@ -9,10 +9,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useRequest } from "@/api/request";
 import { Link, useNavigate } from "react-router-dom";
 import Loader from "@/components/ui/loader";
-import ContinueWorkoutPrompt from "@/components/Student/ContinueWorkoutPrompt";
 import TrainingHistorySection from "@/components/Student/TrainingHistorySection";
 import { useActiveWorkoutCheck } from "@/hooks/useActiveWorkoutCheck";
-import { clearActiveSession } from "@/lib/activeSessionDb";
+import { useWorkoutSessionStore } from "@/stores/workoutSessionStore";
 
 type ExerciseWithSeriesAndRest = { series?: string; rest?: string };
 
@@ -44,27 +43,18 @@ function formatEstimatedDuration(exercises: unknown[]): string {
 export default function StudentHome() {
   const request = useRequest();
   const navigate = useNavigate();
-  const [isFinishing, setIsFinishing] = useState(false);
+  const activeCheck = useActiveWorkoutCheck({});
+  const session = useWorkoutSessionStore((s) => s.session);
+  const setShowWorkoutPrompt = useWorkoutSessionStore((s) => s.setShowWorkoutPrompt);
 
-  const activeCheck = useActiveWorkoutCheck({
-    request,
-    onFinished: () => { },
-  });
-
-  const handleFinishWorkout = async () => {
-    const session = activeCheck.session;
-    if (!session) return;
-    setIsFinishing(true);
-    try {
-      await request({
-        method: "PATCH",
-        url: `/training-execution/${session.executionId}/finish`,
-      });
-      clearActiveSession();
-      activeCheck.clearSession();
-    } finally {
-      setIsFinishing(false);
+  const handleStartWorkout = (trainingId: number, periodId: number) => {
+    if (session && (session.trainingId !== trainingId || session.periodId !== periodId)) {
+      setShowWorkoutPrompt(true);
+      return;
     }
+    navigate(`/student/training/${trainingId}/period/${periodId}/execute`, {
+      state: session ? { fromContinue: true } : undefined,
+    });
   };
 
   const { data: context, isFetching } = useQuery({
@@ -82,22 +72,6 @@ export default function StudentHome() {
 
   if (!activeCheck.checkDone) {
     return <Loader loading={true} />;
-  }
-
-  if (activeCheck.showPrompt && activeCheck.session) {
-    return (
-      <ContinueWorkoutPrompt
-        periodName={activeCheck.periodName}
-        onContinue={() =>
-          navigate(
-            `/student/training/${activeCheck.session!.trainingId}/period/${activeCheck.session!.periodId}/execute`,
-            { state: { fromContinue: true } }
-          )
-        }
-        onFinish={handleFinishWorkout}
-        isFinishing={isFinishing}
-      />
-    );
   }
 
   return (
@@ -138,11 +112,12 @@ export default function StudentHome() {
                   </p>
                 </div>
 
-                <Button asChild className="w-full md:w-auto gap-2">
-                  <Link to={`/student/training/${lastTraining.id}/period/${nextPeriod.id}/execute`}>
-                    <Play className="w-4 h-4" />
-                    Iniciar treino
-                  </Link>
+                <Button
+                  className="w-full md:w-auto gap-2"
+                  onClick={() => handleStartWorkout(lastTraining.id, nextPeriod.id)}
+                >
+                  <Play className="w-4 h-4" />
+                  Iniciar treino
                 </Button>
               </div>
             )}

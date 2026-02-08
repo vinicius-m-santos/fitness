@@ -62,9 +62,18 @@ final class TrainingExecutionController extends AbstractController
     public function history(Request $request): JsonResponse
     {
         $client = $this->getClientOrFail();
+        $since = null;
+        $sinceParam = $request->query->get('since');
+        if (\is_string($sinceParam) && $sinceParam !== '') {
+            $since = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $sinceParam)
+                ?: \DateTimeImmutable::createFromFormat('Y-m-d', $sinceParam);
+            if ($since === false) {
+                $since = null;
+            }
+        }
         $limit = $request->query->getInt('limit', 30);
         $limit = min(50, max(1, $limit));
-        $data = $this->trainingExecutionService->getHistoryForClient($client, $limit);
+        $data = $this->trainingExecutionService->getHistoryForClient($client, $since, $limit);
         return $this->json(['items' => $data]);
     }
 
@@ -82,6 +91,21 @@ final class TrainingExecutionController extends AbstractController
         $client = $this->getClientOrFail();
         $this->trainingExecutionService->deleteExecution($client, $id);
         return $this->json(['message' => 'Treino excluído']);
+    }
+
+    #[Route('/finish-with-session', name: 'training_execution_finish_with_session', methods: ['POST'])]
+    public function finishWithSession(Request $request): JsonResponse
+    {
+        $client = $this->getClientOrFail();
+        $data = json_decode($request->getContent(), true);
+        if (!$data || !\is_array($data)) {
+            return $this->json(['error' => 'Payload inválido'], 400);
+        }
+        $execution = $this->trainingExecutionService->finishWithSession($client, $data);
+        return $this->json([
+            'id' => $execution->getId(),
+            'finishedAt' => $execution->getFinishedAt()?->format(\DateTimeInterface::ATOM),
+        ]);
     }
 
     #[Route('/{id}/finish', name: 'training_execution_finish', methods: ['PATCH'])]

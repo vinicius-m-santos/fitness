@@ -61,7 +61,7 @@ const ActionButtons = (params: any) => {
   };
 
   return (
-    <div className="flex items-center gap-2 justify-center">
+    <div className="flex items-center justify-center gap-2 flex-shrink-0">
       <DefaultTooltip tooltipText="Visualizar aluno" delay={0}>
         <button
           onClick={handleView}
@@ -152,6 +152,9 @@ const ClientTable = ({ clientTableData, loading }) => {
       cellRenderer: DateConverter,
       field: "createdAt",
       flex: 2,
+      wrapHeaderText: true,
+      wrapText: true,
+      cellClass: "ag-cell-wrap",
     },
     {
       headerName: "Ação",
@@ -165,6 +168,8 @@ const ClientTable = ({ clientTableData, loading }) => {
         />
       ),
       flex: 2,
+      minWidth: 100,
+      wrapHeaderText: true,
     },
   ]);
 
@@ -194,10 +199,20 @@ const ClientTable = ({ clientTableData, loading }) => {
       />
       <style>
         {`
-                    .ag-cell-wrapper {
-                        height: 100%;
-                    }
-                `}
+          .ag-cell-wrapper {
+            height: 100%;
+          }
+          .ag-cell-wrap {
+            word-break: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+            line-height: 1.4;
+          }
+          .ag-header-cell-label .ag-header-cell-text {
+            white-space: normal;
+            word-break: break-word;
+          }
+        `}
       </style>
     </div>
   );

@@ -23,6 +23,7 @@ import RegisterSuccess from "./pages/RegisterSuccess";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ClientRegister from "./pages/ClientRegister";
+import CadastroPersonal from "./pages/CadastroPersonal";
 import StandardTrainings from "./pages/StandardTrainings";
 import WeekSummary from "./pages/WeekSummary";
 import PlanSubscription from "./pages/PlanSubscription";
@@ -180,6 +181,16 @@ export default function App() {
                     <NoAuthLayout>
                         <PublicRouteGuard>
                             <ClientRegister />
+                        </PublicRouteGuard>
+                    </NoAuthLayout>
+                }
+            />
+            <Route
+                path="/cadastro-personal/:personalUuid"
+                element={
+                    <NoAuthLayout>
+                        <PublicRouteGuard>
+                            <CadastroPersonal />
                         </PublicRouteGuard>
                     </NoAuthLayout>
                 }

@@ -20,6 +20,15 @@ class TrainingExecutionService
 {
     private const EDIT_WINDOW_HOURS = 24;
 
+    private static function parseSeriesCount(?string $series): int
+    {
+        if ($series === null || $series === '') {
+            return 4;
+        }
+        $n = (int) preg_replace('/^(\d+).*$/', '$1', trim($series));
+        return $n >= 1 && $n <= 20 ? $n : 4;
+    }
+
     public static function isWithinEditWindow(?\DateTimeImmutable $finishedAt): bool
     {
         if ($finishedAt === null) {
@@ -89,11 +98,149 @@ class TrainingExecutionService
         if ($execution->getFinishedAt() !== null) {
             throw new UnprocessableEntityHttpException('Treino já finalizado');
         }
+        foreach ($execution->getExerciseExecutions() as $ee) {
+            $duration = $ee->getDurationSeconds();
+            $ee->setExecuted($duration !== null && $duration >= 60);
+            $pe = $ee->getPeriodExercise();
+            $seriesCount = self::parseSeriesCount($pe?->getSeries());
+            $existingByNumber = [];
+            foreach ($ee->getSetExecutions() as $set) {
+                $existingByNumber[$set->getSetNumber()] = $set;
+            }
+            for ($n = 1; $n <= $seriesCount; $n++) {
+                if (!isset($existingByNumber[$n])) {
+                    $setExecution = new SetExecution();
+                    $setExecution->setExerciseExecution($ee);
+                    $setExecution->setSetNumber($n);
+                    $setExecution->setLoadKg(0.0);
+                    $ee->addSetExecution($setExecution);
+                    $this->setExecutionRepo->add($setExecution, false);
+                }
+            }
+        }
         $execution->setFinishedAt(new \DateTimeImmutable());
         if ($rating !== null && $rating !== '') {
             $enum = WorkoutRatingEnum::tryFrom($rating);
             if ($enum !== null) {
                 $execution->setRating($enum);
+            }
+        }
+        $this->em->flush();
+        return $execution;
+    }
+
+    /**
+     * Cria ou atualiza execução a partir dos dados da sessão. Se executionId for informado, atualiza o registro existente.
+     *
+     * @param array{executionId?: int, trainingId: int, periodId: int, startedAt: string, finishedAt: string, rating?: string|null, exerciseExecutions: array<int, array{periodExerciseId: int, executionOrder: int, durationSeconds: int|null, sets: array<int, array{setNumber: int, loadKg: float|null, restSeconds: int|null}>}>} $payload
+     */
+    public function finishWithSession(Client $client, array $payload): TrainingExecution
+    {
+        $executionId = isset($payload['executionId']) && is_numeric($payload['executionId']) ? (int) $payload['executionId'] : null;
+        $trainingId = (int) ($payload['trainingId'] ?? 0);
+        $periodId = (int) ($payload['periodId'] ?? 0);
+        $startedAtStr = $payload['startedAt'] ?? null;
+        $finishedAtStr = $payload['finishedAt'] ?? null;
+        $rating = isset($payload['rating']) && \is_string($payload['rating']) ? $payload['rating'] : null;
+        $exerciseExecutionsData = $payload['exerciseExecutions'] ?? [];
+        if (!$trainingId || !$periodId || !$startedAtStr || !$finishedAtStr) {
+            throw new UnprocessableEntityHttpException('trainingId, periodId, startedAt e finishedAt são obrigatórios');
+        }
+        $training = $this->trainingRepo->find($trainingId);
+        if (!$training || $training->getClient()->getId() !== $client->getId()) {
+            throw new NotFoundHttpException('Treino não encontrado');
+        }
+        $period = null;
+        foreach ($training->getPeriods() as $p) {
+            if ($p->getId() === $periodId) {
+                $period = $p;
+                break;
+            }
+        }
+        if (!$period) {
+            throw new NotFoundHttpException('Período não encontrado');
+        }
+        try {
+            $startedAt = new \DateTimeImmutable($startedAtStr);
+            $finishedAt = new \DateTimeImmutable($finishedAtStr);
+        } catch (\Exception $e) {
+            throw new UnprocessableEntityHttpException('startedAt e finishedAt devem estar em formato ISO 8601');
+        }
+        if ($executionId !== null) {
+            $execution = $this->trainingExecutionRepo->find($executionId);
+            if (!$execution || $execution->getClient()->getId() !== $client->getId()) {
+                throw new NotFoundHttpException('Execução não encontrada');
+            }
+            $execution->setStartedAt($startedAt);
+            $execution->setFinishedAt($finishedAt);
+            if ($rating !== null && $rating !== '') {
+                $enum = WorkoutRatingEnum::tryFrom($rating);
+                $execution->setRating($enum !== null ? $enum : $execution->getRating());
+            }
+            $toRemove = $execution->getExerciseExecutions()->toArray();
+            foreach ($toRemove as $ee) {
+                $execution->getExerciseExecutions()->removeElement($ee);
+            }
+        } else {
+            $execution = new TrainingExecution();
+            $execution->setTraining($training);
+            $execution->setClient($client);
+            $execution->setStartedAt($startedAt);
+            $execution->setFinishedAt($finishedAt);
+            if ($rating !== null && $rating !== '') {
+                $enum = WorkoutRatingEnum::tryFrom($rating);
+                if ($enum !== null) {
+                    $execution->setRating($enum);
+                }
+            }
+            $this->trainingExecutionRepo->add($execution, false);
+        }
+        $eeDataByPeId = [];
+        foreach ($exerciseExecutionsData as $eeData) {
+            $peId = (int) ($eeData['periodExerciseId'] ?? 0);
+            if ($peId > 0) {
+                $eeDataByPeId[$peId] = $eeData;
+            }
+        }
+        $order = 1;
+        foreach ($period->getPeriodExercises() as $periodExercise) {
+            $peId = $periodExercise->getId();
+            $eeData = $eeDataByPeId[$peId] ?? null;
+            $exerciseExecution = new ExerciseExecution();
+            $exerciseExecution->setTrainingExecution($execution);
+            $exerciseExecution->setPeriodExercise($periodExercise);
+            $exerciseExecution->setExecutionOrder($order++);
+            $durationSeconds = null;
+            $setsData = [];
+            if ($eeData !== null) {
+                $durationSeconds = isset($eeData['durationSeconds']) && $eeData['durationSeconds'] !== null
+                    ? (int) $eeData['durationSeconds'] : null;
+                $setsData = $eeData['sets'] ?? [];
+            }
+            $exerciseExecution->setDurationSeconds($durationSeconds);
+            $executed = $durationSeconds !== null && $durationSeconds >= 60;
+            $exerciseExecution->setExecuted($executed);
+            $this->exerciseExecutionRepo->add($exerciseExecution, false);
+            $seriesCount = self::parseSeriesCount($periodExercise->getSeries());
+            $loadBySet = [];
+            $restBySet = [];
+            foreach ($setsData as $s) {
+                $sn = (int) ($s['setNumber'] ?? 0);
+                if ($sn >= 1 && $sn <= $seriesCount) {
+                    $loadBySet[$sn] = isset($s['loadKg']) && $s['loadKg'] !== null ? (float) $s['loadKg'] : 0.0;
+                    $restBySet[$sn] = isset($s['restSeconds']) && $s['restSeconds'] !== null ? (int) $s['restSeconds'] : null;
+                }
+            }
+            for ($n = 1; $n <= $seriesCount; $n++) {
+                $setExecution = new SetExecution();
+                $setExecution->setExerciseExecution($exerciseExecution);
+                $setExecution->setSetNumber($n);
+                $setExecution->setLoadKg($loadBySet[$n] ?? 0.0);
+                if (isset($restBySet[$n]) && $restBySet[$n] !== null) {
+                    $setExecution->setRestSeconds($restBySet[$n]);
+                }
+                $exerciseExecution->addSetExecution($setExecution);
+                $this->setExecutionRepo->add($setExecution, false);
             }
         }
         $this->em->flush();
@@ -264,9 +411,11 @@ class TrainingExecutionService
      *
      * @return list<array{id: int, finishedAt: string, startedAt: string, trainingId: int, trainingName: string, periodId: int|null, periodName: string|null, totalDurationSeconds: int, exerciseExecutions: list<array{id: int, periodExerciseId: int, exerciseName: string, durationSeconds: int|null, sets: list<array{setNumber: int, loadKg: float|null}>}>}>
      */
-    public function getHistoryForClient(Client $client, int $limit = 30): array
+    public function getHistoryForClient(Client $client, ?\DateTimeInterface $since = null, int $limit = 30): array
     {
-        $executions = $this->trainingExecutionRepo->findFinishedByClientOrderByFinishedAtDesc($client, $limit);
+        $executions = $since !== null
+            ? $this->trainingExecutionRepo->findFinishedByClientOrderByFinishedAtDesc($client, $since, 500)
+            : $this->trainingExecutionRepo->findFinishedByClientOrderByFinishedAtDesc($client, null, min(50, max(1, $limit)));
         $result = [];
         foreach ($executions as $execution) {
             $finishedAt = $execution->getFinishedAt();
@@ -289,19 +438,27 @@ class TrainingExecutionService
                         $periodName = $tp->getName();
                     }
                 }
-                $sets = [];
+                $seriesCount = self::parseSeriesCount($pe?->getSeries());
+                $loadBySet = [];
+                $restBySet = [];
                 foreach ($ee->getSetExecutions() as $set) {
+                    $loadBySet[$set->getSetNumber()] = $set->getLoadKg() ?? 0.0;
+                    $restBySet[$set->getSetNumber()] = $set->getRestSeconds();
+                }
+                $sets = [];
+                for ($n = 1; $n <= $seriesCount; $n++) {
                     $sets[] = [
-                        'setNumber' => $set->getSetNumber(),
-                        'loadKg' => $set->getLoadKg(),
+                        'setNumber' => $n,
+                        'loadKg' => $loadBySet[$n] ?? 0.0,
+                        'restSeconds' => $restBySet[$n] ?? null,
                     ];
                 }
-                usort($sets, fn ($a, $b) => $a['setNumber'] <=> $b['setNumber']);
                 $exerciseExecutions[] = [
                     'id' => $ee->getId(),
                     'periodExerciseId' => $pe?->getId() ?? 0,
                     'exerciseName' => $pe?->getExercise()?->getName() ?? '—',
                     'durationSeconds' => $ee->getDurationSeconds(),
+                    'executed' => $ee->isExecuted(),
                     'sets' => $sets,
                 ];
             }

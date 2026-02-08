@@ -17,7 +17,8 @@ export type HistoryExerciseExecution = {
   periodExerciseId: number;
   exerciseName: string;
   durationSeconds: number | null;
-  sets: { setNumber: number; loadKg: number | null }[];
+  executed?: boolean;
+  sets: { setNumber: number; loadKg: number | null; restSeconds?: number | null }[];
 };
 
 export type HistoryItemForEdit = {
@@ -49,7 +50,6 @@ export default function EditHistoryLoadsModal({
 
   useEffect(() => {
     if (open && item) {
-      console.log(item.exerciseExecutions);
       setLocalExercises(
         item.exerciseExecutions.map((ee) => ({
           ...ee,
@@ -60,6 +60,8 @@ export default function EditHistoryLoadsModal({
   }, [open, item]);
 
   const handleLoadChange = (eeIndex: number, setIndex: number, value: string) => {
+    const ee = localExercises[eeIndex];
+    if (ee?.executed === false) return;
     const num = value === "" ? null : parseFloat(value.replace(",", "."));
     const kg = num != null && !isNaN(num) && num >= 0 ? num : null;
     setLocalExercises((prev) => {
@@ -80,6 +82,7 @@ export default function EditHistoryLoadsModal({
     if (!item) return;
     const updates: { exerciseExecutionId: number; sets: { setNumber: number; loadKg: number | null }[] }[] = [];
     localExercises.forEach((ee) => {
+      if (ee.executed === false) return;
       const original = item.exerciseExecutions.find((e) => e.id === ee.id);
       if (!original) return;
       const hasChange = ee.sets.some((s) => {
@@ -113,27 +116,31 @@ export default function EditHistoryLoadsModal({
           {localExercises.map((ee, eeIndex) => (
             <div key={ee.id} className="space-y-3">
               <p className="font-medium text-sm text-foreground">{ee.exerciseName}</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {ee.sets.map((set, setIndex) => (
-                  <div key={set.setNumber} className="flex flex-col gap-1.5">
-                    <Label className="text-xs text-muted-foreground">
-                      Série {set.setNumber}
-                    </Label>
-                    <Input
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step={0.5}
-                      placeholder="kg"
-                      value={formatLoad(set.loadKg)}
-                      onChange={(e) =>
-                        handleLoadChange(eeIndex, setIndex, e.target.value)
-                      }
-                      className="h-9"
-                    />
-                  </div>
-                ))}
-              </div>
+              {ee.executed === false ? (
+                <span className="text-muted-foreground text-xs italic">Não executado</span>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {ee.sets.map((set, setIndex) => (
+                    <div key={set.setNumber} className="flex flex-col gap-1.5">
+                      <Label className="text-xs text-muted-foreground">
+                        Série {set.setNumber}
+                      </Label>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        step={0.5}
+                        placeholder="kg"
+                        value={formatLoad(set.loadKg)}
+                        onChange={(e) =>
+                          handleLoadChange(eeIndex, setIndex, e.target.value)
+                        }
+                        className="h-9"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>

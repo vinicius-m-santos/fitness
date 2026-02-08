@@ -12,7 +12,7 @@ export default function GenderSelect({ value, handleChange }) {
         <>
             <Label
                 htmlFor="gender"
-                className="sm:text-right text-sm font-medium"
+                className="sm:text-right text-sm font-medium text-black"
             >
                 Gênero
             </Label>

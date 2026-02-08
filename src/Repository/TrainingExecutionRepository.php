@@ -35,7 +35,7 @@ class TrainingExecutionRepository extends ServiceEntityRepository
     {
         $conn = $this->em->getConnection();
         $sql = 'SELECT se.rest_seconds FROM set_executions se
-            INNER JOIN exercise_executions ee ON ee.id = se.exercise_execution_id
+            INNER JOIN exercise_executions ee ON ee.id = se.exercise_execution_id AND ee.executed = true
             INNER JOIN training_executions te ON te.id = ee.training_execution_id
             WHERE te.client_id = :clientId AND se.rest_seconds IS NOT NULL
             ORDER BY te.started_at DESC LIMIT 1';
@@ -49,6 +49,29 @@ class TrainingExecutionRepository extends ServiceEntityRepository
             ->where('te.training = :training')
             ->andWhere('te.finishedAt IS NOT NULL')
             ->setParameter('training', $training)
+            ->orderBy('te.finishedAt', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+        return $te?->getFinishedAt();
+    }
+
+    /**
+     * Last finished_at for executions of this training that include exercises from this period.
+     */
+    public function findLastFinishedAtByTrainingAndPeriod(Client $client, Training $training, int $periodId): ?\DateTimeImmutable
+    {
+        $te = $this->createQueryBuilder('te')
+            ->innerJoin('te.exerciseExecutions', 'ee')
+            ->innerJoin('ee.periodExercise', 'pe')
+            ->innerJoin('pe.trainingPeriod', 'tp')
+            ->where('te.client = :client')
+            ->andWhere('te.training = :training')
+            ->andWhere('tp.id = :periodId')
+            ->andWhere('te.finishedAt IS NOT NULL')
+            ->setParameter('client', $client)
+            ->setParameter('training', $training)
+            ->setParameter('periodId', $periodId)
             ->orderBy('te.finishedAt', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
@@ -309,12 +332,13 @@ class TrainingExecutionRepository extends ServiceEntityRepository
 
     /**
      * @param Client $client
+     * @param \DateTimeInterface|null $since
      * @param int $limit
      * @return list<TrainingExecution>
      */
-    public function findFinishedByClientOrderByFinishedAtDesc(Client $client, int $limit = 30): array
+    public function findFinishedByClientOrderByFinishedAtDesc(Client $client, ?\DateTimeInterface $since = null, int $limit = 500): array
     {
-        $results = $this->createQueryBuilder('te')
+        $qb = $this->createQueryBuilder('te')
             ->leftJoin('te.training', 't')->addSelect('t')
             ->leftJoin('te.exerciseExecutions', 'ee')->addSelect('ee')
             ->leftJoin('ee.periodExercise', 'pe')->addSelect('pe')
@@ -325,9 +349,11 @@ class TrainingExecutionRepository extends ServiceEntityRepository
             ->andWhere('te.finishedAt IS NOT NULL')
             ->setParameter('client', $client)
             ->orderBy('te.finishedAt', 'DESC')
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
+            ->setMaxResults($limit);
+        if ($since !== null) {
+            $qb->andWhere('te.finishedAt >= :since')->setParameter('since', $since);
+        }
+        $results = $qb->getQuery()->getResult();
         return array_values($results);
     }
 }
