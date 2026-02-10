@@ -61,7 +61,7 @@ export default function Clients() {
     "Você atingiu o limite de alunos do seu plano. Em breve teremos planos pagos com mais vagas.";
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8" data-tour-id="clients-page">
       <div className="flex flex-row justify-between md:flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-wide flex items-center gap-2">
           <Users className="h-6 w-6 md:h-8 md:w-8" />
@@ -76,6 +76,7 @@ export default function Clients() {
             onClick={handleCopyPersonalLink}
             disabled={!canAddStudent}
             title={!canAddStudent ? limitMessage : undefined}
+            data-tour-id="personal-link"
           >
             <Link2 className="h-4 w-4" />
             Link de personal
@@ -92,7 +93,7 @@ export default function Clients() {
         </div>
       )}
 
-      <div className="">
+      <div className="" data-tour-id="clients-list">
         <ClientList clientTableData={data} loading={isLoading || isFetching} />
       </div>
     </div>

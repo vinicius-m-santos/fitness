@@ -108,6 +108,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: "datetime_immutable", nullable: true)]
     private ?\DateTimeImmutable $resetTokenExpiresAt = null;
 
+    #[ORM\Column(type: "boolean", options: ["default" => false])]
+    #[Groups(['user_all'])]
+    private bool $onboardingTourCompleted = false;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -372,6 +376,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setClient(?Client $client): self
     {
         $this->client = $client;
+        return $this;
+    }
+
+    public function isOnboardingTourCompleted(): bool
+    {
+        return $this->onboardingTourCompleted;
+    }
+
+    public function setOnboardingTourCompleted(bool $onboardingTourCompleted): self
+    {
+        $this->onboardingTourCompleted = $onboardingTourCompleted;
         return $this;
     }
 }

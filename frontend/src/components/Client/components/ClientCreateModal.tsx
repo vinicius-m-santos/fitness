@@ -103,6 +103,7 @@ export default function ClientCreateModal({ canAddStudent = true }: ClientCreate
           className="flex items-center gap-2"
           disabled={!canAddStudent}
           title={!canAddStudent ? LIMIT_MESSAGE : undefined}
+          data-tour-id="client-create-trigger"
         >
           <Plus className="h-4 w-4 mr-2" />
           Novo Aluno

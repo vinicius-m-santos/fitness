@@ -62,6 +62,7 @@ class JWTSuccessHandler
             'deletedAt' => $user->getDeletedAt() ? $user->getDeletedAt()->format('Y-m-d H:i:s') : null,
             'avatarKey' => $user->getAvatarKey(),
             'avatarUrl' => $user->getAvatarUrl(),
+            'onboardingTourCompleted' => $user->isOnboardingTourCompleted(),
         ];
 
         if ($user->getClient()) {

@@ -14,6 +14,7 @@ export type AuthUser = {
   createdAt?: string;
   emailNotifications?: boolean;
   appNotifications?: boolean;
+  onboardingTourCompleted?: boolean;
   client?: { id: number; name: string };
   personal?: { id: number; showPlatformExercises?: boolean };
 };

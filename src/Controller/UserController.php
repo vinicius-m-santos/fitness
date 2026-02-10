@@ -212,6 +212,10 @@ class UserController extends AbstractController
             $user->setAvatarUrl($data['avatarUrl']);
         }
 
+        if (isset($data['onboardingTourCompleted'])) {
+            $user->setOnboardingTourCompleted((bool)$data['onboardingTourCompleted']);
+        }
+
         $errors = $this->validator->validate($user);
         if (count($errors) > 0) {
             $errorMessage = null;

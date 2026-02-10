@@ -3,6 +3,7 @@ import { useContinueTrainingDraft } from "@/hooks/useTrainingDraft";
 import ContinueTrainingDraftPrompt from "@/components/Training/ContinueTrainingDraftPrompt";
 import WorkoutActiveBanner from "@/components/Student/WorkoutActiveBanner";
 import WorkoutSessionProvider from "@/components/Student/WorkoutSessionProvider";
+import PersonalOnboarding from "@/components/Onboarding/PersonalOnboarding";
 
 export default function AdminLayout({ children }) {
     const { draft, showPrompt, onContinue, onDiscard } = useContinueTrainingDraft();
@@ -18,7 +19,9 @@ export default function AdminLayout({ children }) {
                 />
             ) : (
                 <WorkoutSessionProvider>
-                    {children}
+                    <PersonalOnboarding>
+                        {children}
+                    </PersonalOnboarding>
                 </WorkoutSessionProvider>
             )}
         </div>

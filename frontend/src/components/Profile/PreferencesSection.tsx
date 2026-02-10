@@ -8,9 +8,12 @@ import {
   Dumbbell,
   Bell,
   Globe,
+  Compass,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useRequest } from "@/api/request";
 import { useAuth } from "@/providers/AuthProvider";
+import { useOnboardingStore } from "@/stores/onboardingStore";
 
 export default function PreferencesSection() {
   const { user, updateUser } = useAuth();
@@ -29,7 +32,7 @@ export default function PreferencesSection() {
         showSuccess: false,
       });
       updateUser({ ...user, ...updatedUser });
-    } catch (error) {
+    } catch {
       // Error is handled by useRequest
     } finally {
       setIsLoading(null);
@@ -105,8 +108,12 @@ export default function PreferencesSection() {
               onCheckedChange={(checked) => handleToggle("showPlatformExercises", checked)}
               disabled={isLoading === "showPlatformExercises"}
             />
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+
+      {isPersonal && (
+        <TourGuidedCard user={user} updateUser={updateUser} request={request} />
       )}
     </div>
   );
@@ -138,5 +145,63 @@ function PreferenceItem({
         disabled={disabled}
       />
     </div>
+  );
+}
+
+function TourGuidedCard({
+  user,
+  updateUser,
+  request,
+}: {
+  user: { id: number; onboardingTourCompleted?: boolean; [k: string]: unknown } | null;
+  updateUser: (updated: unknown) => void;
+  request: (opts: { method: string; url: string; data?: object; showSuccess?: boolean }) => Promise<unknown>;
+}) {
+  const restartTour = useOnboardingStore((s) => s.restartTour);
+  const [loading, setLoading] = useState(false);
+
+  const handleRestart = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      const res = await request({
+        method: "PATCH",
+        url: `/user/${user.id}`,
+        data: { onboardingTourCompleted: false },
+        showSuccess: false,
+      });
+      if (res && typeof res === "object" && user) {
+        updateUser({ ...user, ...res });
+      }
+      restartTour();
+    } catch {
+      // useRequest shows error
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardContent className="p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <Compass className="text-muted-foreground" />
+          <h3 className="text-lg font-semibold">Tour guiado</h3>
+        </div>
+        <Separator />
+        <p className="text-sm text-muted-foreground">
+          Reinicie o tour de boas-vindas para rever as dicas de uso da plataforma.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleRestart}
+          disabled={loading}
+        >
+          {loading ? "Aguarde..." : "Reiniciar tour guiado"}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

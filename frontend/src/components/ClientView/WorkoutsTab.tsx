@@ -212,8 +212,8 @@ export default function WorkoutsTab({ isActive = true }: WorkoutsTabProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row gap-2 md:gap-0 items-center justify-between">
+    <div className="space-y-6" data-tour-id="workouts-content">
+      <div className="flex flex-col md:flex-row gap-2 md:gap-0 items-center justify-between" data-tour-id="workouts-header">
         <h3 className="text-lg md:text-xl font-semibold text-black flex items-center gap-2">
           <Dumbbell className="h-4 w-4 md:h-5 md:w-5" />
           {user?.roles.includes("ROLE_PERSONAL") ? "Treinos do Aluno" : "Meus Treinos"}
@@ -232,6 +232,7 @@ export default function WorkoutsTab({ isActive = true }: WorkoutsTabProps) {
               size="sm"
               className="cursor-pointer w-full md:w-auto"
               onClick={() => setOpenModal(true)}
+              data-tour-id="workout-novo-treino"
             >
               <PlusIcon /> Novo treino
             </Button>
@@ -250,6 +251,7 @@ export default function WorkoutsTab({ isActive = true }: WorkoutsTabProps) {
           value={accordionValue}
           onValueChange={setAccordionValue}
           className="space-y-3"
+          data-tour-id="workout-accordion"
         >
           {workouts.map((workout: { id: number; name: string; createdAt: string; isStandard?: boolean; periods: unknown[] }) => (
             <AccordionItem key={workout.id} value={String(workout.id)}>

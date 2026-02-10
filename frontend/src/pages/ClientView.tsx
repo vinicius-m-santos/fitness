@@ -131,7 +131,7 @@ export default function ClientView() {
         </div>
       </Card>
 
-      <Tabs value={tab} onValueChange={setTab} className="w-full">
+      <Tabs value={tab} onValueChange={setTab} className="w-full" data-tour-id="client-view-tabs">
         <TabsList className="h-auto grid grid-cols-2 sm:grid-cols-6 mb-3 gap-2">
           <TabsTrigger
             className="cursor-pointer hover:bg-gray-200 w-full text-md md:text-sm"
@@ -148,6 +148,7 @@ export default function ClientView() {
           <TabsTrigger
             className="cursor-pointer mx-1 hover:bg-gray-200 w-full text-md md:text-sm"
             value="treinos"
+            data-tour-id="workouts-tab-trigger"
           >
             Treinos
           </TabsTrigger>

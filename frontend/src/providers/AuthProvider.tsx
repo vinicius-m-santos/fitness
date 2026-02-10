@@ -26,6 +26,7 @@ type User = {
   createdAt?: string;
   emailNotifications?: boolean;
   appNotifications?: boolean;
+  onboardingTourCompleted?: boolean;
   client?: {
     id: number;
     name: string;
