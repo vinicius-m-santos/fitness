@@ -9,6 +9,7 @@ import "./i18n";
 import { AuthProvider } from "./providers/AuthProvider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import FeedbackButton from "./components/Feedback/FeedbackButton";
+import { FeedbackModalProvider } from "./components/Feedback/FeedbackModalContext";
 import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
 import * as Sentry from "@sentry/react";
 
@@ -36,9 +37,11 @@ const root = (
             <QueryClientProvider client={queryClient}>
                 <GoogleOAuthProvider clientId={googleClientId} locale="pt-BR">
                     <AuthProvider>
-                        <Toaster position="top-center" />
-                        <App />
-                        <FeedbackButton />
+                        <FeedbackModalProvider>
+                            <Toaster position="top-center" />
+                            <App />
+                            <FeedbackButton />
+                        </FeedbackModalProvider>
                     </AuthProvider>
                 </GoogleOAuthProvider>
             </QueryClientProvider>

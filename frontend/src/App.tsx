@@ -27,10 +27,13 @@ import CadastroPersonal from "./pages/CadastroPersonal";
 import StandardTrainings from "./pages/StandardTrainings";
 import WeekSummary from "./pages/WeekSummary";
 import PlanSubscription from "./pages/PlanSubscription";
+import Help from "./pages/Help";
+import WelcomeModalGate from "./components/Welcome/WelcomeModalGate";
 
 export default function App() {
     return (
-        <Routes>
+        <>
+            <Routes>
             <Route
                 path="/week-summary"
                 element={
@@ -237,7 +240,21 @@ export default function App() {
                     </PrivateRoute>
                 }
             />
+            <Route
+                path="/help"
+                element={
+                    <PrivateRoute
+                        allowedRoles={[ROLE_CLIENT, ROLE_PERSONAL]}
+                    >
+                        <AdminLayout>
+                            <Help />
+                        </AdminLayout>
+                    </PrivateRoute>
+                }
+            />
             <Route path="/logout" element={<Logout />} />
-        </Routes>
+            </Routes>
+            <WelcomeModalGate />
+        </>
     );
 }
